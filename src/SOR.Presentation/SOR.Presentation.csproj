@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <RootNamespace>SOR.Presentation</RootNamespace>
+    <AssemblyName>SOR.Presentation</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SOR.Application\SOR.Application.csproj" />
+    <ProjectReference Include="..\SOR.Infrastructure\SOR.Infrastructure.csproj" />
+    <ProjectReference Include="..\SOR.Domain\SOR.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,655 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SOR.Application</name>
+    </assembly>
+    <members>
+        <member name="T:SOR.Application.DTOs.AuthenticatedUserDto">
+            <summary>Podsumowanie sesji zalogowanego użytkownika — źródło kontekstu uprawnień w UI.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.AuthenticatedUserDto.#ctor(System.Guid,System.String,System.String,SOR.Domain.Enums.UserRole,System.Guid,System.String,SOR.Domain.Enums.ZoneKind,System.Nullable{System.Guid},System.DateTimeOffset)">
+            <summary>Podsumowanie sesji zalogowanego użytkownika — źródło kontekstu uprawnień w UI.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanManageAllZones">
+            <summary>BR-12: koordynator ma dostęp do wszystkich stref oddziału.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanEnterDiagnosis">
+            <summary>BR-13: rozpoznanie ICD-10 może wystawić wyłącznie lekarz lub koordynator.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.AuthenticatedUserDto.HasAccessTo(System.Guid)">
+            <summary>Czy użytkownik jest zalogowany w podanej strefie (lub jest koordynatorem).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.AuthenticationFailureDto">
+            <summary>Wynik nieudanej próby uwierzytelnienia (bez ujawniania szczegółów kryptograficznych).</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.AuthenticationFailureDto.#ctor(System.String,System.String,System.Int32,System.DateTimeOffset)">
+            <summary>Wynik nieudanej próby uwierzytelnienia (bez ujawniania szczegółów kryptograficznych).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.AuthenticationSuccessDto">
+            <summary>Komunikat zwracany po udanym logowaniu.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.AuthenticationSuccessDto.#ctor(SOR.Application.DTOs.AuthenticatedUserDto,System.String,System.String)">
+            <summary>Komunikat zwracany po udanym logowaniu.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.PatientCardDto">
+            <summary>Widok karty pacjenta na pulpicie strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.PatientCardDto.#ctor(System.Guid,System.String,System.String,System.Int32,SOR.Domain.Enums.TriageCategory,SOR.Domain.Enums.PatientState,System.String,System.TimeSpan,System.TimeSpan,System.Boolean,System.Boolean,System.String,System.Int32)">
+            <summary>Widok karty pacjenta na pulpicie strefy.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.PatientDetailsDto">
+            <summary>Pełny widok karty pacjenta (okno szczegółów).</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.PatientDetailsDto.#ctor(System.Guid,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,SOR.Domain.Enums.TriageCategory,System.String,SOR.Domain.Enums.PatientState,System.Nullable{System.Guid},System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicalOrderDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.ZoneTransferDto},System.Collections.Generic.IReadOnlyList{System.String})">
+            <summary>Pełny widok karty pacjenta (okno szczegółów).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.MedicalOrderDto">
+            <summary>Wynik operacji zapisu zlecenia lekarskiego.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.MedicalOrderDto.#ctor(System.Guid,SOR.Domain.Enums.MedicalOrderType,System.String,SOR.Domain.Enums.MedicalOrderState,System.Boolean,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.String)">
+            <summary>Wynik operacji zapisu zlecenia lekarskiego.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.ZoneTransferDto">
+            <summary>Wpis historii przeniesień pacjenta między strefami.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.ZoneTransferDto.#ctor(System.Guid,System.String,System.String,System.String,System.DateTimeOffset,System.Boolean)">
+            <summary>Wpis historii przeniesień pacjenta między strefami.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.ReassignZoneCommand">
+            <summary>Dane wejściowe komendy manualnej zmiany strefy przez użytkownika.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.ReassignZoneCommand.#ctor(System.Guid,System.Guid,SOR.Domain.Enums.ReassignmentReasonCode,System.String)">
+            <summary>Dane wejściowe komendy manualnej zmiany strefy przez użytkownika.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.AcceptRotationCommand">
+            <summary>Dane wejściowe komendy przyjęcia rekomendacji rotacji.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.AcceptRotationCommand.#ctor(System.Guid,System.Guid,SOR.Domain.Enums.ReassignmentReasonCode,System.String)">
+            <summary>Dane wejściowe komendy przyjęcia rekomendacji rotacji.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.ReassignmentResultDto">
+            <summary>Wynik udanej zmiany strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.ReassignmentResultDto.#ctor(System.Guid,System.Guid,System.String,System.Guid,System.String,System.Guid,System.String,SOR.Domain.Enums.ReassignmentKind,System.String,System.DateTimeOffset,System.String)">
+            <summary>Wynik udanej zmiany strefy.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.RotationRecommendationDto">
+            <summary>Rekomendacja rotacji gotowa do prezentacji w interfejsie (baner / okno dialogowe).</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.RotationRecommendationDto.#ctor(System.Guid,System.String,System.Guid,System.String,System.Guid,System.String,System.Decimal,System.Decimal,System.Decimal,System.String,System.DateTimeOffset)">
+            <summary>Rekomendacja rotacji gotowa do prezentacji w interfejsie (baner / okno dialogowe).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.OperationResultDto">
+            <summary>Podsumowanie wykonanej operacji z informacją o wpisie audytowym.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.OperationResultDto.#ctor(System.Boolean,System.String,System.Nullable{System.Guid})">
+            <summary>Podsumowanie wykonanej operacji z informacją o wpisie audytowym.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.ZoneLoadDto">
+            <summary>Wynik monitoringu obciążenia pojedynczej strefy — podstawa komponentu pulpitu.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.ZoneLoadDto.#ctor(System.Guid,System.String,System.String,SOR.Domain.Enums.ZoneKind,System.Decimal,SOR.Domain.Enums.ZoneLoadStatus,System.Int32,System.Int32,System.Int32,System.Int32,System.Boolean,System.String)">
+            <summary>Wynik monitoringu obciążenia pojedynczej strefy — podstawa komponentu pulpitu.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.DepartmentLoadSnapshotDto">
+            <summary>Zestaw wyników monitoringu dla całego oddziału.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.DepartmentLoadSnapshotDto.#ctor(System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.ZoneLoadDto},System.DateTimeOffset)">
+            <summary>Zestaw wyników monitoringu dla całego oddziału.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.DepartmentLoadSnapshotDto.HasCriticalZone">
+            <summary>Czy w oddziale występuje co najmniej jedna strefa wymagająca interwencji.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.DepartmentLoadSnapshotDto.MostLoadedZone">
+            <summary>Strefa o najwyższym obciążeniu (źródło priorytetowego banera).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.StaffAssignmentDto">
+            <summary>Opis pojedynczego przypisania personelu do strefy (tablica personelu).</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.StaffAssignmentDto.#ctor(System.Guid,System.String,System.String,SOR.Domain.Enums.UserRole,System.Guid,System.String,SOR.Domain.Enums.ReassignmentKind,System.String,System.DateTimeOffset,System.Int32,System.Boolean)">
+            <summary>Opis pojedynczego przypisania personelu do strefy (tablica personelu).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.RotationHistoryDto">
+            <summary>Wpis historii rotacji wyświetlany w szczegółach personelu.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.RotationHistoryDto.#ctor(System.Guid,System.Guid,System.String,SOR.Domain.Enums.ReassignmentKind,System.String,System.String,System.String,System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Boolean)">
+            <summary>Wpis historii rotacji wyświetlany w szczegółach personelu.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.SorApplicationException">
+            <summary>
+            Wyjątek warstwy aplikacji — mapa wyjątków domenowych na komunikaty prezentacyjne.
+            Warstwa prezentacji przechwytuje wyłącznie <see cref="T:SOR.Application.Interfaces.SorApplicationException"/> i <see cref="T:SOR.Domain.Common.DomainException"/>,
+            dzięki czemu nie musi znać szczegółów domenowych.
+            </summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.AuthenticationException">
+            <summary>Błąd uwierzytelnienia — nieudane logowanie lub brak aktywnej sesji.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.AuthorizationException">
+            <summary>Brak uprawnień do wykonania operacji w kontekście aktualnej strefy (BR-12/BR-13).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.PersistenceException">
+            <summary>Wystąpił błąd wejścia-wyjścia podczas operacji na trwałym magazynie danych.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.EntityNotFoundException">
+            <summary>Próba pobrania lub zaktualizowania nieistniejącego zasobu.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.ZoneCapacityExceededException">
+            <summary>Operacja naruszałaby limit zdolności przyjęciowej strefy (BR-04).</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.ZoneCapacityExceededException.ZoneName">
+            <summary>Nazwa strefy, której dotyczy przekroczenie.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.ZoneCapacityExceededException.Capacity">
+            <summary>Zdolność przyjęciowa strefy w chwili przekroczenia.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IDomainEventPublisher">
+             <summary>
+             Punkt publikacji zdarzeń domenowych dla warstwy aplikacji.
+            
+             Zdarzenia domenowe zgłaszane przez monitoring i rotację są przekazywane dalej jako strumień
+             faktów. Dzięki temu integracja z systemem zewnętrznym (kolejka komunikatów, webhook do HIS)
+             sprowadza się do podmiany implementacji tego interfejsu, bez ingerencji w logikę domenową.
+             </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDomainEventPublisher.PublishZoneOverloaded(SOR.Application.DTOs.ZoneLoadDto)">
+            <summary>Zdarzenie przekroczenia progu obciążenia strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDomainEventPublisher.PublishZoneNormalized(SOR.Application.DTOs.ZoneLoadDto)">
+            <summary>Zdarzenie normalizacji obciążenia strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDomainEventPublisher.PublishStaffReassigned(SOR.Domain.Common.StaffZoneReassignedEvent)">
+            <summary>Zdarzenie udokumentowanej zmiany strefy przez użytkownika.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IDomainEventPublisher.PublishedEvents">
+            <summary>Wszystkie zdarzenia zgłoszone w bieżącej transakcji (przydatne w testach i diagnostyce).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IPatientService">
+            <summary>Serwis pacjenta — rejestracja, triage, przypisanie do strefy, zlecenia, zamknięcie karty.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.RegisterPatientAsync(System.String,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,System.Threading.CancellationToken)">
+            <summary>Rejestracja pacjenta w module wstępnym.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.PerformTriageAsync(System.Guid,SOR.Domain.Enums.TriageCategory,System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Wykonanie oceny Triage z automatyczną rekomendacją strefy docelowej.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.AssignToZoneAsync(System.Guid,System.Guid,System.Threading.CancellationToken)">
+            <summary>Przypisanie pacjenta do strefy z walidacją zdolności przyjęciowej (BR-04).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.TransferPatientAsync(System.Guid,System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>Przeniesienie pacjenta między strefami z uzasadnieniem (BR-19).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.AddOrderAsync(System.Guid,SOR.Domain.Enums.MedicalOrderType,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>Dodanie zlecenia lekarskiego.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.ChangeOrderStateAsync(System.Guid,SOR.Domain.Enums.MedicalOrderState,System.String,System.Threading.CancellationToken)">
+            <summary>Zmiana statusu zlecenia.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.SetDiagnosisAsync(System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>Ustawienie rozpoznania ICD-10.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.CloseCardAsync(System.Guid,System.Boolean,System.Threading.CancellationToken)">
+            <summary>Próba zamknięcia karty pacjenta (BR-09/BR-10/BR-11).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.LockCardAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Przejęcie blokady karty (BR-20).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.UnlockCardAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Zwolnienie blokady karty.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.GetZonePatientsAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera pacjentów strefy (do widoku pulpitu).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.GetAwaitingTriageAsync(System.Threading.CancellationToken)">
+            <summary>Pobiera pacjentów oczekujących na triage.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.GetPatientAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera szczegóły karty pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IAuditLogService">
+            <summary>Serwis dziennika audytu (wymóg formalny ścieżki audytowej).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuditLogService.RecordAsync(SOR.Domain.Enums.AuditActionType,System.Nullable{System.Guid},System.String,System.Nullable{System.Guid},System.String,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>Zapisuje wpis audytowy w bieżącej transakcji.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuditLogService.GetRecentAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>Pobiera ostatnie wpisy audytowe (widok koordynatora).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuditLogService.GetByUserAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera pełną historię rotacji danego użytkownika do wglądu.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.AuditLogEntryDto">
+            <summary>Wpis dziennika audytu prezentowany w interfejsie.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.AuditLogEntryDto.#ctor(System.Guid,SOR.Domain.Enums.AuditActionType,System.String,System.String,System.String,System.DateTimeOffset,System.Boolean)">
+            <summary>Wpis dziennika audytu prezentowany w interfejsie.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IRepository`1">
+            <summary>
+            Kontrakt dostępu do danych (wzorzec Repository). Definicja leży w warstwie aplikacji,
+            aby domena nie zależała od technologii trwałości (zgodnie z Dependency Inversion).
+            </summary>
+            <typeparam name="TEntity">Typ encji agregatu.</typeparam>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IRepository`1.GetByIdAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Wyszukuje encję po tożsamości.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IRepository`1.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>Zwraca wszystkie encje (opcjonalnie filtrowane).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IRepository`1.AddAsync(`0,System.Threading.CancellationToken)">
+            <summary>Dodaje encję do kontekstu (zatwierdzenie następuje w Unit of Work).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IRepository`1.Remove(`0)">
+            <summary>Usuwa encję z kontekstu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IRepository`1.GetByIdsAsync(System.Collections.Generic.IReadOnlyCollection{System.Guid},System.Threading.CancellationToken)">
+            <summary>Masowe pobranie encji po zbiorze tożsamości (wydajne zapytanie IN).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IPatientRepository">
+            <summary>Repozytorium pacjentów z obsługą blokady współbieżnej.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientRepository.GetByZoneAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera pacjentów przypisanych do strefy (bez zamkniętych).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientRepository.GetAwaitingTriageAsync(System.Threading.CancellationToken)">
+            <summary>Pobiera pacjentów oczekujących na triage.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientRepository.CountActiveByZoneAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Liczy pacjentów aktywnych w strefie (BR-04).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientRepository.GetByPeselAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Wyszukuje pacjenta po PESEL.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IZoneRepository">
+            <summary>Repozytorium stref.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneRepository.GetByCodeAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Pobiera strefę po kodzie domenowym.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneRepository.GetActiveAsync(System.Threading.CancellationToken)">
+            <summary>Pobiera wszystkie aktywne strefy.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IUserRepository">
+            <summary>Repozytorium użytkowników.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IUserRepository.GetByLoginAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Wyszukuje użytkownika po znormalizowanym loginie.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IStaffZoneAssignmentRepository">
+            <summary>Repozytorium przypisań personelu do stref.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffZoneAssignmentRepository.GetActiveForUserAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Aktualne przypisanie użytkownika (null gdy żadne).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffZoneAssignmentRepository.GetAllActiveAsync(System.Threading.CancellationToken)">
+            <summary>Aktywne przypisania wszystkich pracowników.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffZoneAssignmentRepository.GetActiveByZoneAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Aktywne przypisania dla strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffZoneAssignmentRepository.GetHistoryForUserAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pełna historia przypisań użytkownika (najnowsze na początku).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IDutyShiftRepository">
+            <summary>Repozytorium grafiku dyżurów.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDutyShiftRepository.GetActiveShiftAsync(System.Guid,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>Aktywny dyżur użytkownika w danym momencie — podstawa logowania kontekstowego (BR-16).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDutyShiftRepository.GetShiftsInRangeAsync(System.DateTimeOffset,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>Dyżury w przedziale czasowym (widok grafiku).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IMedicalOrderRepository">
+            <summary>Repozytorium zleceń lekarskich.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalOrderRepository.GetOpenByPatientAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Otwarte zlecenia pacjenta (BR-10).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IAuditLogRepository">
+            <summary>Repozytorium wpisów dziennika audytu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuditLogRepository.GetRecentAsync(System.Int32,System.Threading.CancellationToken)">
+            <summary>Ostatnie wpisy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuditLogRepository.GetByUserAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Wpisy dotyczące użytkownika.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.ITriageAssessmentRepository">
+             <summary>
+             Repozytorium ocen segregacji medycznej (Triage).
+            
+             Istnieje mimo przynależności <see cref="T:SOR.Domain.Entities.TriageAssessment"/> do agregatu pacjenta, ponieważ
+             nową ocenę trzeba jawnie dodać do kontekstu trwałości. Podczas wykrywania zmian EF Core
+             traktuje encję odnalezioną w nawigacji, która ma już ustawiony klucz obcy, jako istniejącą —
+             bez jawnego dodania próbowałby wykonać aktualizację nieistniejącego wiersza.
+             </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.ITriageAssessmentRepository.GetByPatientAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Historia ocen pacjenta w kolejności chronologicznej.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IZoneTransferRepository">
+            <summary>
+            Repozytorium historii przeniesień pacjenta między strefami. Podobnie jak oceny Triage,
+            nowe przeniesienie trzeba jawnie dodać do kontekstu, aby EF Core wykonał INSERT, a nie
+            aktualizację wiersza, którego jeszcze nie ma.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneTransferRepository.GetByPatientAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Historia przeniesień pacjenta w kolejności chronologicznej.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IUnitOfWork">
+            <summary>
+            Jednostka pracy (Unit of Work) — granica transakcji. Zatwierdzenie jest atomowe:
+            rotacja personelu i przeniesienie pacjenta zapisywane są w całości albo wcale.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IUnitOfWork.CommitAsync(System.Threading.CancellationToken)">
+            <summary>Zapisuje wszystkie zmiany z kontekstu w pojedynczej transakcji.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IUnitOfWork.RollbackAsync(System.Threading.CancellationToken)">
+            <summary>Wycofuje wszystkie niezapisane zmiany z kontekstu.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.HasPendingChanges">
+            <summary>Czy istnieją niezapisane zmiany.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.Patients">
+            <summary>Repozytorium pacjentów.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.Zones">
+            <summary>Repozytorium stref.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.Users">
+            <summary>Repozytorium użytkowników.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.StaffAssignments">
+            <summary>Repozytorium przypisań personelu do stref.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.DutyShifts">
+            <summary>Repozytorium dyżurów.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.MedicalOrders">
+            <summary>Repozytorium zleceń lekarskich.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.AuditEntries">
+            <summary>Repozytorium wpisów audytowych.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.TriageAssessments">
+            <summary>Repozytorium ocen segregacji medycznej.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.ZoneTransfers">
+            <summary>Repozytorium historii przeniesień pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IAuthenticationService">
+            <summary>Serwis uwierzytelniania (BR-15/BR-16).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuthenticationService.LoginAsync(System.String,System.String,System.Threading.CancellationToken)">
+            <summary>Uwierzytelnia użytkownika i ustawia kontekst strefy na podstawie grafiku.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuthenticationService.LogoutAsync(System.Threading.CancellationToken)">
+            <summary>Kończy sesję i zwalnia przypisanie ze strefy.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IAuthenticationService.CurrentUser">
+            <summary>Zwraca aktualnie zalogowanego użytkownika (null gdy brak sesji).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IAuthenticationService.RefreshCurrentUserContextAsync(System.Threading.CancellationToken)">
+            <summary>
+            Odświeża kontekst strefy bieżącej sesji na podstawie aktywnego przypisania.
+            Wywoływane po rotacji, aby warstwa prezentacji natychmiast pracowała w nowej strefie (BR-16).
+            </summary>
+        </member>
+        <member name="E:SOR.Application.Interfaces.IAuthenticationService.SessionChanged">
+            <summary>Zdarzenie sesji — używane przez warstwę prezentacji do nawigacji.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IZoneLoadMonitoringService">
+            <summary>Serwis monitoringu obciążenia stref (BR-06/BR-07).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadMonitoringService.GetSnapshotAsync(System.Threading.CancellationToken)">
+            <summary>Pobiera bieżący stan obciążenia wszystkich stref oddziału.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadMonitoringService.GetZoneLoadAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera stan obciążenia jednej strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadMonitoringService.StartMonitoringAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <summary>Rozpoczyna cykliczne monitorowanie w tle (asynchroniczne, nieblokujące UI).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadMonitoringService.StopMonitoring">
+            <summary>Zatrzymuje cykliczne monitorowanie.</summary>
+        </member>
+        <member name="E:SOR.Application.Interfaces.IZoneLoadMonitoringService.ZoneOverloaded">
+            <summary>Zdarzenie przekroczenia progu obciążenia strefy.</summary>
+        </member>
+        <member name="E:SOR.Application.Interfaces.IZoneLoadMonitoringService.ZoneNormalized">
+            <summary>Zdarzenie normalizacji obciążenia strefy.</summary>
+        </member>
+        <member name="E:SOR.Application.Interfaces.IZoneLoadMonitoringService.RotationSuggested">
+            <summary>Zdarzenie wygenerowania rekomendacji rotacji.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IStaffRotationService">
+            <summary>Serwis rotacji personelu (BR-05/BR-07/BR-08).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffRotationService.ReassignZoneAsync(SOR.Application.DTOs.ReassignZoneCommand,System.Threading.CancellationToken)">
+            <summary>Manualna zmiana strefy przez użytkownika — z obowiązkowym uzasadnieniem i zapisem audytowym.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffRotationService.AcceptRecommendationAsync(SOR.Application.DTOs.AcceptRotationCommand,System.Threading.CancellationToken)">
+            <summary>Przyjęcie rekomendacji rotacji przez użytkownika.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffRotationService.CoordinatorAssignAsync(System.Guid,System.Guid,SOR.Domain.Enums.ReassignmentReasonCode,System.String,System.Threading.CancellationToken)">
+            <summary>Rotacja zlecona przez koordynatora (innemu pracownikowi).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffRotationService.GetReassignmentTargetsAsync(System.Threading.CancellationToken)">
+            <summary>Zwraca listę stref dostępnych do zmiany (filtry BR-04/BR-05).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffRotationService.GetRotationHistoryAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera pełną historię rotacji danego pracownika.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IStaffRotationService.GetStaffByZoneAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera listę personelu aktualnie przypisanego do stref.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IStaffRotationService.CurrentRecommendation">
+            <summary>Bieżąca, przydatna dla warstwy UI rekomendacja rotacji (null gdy brak).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IZoneLoadQueryService">
+             <summary>
+             Odczytowe źródło stanu obciążenia stref.
+            
+             Wydzielenie tego kontraktu od <see cref="T:SOR.Application.Interfaces.IZoneLoadMonitoringService"/> ma cel architektoniczny:
+             monitoring publikuje zdarzenia i uruchamia pętlę w tle (potrzebuje silnika rekomendacji oraz
+             dziennika audytu), natomiast serwis rotacji potrzebuje wyłącznie samego odczytu obciążenia.
+             Dzięki rozdzieleniu obu zależności graf obiektów pozostaje acykliczny — bez konieczności
+             stosowania wyjątkowości typu <c>Lazy&lt;T&gt;</c> w kontenerze DI.
+             </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadQueryService.GetSnapshotAsync(System.Threading.CancellationToken)">
+            <summary>Buduje bieżący stan obciążenia wszystkich aktywnych stref oddziału.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadQueryService.GetZoneLoadAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Buduje stan obciążenia jednej strefy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IZoneLoadQueryService.GetRecommendationAsync(System.Threading.CancellationToken)">
+            <summary>
+            Zwraca aktualną rekomendację rotacji wygenerowaną przez silnik rekomendacji.
+            Nie publikuje zdarzeń i nie zapisuje audytu — wyłącznie oblicza propozycję.
+            </summary>
+        </member>
+        <member name="T:SOR.Application.Mapping.EntityMapper">
+            <summary>
+            Warstwa mapowania encji domenowych na DTO-y. Oddzielona od serwisów, aby logika biznesowa
+            nie zawierała kosmetycznych operacji projekcji danych na potrzeby UI.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Mapping.EntityMapper.ToCardDto(SOR.Domain.Entities.Patient,System.DateTimeOffset)">
+            <summary>Buduje DTO karty pacjenta na pulpicie.</summary>
+        </member>
+        <member name="M:SOR.Application.Mapping.EntityMapper.ToDetailsDto(SOR.Domain.Entities.Patient,System.String,System.DateTimeOffset)">
+            <summary>Buduje pełny DTO karty pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.AuditLogService">
+            <summary>
+            Serwis dziennika audytu. Wpisy są tworzone w kontekście bieżącego Unit of Work,
+            dzięki czemu zapis audytowy jest atomowy z operacją biznesową (wymóg BR-25).
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.AuditLogService.RecordAsync(SOR.Domain.Enums.AuditActionType,System.Nullable{System.Guid},System.String,System.Nullable{System.Guid},System.String,System.String,System.Boolean,System.Threading.CancellationToken)">
+            <summary>
+            Zapisuje wpis audytowy. Zatwierdzenie transakcji pozostaje w gestii wywołującego serwisu,
+            dzięki czemu wpis audytowy i operacja biznesowa trafiają do bazy atomowo.
+            </summary>
+        </member>
+        <member name="T:SOR.Application.Services.AuthenticationService">
+            <summary>
+            Serwis uwierzytelniania z kontekstowym logowaniem. Po poprawnym uwierzytelnieniu
+            odczytuje aktywny dyżur z grafiku, wyznacza przypisanie strefy i ustawia kontekst uprawnień (BR-16).
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.AuthenticationService.RefreshCurrentUserContextAsync(System.Threading.CancellationToken)">
+            <summary>
+            Odświeża strefę bieżącej sesji na podstawie najnowszego aktywnego przypisania.
+            Po rotacji, którą wykonuje sam użytkownik, wpis w grafiku zmienia się w bazie —
+            bez tego odświeżenia interfejs nadal wskazywałby starą strefę.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.AuthenticationService.ResolveZoneContextAsync(SOR.Domain.Entities.User,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Odczytuje strefę z grafiku (BR-16). W razie braku aktywnego dyżuru kieruje pracownika
+            do modułu triage (strefa awaryjna) i informuje o tym fakcie użytkownika.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.AuthenticationService.PerformDummyHash(System.String)">
+            <summary>Wykonuje kosztowny hash, aby wyrównać czas odpowiedzi dla nieistniejących kont.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.AuthenticationService.LoginAttemptTracker">
+            <summary>Stanowa klasa śledząca próby logowania per login.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.DomainEventPublisher">
+             <summary>
+             Domyślna implementacja publikatora zdarzeń domenowych — buforuje zdarzenia w obrębie
+             bieżącego zakresu (scope). Warstwa prezentacja może je odczytać i przekazać do systemu
+             zewnętrznego, a testy mogą zweryfikować, że zdarzenia faktycznie zostały zgłoszone.
+            
+             Kolekcja jest wątkozabezpieczna, ponieważ pętla monitoringu publikuje z wątku roboczego.
+             </summary>
+        </member>
+        <member name="P:SOR.Application.Services.DomainEventPublisher.PublishedEvents">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.DomainEventPublisher.PublishZoneOverloaded(SOR.Application.DTOs.ZoneLoadDto)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.DomainEventPublisher.PublishZoneNormalized(SOR.Application.DTOs.ZoneLoadDto)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.DomainEventPublisher.PublishStaffReassigned(SOR.Domain.Common.StaffZoneReassignedEvent)">
+            <inheritdoc />
+        </member>
+        <member name="T:SOR.Application.Services.PatientService">
+            <summary>
+            Serwis pacjenta. Orkiestruje rejestrację, triage, przydział do strefy, zlecenia
+            oraz zamknięcie karty, egzekwując reguły BR-01, BR-04, BR-09, BR-10, BR-19 i BR-20.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientService.EnsureStaffOfZoneOrCoordinator(SOR.Application.DTOs.AuthenticatedUserDto,System.Guid)">
+            <summary>BR-12: pracownik operuje na pacjentach własnej strefy; koordynator — wszystkich.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.StaffRotationService">
+            <summary>
+            Serwis rotacji personelu. Centralny punkt realizujący reguły BR-05, BR-07 i BR-08:
+            każda zmiana strefy jest walidowana, transakcyjna i audytowana.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.StaffRotationService.ReassignZoneAsync(SOR.Application.DTOs.ReassignZoneCommand,System.Threading.CancellationToken)">
+            <summary>Manualna zmiana strefy — BR-05: obowiązkowe uzasadnienie, walidacja strefy docelowej.</summary>
+        </member>
+        <member name="M:SOR.Application.Services.StaffRotationService.AcceptRecommendationAsync(SOR.Application.DTOs.AcceptRotationCommand,System.Threading.CancellationToken)">
+            <summary>Przyjęcie rekomendacji systemu — BR-07.</summary>
+        </member>
+        <member name="M:SOR.Application.Services.StaffRotationService.CoordinatorAssignAsync(System.Guid,System.Guid,SOR.Domain.Enums.ReassignmentReasonCode,System.String,System.Threading.CancellationToken)">
+            <summary>Rotacja zlecona przez koordynatora — BR-08.</summary>
+        </member>
+        <member name="M:SOR.Application.Services.StaffRotationService.SetRecommendation(SOR.Application.DTOs.RotationRecommendationDto)">
+            <summary>Ustawia aktualną rekomendację (wywoływane przez serwis monitoringu).</summary>
+        </member>
+        <member name="M:SOR.Application.Services.StaffRotationService.ReassignInternalAsync(System.Guid,System.Guid,SOR.Domain.Enums.ReassignmentKind,SOR.Domain.ValueObjects.ReassignmentReason,System.String,SOR.Domain.Enums.AuditActionType,System.Threading.CancellationToken)">
+            <summary>
+            Wspólny algorytm zmiany strefy: walidacja, zamknięcie poprzedniego przypisania,
+            utworzenie nowego, wpis audytowy i zapis transakcyjny.
+            </summary>
+        </member>
+        <member name="T:SOR.Application.Services.ZoneLoadMonitoringService">
+             <summary>
+             Serwis monitoringu obciążenia stref (BR-06, BR-07).
+            
+             Klasa pełni wyłącznie rolę „obserwatora”: cyklicznie odpytuje <see cref="T:SOR.Application.Interfaces.IZoneLoadQueryService"/>,
+             wykrywa zmiany statusu i publikuje zdarzenia dla warstwy prezentacji. Nie zawiera logiki
+             obliczeniowej, dzięki czemu graf zależności pozostaje acykliczny.
+            
+             Dwa zdarzenia są świadomie oddzielone:
+             <list type="bullet">
+               <item><description><c>ZoneOverloaded</c> — przekroczenie progu, wymaga pilnej reakcji.</description></item>
+               <item><description><c>ZoneNormalized</c> — powrót do normy, komunikat informacyjny.</description></item>
+             </list>
+             </summary>
+        </member>
+        <member name="E:SOR.Application.Services.ZoneLoadMonitoringService.ZoneOverloaded">
+            <inheritdoc />
+        </member>
+        <member name="E:SOR.Application.Services.ZoneLoadMonitoringService.ZoneNormalized">
+            <inheritdoc />
+        </member>
+        <member name="E:SOR.Application.Services.ZoneLoadMonitoringService.RotationSuggested">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.GetSnapshotAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.GetZoneLoadAsync(System.Guid,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.StartMonitoringAsync(System.TimeSpan,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.StopMonitoring">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.DisposeAsync">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.PublishTransitionsAsync(SOR.Application.DTOs.DepartmentLoadSnapshotDto,System.Threading.CancellationToken)">
+            <summary>
+            Wykrywa przejścia statusu i publikuje zdarzenia. Zdarzenie alarmowe jest rejestrowane
+            w dzienniku audytu oraz w strumieniu zdarzeń domenowych (dla integracji z systemem zewnętrznym).
+            Powrót do normy jest komunikatem informacyjnym i nie trafia do audytu operacyjnego.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.PublishRecommendationAsync(System.Threading.CancellationToken)">
+            <summary>
+            Publikuje rekomendację rotacji wyłącznie wtedy, gdy zmieniła się w stosunku do poprzedniej.
+            Zapobiega to powstawaniu identycznych wpisów audytowych przy każdym cyklu monitoringu.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadMonitoringService.RecordOverloadAsync(SOR.Application.DTOs.ZoneLoadDto,System.Threading.CancellationToken)">
+            <summary>Zapisuje w dzienniku audytu wykrycie przekroczenia progu obciążenia.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.ZoneLoadQueryService">
+             <summary>
+             Bezpieczny dla wątków odczyt stanu obciążenia stref i wyliczenie rekomendacji rotacji.
+            
+             Klasa jest celowo pozbawiona efektów ubocznych: nie publikuje zdarzeń, nie zapisuje wpisów
+             audytowych i nie uruchamia pętli monitoringu. Dzięki temu może być wstrzykiwana zarówno do
+             serwisu monitoringu, jak i do serwisu rotacji, nie tworząc cyklu zależności.
+             </summary>
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadQueryService.GetSnapshotAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadQueryService.GetZoneLoadAsync(System.Guid,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadQueryService.GetRecommendationAsync(System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.ZoneLoadQueryService.BuildStaffPoolAsync(System.Collections.Generic.IReadOnlyList{SOR.Domain.Entities.StaffZoneAssignment},System.Collections.Generic.IReadOnlyList{SOR.Domain.Entities.Patient},System.Threading.CancellationToken)">
+            <summary>Buduje listę personelu z indywidualnym obciążeniem pacjentami.</summary>
+        </member>
+    </members>
+</doc>

@@ -1,0 +1,13 @@
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.AssemblyInfoInputs.cache
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.AssemblyInfo.cs
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.csproj.CoreCompileInputs.cache
+D:\pwswProj\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.deps.json
+D:\pwswProj\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.dll
+D:\pwswProj\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.pdb
+D:\pwswProj\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.xml
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.dll
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\refint\SOR.Domain.dll
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.xml
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.pdb
+D:\pwswProj\src\SOR.Domain\obj\Debug\net9.0\ref\SOR.Domain.dll

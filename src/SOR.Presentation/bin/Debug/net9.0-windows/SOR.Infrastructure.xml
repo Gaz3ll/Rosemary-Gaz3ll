@@ -1,0 +1,193 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SOR.Infrastructure</name>
+    </assembly>
+    <members>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.PatientConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Patient"/> — tabela kart pacjentów.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.TriageAssessmentConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.TriageAssessment"/> — tabela ocen segregacji medycznej.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.MedicalOrderConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.MedicalOrder"/> — tabela zleceń lekarskich.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.ZoneTransferConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.ZoneTransfer"/> — tabela historii przeniesień pacjentów.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.AuditLogEntryConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.AuditLogEntry"/> — tabela dziennika audytu (append-only).</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.UserConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.User"/> — tabela użytkowników.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.ZoneConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Zone"/> — tabela stref oddziału.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.DutyRosterConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.DutyRoster"/> — tabela grafików dyżurów.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.DutyShiftConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.DutyShift"/> — tabela wpisów grafiku.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.StaffZoneAssignmentConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.StaffZoneAssignment"/> — tabela przypisań i historii rotacji.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.DatabaseConnectionInfo">
+            <summary>
+            Opis połączenia z trwałym magazynem danych. Obiekt przekazywany do warstwy trwałości,
+            aby uniknąć „magic stringów" i umożliwić diagnostykę ścieżki pliku bazy.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseConnectionInfo.#ctor(System.String)">
+            <summary>
+            Opis połączenia z trwałym magazynem danych. Obiekt przekazywany do warstwy trwałości,
+            aby uniknąć „magic stringów" i umożliwić diagnostykę ścieżki pliku bazy.
+            </summary>
+        </member>
+        <member name="P:SOR.Infrastructure.Persistence.DatabaseConnectionInfo.IsLocalFile">
+            <summary>Czy baza danych znajduje się na nośniku lokalnym (wpływa na tryb blokowania pliku).</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.DatabaseInitializer">
+            <summary>
+            Inicjalizator trwałego magazynu danych: tworzy schemat bazy SQLite, weryfikuje
+            dostępność ścieżki pliku i raportuje błędy wejścia-wyjścia w postaci kontrolowanych wyjątków.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseInitializer.EnsureCreatedAsync(System.Threading.CancellationToken)">
+            <summary>Tworzy schemat bazy, jeśli jeszcze nie istnieje. Odporny na blokady pliku.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.DatabaseSeeder">
+            <summary>
+            Generator danych startowych (seed). Tworzy kompletny, realistyczny stan oddziału:
+            4 strefy, personel z rolami, aktywny grafik dyżuru oraz pacjentów o zróżnicowanym
+            kodzie Triage, aby od razu po uruchomieniu widoczne były różne statusy obciążenia stref.
+            Dane startowe ułatwiają prezentację systemu podczas obrony projektu.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedAsync(System.Threading.CancellationToken)">
+            <summary>Wypełnia bazę danymi startowymi, jeśli nie zawiera jeszcze żadnych stref.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.EntityFrameworkRepository`1">
+            <summary>
+            Generyczna implementacja wzorca Repository z użyciem EF Core.
+            Domyślna implementacja <see cref="T:SOR.Infrastructure.Persistence.Repositories.EntityFrameworkRepository`1"/> pokrywa operacje
+            wspólne wszystkich agregatów; repozytoria specjalizowane dodają zapytania dziedzinowe.
+            </summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.PatientRepository">
+            <summary>Repozytorium pacjentów z zapytaniami dziedzinowymi.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.ZoneRepository">
+            <summary>Repozytorium stref.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.UserRepository">
+            <summary>Repozytorium użytkowników.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.StaffZoneAssignmentRepository">
+            <summary>Repozytorium przypisań personelu do stref — obsługa aktywnych wpisów i historii rotacji.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.DutyShiftRepository">
+            <summary>Repozytorium dyżurów — obsługa odczytu kontekstowego grafiku (BR-16).</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.MedicalOrderRepository">
+            <summary>Repozytorium zleceń lekarskich.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.AuditLogRepository">
+            <summary>Repozytorium dziennika audytu.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.TriageAssessmentRepository">
+            <summary>Repozytorium ocen segregacji medycznej — umożliwia jawne dodanie nowej oceny do kontekstu.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.ZoneTransferRepository">
+            <summary>Repozytorium historii przeniesień pacjenta — jawne dodanie nowego wpisu wymusza INSERT.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.SorDbContext">
+            <summary>
+            Kontekst trwałości (DbContext) mapujący model domenowy na relacyjną bazę SQLite.
+            Konfiguracja jest rozdzielona na klasy <c>IEntityTypeConfiguration&lt;T&gt;</c> (konfiguracja per encja),
+            co utrzymuje klasę kontekstu zwartej i łatwej w utrzymaniu.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.SorDbContext.SaveChanges(System.Boolean)">
+            <summary>
+            Zapis zmian z nadaniem nowych tokenów współbieżności. Wywołanie <see cref="M:SOR.Infrastructure.Persistence.SorDbContext.StampConcurrencyTokens"/>
+            przed podstawową implementacją gwarantuje, że każda modyfikacja trafia do bazy z nową wersją,
+            a warunek <c>WHERE</c> używa wersji oryginalnej odczytanej z bazy.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.SorDbContext.SaveChangesAsync(System.Boolean,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.SorDbContext.StampConcurrencyTokens">
+            <summary>Nadaje nowe, unikalne tokeny wersji encjom dodawanym i modyfikowanym.</summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.SorDbContext.ConfigureConventions(Microsoft.EntityFrameworkCore.ModelConfigurationBuilder)">
+             <summary>
+             Konwencje typów dla całego modelu.
+            
+             <para>
+             Wartości <see cref="T:System.DateTimeOffset"/> są zapisywane jako liczba całkowita (binarna
+             reprezentacja znacznika czasu UTC). Dostawca SQLite nie potrafi tłumaczyć porównań ani
+             sortowania na natywnym typie tekstowym <c>DateTimeOffset</c>, co powodowałoby błąd
+             wykonania przy zapytaniach filtrujących grafik dyżurów po czasie. Zapis w postaci
+             <c>long</c> pozwala na w pełni serwerowe porównania (BR-02).
+             </para>
+             </summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.SorDbContextDesignTimeFactory">
+            <summary>
+            Fabryka kontekstu używana wyłącznie przez narzędzia czasu projektowania
+            (<c>dotnet ef migrations add</c>, <c>dotnet ef database update</c>).
+            </summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.SqliteUnitOfWork">
+            <summary>
+            Implementacja wzorca Unit of Work dla SQLite. Zatwierdzenie zmian jest transakcyjne
+            (wzrost wydajności: jedna transakcja na całą operację biznesową) i odporne na blokady pliku bazy
+            dzięki automatycznemu ponawianiu z wykładniczym backoffem.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.SqliteUnitOfWork.CommitAsync(System.Threading.CancellationToken)">
+            <summary>Zapisuje zmiany w pojedynczej transakcji, z obsługą blokad pliku bazy.</summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.SqliteUnitOfWork.BeginTransactionAsync(System.Threading.CancellationToken)">
+            <summary>Rozpoczyna transakcję obejmującą wiele operacji (np. rotacja personelu + audyt).</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Resilience.IRetryPolicy">
+            <summary>Kontrakt polityki ponawiania operacji wrażliwych na blokady pliku bazy.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Resilience.SqliteRetryPolicy">
+            <summary>
+            Polityka ponawiania z wykładniczym backoffem dla SQLite.
+            Obsługuje blokadę bazy (SQLITE_BUSY / SQLITE_LOCKED) oraz przejściowe błędy I/O,
+            które są typowe dla plikowej bazy danych używanej na stacjach roboczych SOR.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Resilience.SqliteRetryPolicy.IsTransient(System.Exception)">
+            <summary>Rozpoznaje wyjątki, które warto ponowić.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Resilience.ConcurrencyConflictException">
+            <summary>Wyjątek sygnalizujący konflikt współbieżnej modyfikacji (optimistic concurrency).</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.ServiceRegistration">
+            <summary>
+            Composition Root — jedyne miejsce w programie, w którym znane są konkretne implementacje
+            wszystkich abstrakcji. Pozostałe warstwy operują wyłącznie na interfejsach.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.ServiceRegistration.AddSorSystem(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String,SOR.Domain.ValueObjects.ZoneLoadThresholds)">
+            <summary>Rejestruje warstwę trwałości i serwisy aplikacyjne.</summary>
+            <param name="services">Kontener zależności.</param>
+            <param name="databasePath">Ścieżka pliku bazy SQLite.</param>
+            <param name="thresholds">Progi obciążenia stref (parametryzowalne z UI lub pliku konfiguracyjnego).</param>
+        </member>
+        <member name="M:SOR.Infrastructure.ServiceRegistration.InitializeDatabaseAsync(System.IServiceProvider,System.Threading.CancellationToken)">
+            <summary>
+            Wykonuje inicjalizację schematu i danych startowych.
+            Wywoływane przy starcie aplikacji — obsługuje blokady pliku bazy.
+            </summary>
+        </member>
+    </members>
+</doc>

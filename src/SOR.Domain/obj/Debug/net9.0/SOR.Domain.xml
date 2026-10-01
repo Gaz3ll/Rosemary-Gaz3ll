@@ -1,0 +1,1097 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>SOR.Domain</name>
+    </assembly>
+    <members>
+        <member name="T:SOR.Domain.Common.ConcurrentPatientModificationException">
+            <summary>
+            Wyjątek domenowy sygnalizujący konflikt współbieżnej modyfikacji tego samego pacjenta
+            ( optimistic concurrency / blokada logiczna karty pacjenta).
+            </summary>
+        </member>
+        <member name="T:SOR.Domain.Common.PatientCardClosureBlockedException">
+            <summary>Błąd naruszenia wymogu kompletności danych przed zamknięciem karty pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.DomainEvent">
+            <summary>
+            Zdarzenie domenowe. Zdarzenia są deklaratywnym nośnikiem faktów wewnątrz agregatu
+            i publikowane są na zewnątrz przez <c>IDomainEventDispatcher</c>.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Common.DomainEvent.EventId">
+            <summary>Identyfikator zdarzenia (korelacja logów i diagnostyki).</summary>
+        </member>
+        <member name="P:SOR.Domain.Common.DomainEvent.AggregateId">
+            <summary>Identyfikator agregatu, który zgłosił zdarzenie.</summary>
+        </member>
+        <member name="P:SOR.Domain.Common.DomainEvent.EventName">
+            <summary>Nazwa typu zdarzenia używana w dzienniku audytu.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.ZoneOverloadedEvent">
+            <summary>
+            Zdarzenie informujące o przekroczeniu krytycznego progu obciążenia strefy.
+            Używa typu <c>record</c>, aby umożliwić porównanie wartościowe w testach.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Common.ZoneOverloadedEvent.LoadRatio">
+            <summary>Wyliczony wskaźnik obciążenia (pacjenci ważeni na lekarza).</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.ZoneLoadNormalizedEvent">
+            <summary>Zdarzenie zgłaszane po zakończeniu monitoringu, gdy obciążenie strefy spadło poniżej progu.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.StaffZoneReassignedEvent">
+            <summary>Zdarzenie zgłaszane po udokumentowanej zmianie strefy przez użytkownika.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.PatientTransferredEvent">
+            <summary>Zdarzenie zgłaszane po przeniesieniu pacjenta między strefami.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.DomainException">
+            <summary>
+            Wyjątek bazowy dla wszystkich błędów domenowych systemu SOR.
+            Hermetyzuje kontekst powstania błędu i kod maszynowy (wymagany do testów i mapowania na komunikaty UI).
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Common.DomainException.Code">
+            <summary>Stabilny kod błędu, np. <c>SOR-DOM-014</c>.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.ValidationException">
+            <summary>Błąd walidacji niezmiennika encji lub obiektu wartości.</summary>
+        </member>
+        <member name="P:SOR.Domain.Common.ValidationException.BrokenRules">
+            <summary>Lista naruszonych reguł walidacyjnych (przydatna w testach jednostkowych).</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.Entity`1">
+            <summary>
+            Baza dla encji domenowych. Hermetyzuje tożsamość, wersjonowanie (optimistic concurrency)
+            oraz kolejkę zdarzeń domenowych (Domain Events).
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Common.Entity`1.Id">
+            <summary>Tożsamość encji — nieprzechodni stan obiektu w dziedzinie.</summary>
+        </member>
+        <member name="P:SOR.Domain.Common.Entity`1.RowVersion">
+            <summary>Wersja encji — token współbieżności (w bazie: <c>RowVersion</c>).</summary>
+        </member>
+        <member name="M:SOR.Domain.Common.Entity`1.StampRowVersion(System.Byte[])">
+            <summary>
+            Nadaje nową wartość tokenu współbieżności. Wywoływane przez warstwę trwałości bezpośrednio
+            przed zapisem — SQLite nie potrafi samodzielnie generować wartości <c>rowversion</c>,
+            dlatego token jest w całości zarządzany przez aplikację.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Common.Entity`1.IsTransient">
+            <summary>Czy encja jest jeszcze nowa (nieutrwalona).</summary>
+        </member>
+        <member name="M:SOR.Domain.Common.Entity`1.GetDomainEvents">
+            <summary>Zdarzenia domenowe zgłoszone przez encję od ostatniego opróżnienia koleki.</summary>
+        </member>
+        <member name="M:SOR.Domain.Common.Entity`1.Equals(System.Object)">
+            <summary>Metoda współdzielona przez wszystkie encje — porównanie po tożsamości, nie po stanie.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.IClock">
+            <summary>
+            Abstrakcyjny zegar domenowy. Wstrzykiwany zamiast <see cref="P:System.DateTimeOffset.UtcNow"/>,
+            aby testy jednostkowe mogły sterować upływem czasu (rotacja zmian, limity Triage, zboczenia).
+            </summary>
+        </member>
+        <member name="T:SOR.Domain.Common.SystemClock">
+            <summary>Domyślna implementacja zegara opartej na zegarze systemowym.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.IIdGenerator">
+            <summary>
+            Generator identyfikatorów GUID. Wydzielony interfejs umożliwia deterministyczne testy
+            oraz docelowe podmienienie na generator sekwencyjny (UUIDv7) w przyszłości.
+            </summary>
+        </member>
+        <member name="T:SOR.Domain.Common.GuidIdGenerator">
+            <summary>Domyślna implementacja generatora oparta na <c>Guid.CreateVersion7()</c>.</summary>
+        </member>
+        <member name="T:SOR.Domain.Common.InvalidZoneReassignmentException">
+            <summary>
+            Wyjątek domenowy rzucany, gdy użytkownik próbuje zmienić strefę dyżuru w sposób niedozwolony
+            (ta sama strefa, brak uprawnień, brak uzasadnienia, przekroczenie limitu osób).
+            </summary>
+        </member>
+        <member name="T:SOR.Domain.Common.ValueObject">
+            <summary>
+            Wspólna baza obiektów wartości: brak tożsamości, pełna kontrola nad kompozycją (metoda <c>Create</c>),
+            walidacja w konstruktorze oraz porównanie wartościowe.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Common.ValueObject.GetEqualityComponents">
+            <summary>Komponenty składowe porównywane rekurencyjnie (kompozyt).</summary>
+        </member>
+        <member name="M:SOR.Domain.Common.ValueObject.Validate">
+            <summary>Waliduje komponenty po złożeniu — wywoływana z każdej fabryki <c>Create</c>.</summary>
+        </member>
+        <member name="M:SOR.Domain.Common.ValueObject.EnsureNotEmpty(System.String,System.String)">
+            <summary>Zabezpiecza parametry wymagane w konstruktorach obiektów wartości.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.IDomainEventDispatcher">
+            <summary>
+            Mechanizm publikacji zdarzeń domenowych (Mediator / Event Aggregator).
+            Warstwa domeny nie zna warstwy prezentacji — zdarzenia są przekazywane przez tę abstrakcję.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.IDomainEventDispatcher.PublishAsync(SOR.Domain.Common.DomainEvent,System.Threading.CancellationToken)">
+            <summary>Asynchronicznie publikuje zdarzenie do wszystkich subskrybentów.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.DomainEventCollector">
+            <summary>
+            Kolektor zdarzeń domenowych. Subskrypcja jest silnie typowana
+            (żadna konwersja typów na warstwie prezentacji), a opóźnienie propagacji zapewnia
+            natychmiastową reakcję interfejsu po zatwierdzeniu transakcji.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.DomainEventCollector.Subscribe``1(System.Func{``0,System.Threading.Tasks.Task})">
+            <summary>Podpięcie zdarzenia do typu <c>TEvent</c>.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.DomainEventCollector.SubscriptionToken">
+            <summary>Token anulowania subskrypcji (wzorzec Observer z IDisposable).</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.RotationRecommendation">
+            <summary>Rekomendacja rotacji wygenerowana przez system — kandydat i strefa docelowa.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.RotationRecommendation.#ctor(System.Guid,System.String,System.Guid,System.String,System.Guid,System.String,System.Decimal,System.Decimal,System.Decimal)">
+            <summary>Rekomendacja rotacji wygenerowana przez system — kandydat i strefa docelowa.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.RotationRecommendation.Describe">
+            <summary>Tekst gotowy do wyświetlenia w banerze rekomendacji.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.RotationEvaluationContext">
+            <summary>Zestaw danych wejściowych dla silnika rekomendacji rotacji.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.RotationEvaluationContext.#ctor(System.Collections.Generic.IReadOnlyList{SOR.Domain.DomainServices.StaffLoadInfo},System.Collections.Generic.IReadOnlyList{SOR.Domain.DomainServices.ZoneLoadSnapshot})">
+            <summary>Zestaw danych wejściowych dla silnika rekomendacji rotacji.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.StaffLoadInfo">
+            <summary>Obciążenie pojedyncego pracownika — wejście dla silnika rekomendacji.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.StaffLoadInfo.#ctor(System.Guid,System.String,System.Guid,System.String,SOR.Domain.Enums.UserRole,System.Int32)">
+            <summary>Obciążenie pojedyncego pracownika — wejście dla silnika rekomendacji.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.ZoneLoadSnapshot">
+            <summary>Obciążenie strefy — wejście dla silnika rekomendacji.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.ZoneLoadSnapshot.#ctor(System.Guid,System.String,SOR.Domain.Enums.ZoneKind,SOR.Domain.ValueObjects.LoadRatio)">
+            <summary>Obciążenie strefy — wejście dla silnika rekomendacji.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.IRotationRecommendationEngine">
+            <summary>Kontrakt silnika rekomendacji rotacji (Strategy).</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.PatientClosureContext">
+            <summary>Zestaw reguł dla walidacji karty pacjenta przed jej zamknięciem.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientClosureContext.#ctor(System.Guid,System.Boolean,System.Int32,SOR.Domain.Enums.PatientState,System.Boolean)">
+            <summary>Zestaw reguł dla walidacji karty pacjenta przed jej zamknięciem.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.PatientCardClosurePolicy">
+            <summary>Reguła BR-09 / BR-10 — warunki poprawności zamykania karty pacjenta.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientCardClosurePolicy.GetBlockingReasons(SOR.Domain.DomainServices.PatientClosureContext)">
+            <summary>Zwraca listę powodów blokujących zamknięcie karty (pusta = można zamknąć).</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientCardClosurePolicy.CanClose(SOR.Domain.DomainServices.PatientClosureContext)">
+            <summary>Czy kartę można zamknąć.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientCardClosurePolicy.EnsureCanClose(SOR.Domain.DomainServices.PatientClosureContext)">
+            <summary>Waliduje i rzuca wyjątkiem domenowym <see cref="T:SOR.Domain.Common.PatientCardClosureBlockedException"/>.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.RotationRecommendationEngine">
+            <summary>
+            Domyślna implementacja silnika rekomendacji rotacji.
+            Wybiera najbardziej obciążoną strefę oraz kandydata z najmniej obciążonej strefy,
+            z uwzględnieniem dopasowania kompetencji (lekarz preferowany dla strefy ratunkowej).
+            Realizuje regułę BR-07.
+            </summary>
+        </member>
+        <member name="F:SOR.Domain.DomainServices.RotationRecommendationEngine.MinimumReliefGain">
+            <summary>Minimalna różnica wskaźników, aby rekomendacja miała sens (unikamy mikro-rotacji).</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.RotationRecommendationEngine.SelectBestCandidate(System.Collections.Generic.IReadOnlyList{SOR.Domain.DomainServices.StaffLoadInfo},SOR.Domain.DomainServices.ZoneLoadSnapshot)">
+            <summary>Wybiera kandydata: najniższe obciążenie osobiste, dopasowanie roli, minimalna różnica wskaźników.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.RotationRecommendationEngine.ScoreCandidate(SOR.Domain.DomainServices.StaffLoadInfo,SOR.Domain.DomainServices.ZoneLoadSnapshot)">
+            <summary>Punktacja kandydata — im niższa, tym lepszy kandydat.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.ZoneLoadCalculator">
+            <summary>
+            Domyślna implementacja kalkulatora obciążenia strefy.
+            Wylicza ważoną sumę pacjentów (wg kodów Triage) na liczbę przypisanego personelu
+            i klasyfikuje status obciążenia zgodnie z <see cref="T:SOR.Domain.ValueObjects.ZoneLoadThresholds"/>.
+            Implementuje regułę BR-06 oraz warunek szczególny BR-06b.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.ZoneLoadCalculator.CalculateWeightedLoad(SOR.Domain.DomainServices.ZoneLoadContext)">
+            <summary>Suma wag pacjentów ważona kodami Triage.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.ZoneLoadContext">
+            <summary>
+            Dane wejściowe kalkulacji obciążenia jednej strefy: pacjenci aktywni, personel przypisany
+            oraz obecność pacjenta czerwonego oczekującego na pilną interwencję.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.ZoneLoadContext.#ctor(System.Guid,System.String,SOR.Domain.Enums.ZoneKind,System.Collections.Generic.IReadOnlyList{SOR.Domain.ValueObjects.PatientLoadSnapshot},System.Int32,System.Boolean)">
+            <summary>
+            Dane wejściowe kalkulacji obciążenia jednej strefy: pacjenci aktywni, personel przypisany
+            oraz obecność pacjenta czerwonego oczekującego na pilną interwencję.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.DomainServices.ZoneLoadContext.YellowAndOrangeCount">
+            <summary>Liczba pacjentów o priorytecie żółtym lub pomarańczowym — wejście dla reguły BR-06.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.ZoneLoadContext.Create(System.Guid,System.String,SOR.Domain.Enums.ZoneKind,System.Collections.Generic.IEnumerable{SOR.Domain.ValueObjects.PatientLoadSnapshot},System.Int32,System.Boolean)">
+            <summary>Tworzy kontekst z listy pacjentów, filtrując automatycznie pacjentów nieaktywnych.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.IZoneLoadCalculator">
+            <summary>
+            Kontrakt kalkulatora obciążenia strefy. Implementacja domenowa jest niezależna od infrastruktury,
+            co umożliwia podmianę strategii ważenia bez wpływu na resztę systemu.
+            </summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.AuditLogEntry">
+            <summary>
+            Encja <c>AuditLogEntry</c> — niezmienny wpis dziennika audytu. Encja nie udostępnia metod
+            mutacji poza konstrukcją (append-only), co jest wymogiem formalnym ścieżki audytowej.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.AuditLogEntry.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.UserId">
+            <summary>Identyfikator użytkownika (null dla zdarzeń systemowych / nieudanych prób logowania).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.ActorLogin">
+            <summary>Login aktora — zapisywany nawet przy nieudanej autoryzacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.EntityId">
+            <summary>Identyfikator obiektu domenowego będącego przedmiotem zdarzenia.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.Details">
+            <summary>Szczegółowy opis zdarzenia — treść niepoddana zmianie po zapisie.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.Success">
+            <summary>Wynik operacji (istotne dla nieudanych logowań i odrzuconych zmian strefy).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.SchemaVersion">
+            <summary>Wersja schematu / znacznik zgodności definicji wpisu audytowego.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.AuditLogEntry.IsFailure">
+            <summary>Czy wpis dotyczy operacji nieudanej (do wyróżnienia w interfejsie).</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.DutyShift">
+            <summary>
+            Agregat <c>DutyShift</c> — planowany dyżur przypisany do strefy na podstawie grafiku.
+            Po zalogowaniu system odczytuje aktywny wpis i ustawia domyślny kontekst strefy (BR-16).
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.DutyShift.IsCancelled">
+            <summary>Odwołanie dyżuru — system nie uwzględnia go w dopasowaniu strefy po zalogowaniu.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.DutyShift.Notes">
+            <summary>Uwagi koordynatora dotyczące dyżuru.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.DutyShift.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.DutyShift.StaffAssignment">
+            <summary>Przypisanie personelu wynikające z tego grafiku (rotacja zaplanowana).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.DutyShift.IsActiveAt(System.DateTimeOffset)">
+            <summary>Czy dyżur jest aktywny w danym momencie (BR-15).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.DutyShift.Cancel(System.String)">
+            <summary>Odwołanie dyżuru przez koordynatora.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.DutyRoster">
+            <summary>
+            Grafik dyżurów jako osobny agregat przechowujący wpisy. Ułatwia wykrywanie konfliktów
+            grafiku (BR-17: brak podwójnego dyżuru w tej samej strefie).
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.DutyRoster.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.DutyRoster.AddShift(SOR.Domain.Entities.DutyShift)">
+            <summary>Dodaje dyżur po weryfikacji reguły BR-17 (brak nakładania się dyżurów w tej samej strefie).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.DutyRoster.FindActiveShiftFor(System.Guid,System.DateTimeOffset)">
+            <summary>Wyszukuje aktywny dyżur użytkownika w danym momencie — podstawa kontekstowego logowania.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.MedicalOrder">
+            <summary>Encja <c>MedicalOrder</c> — zlecenie lekarskie. Otwarte zlecenia blokują zamknięcie karty (BR-10).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.MedicalOrder.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalOrder.OrderedByRole">
+            <summary>Rola osoby zlecającej — pielęgniarka nie może zlecać rozpoznań (BR-13).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalOrder.CompletedAtUtc">
+            <summary>Czas realizacji zlecenia.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalOrder.CancelledAtUtc">
+            <summary>Data anulowania zlecenia.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalOrder.IsBlocking">
+            <summary>Czy zlecenie blokuje zamknięcie karty pacjenta.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.MedicalOrder.ChangeState(SOR.Domain.Enums.MedicalOrderState,System.DateTimeOffset,System.String)">
+            <summary>Zmiana statusu zlecenia — poprawność maszyny stanów egzekwowana w encji.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.MedicalOrder.EnsureCanBeCompletedBy(SOR.Domain.Enums.UserRole)">
+            <summary>Reguła BR-13: zlecenie lekarskie może oznaczyć jako zrealizowane wyłącznie lekarz lub koordynator.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.PasswordHasher">
+            <summary>
+            Usługa haszowania haseł (PBKDF2-HMAC-SHA256). Wydzielona z encji <see cref="T:SOR.Domain.Entities.User"/>,
+            aby haszowanie było testowalne i wymienne bez zmiany modelu domenowego.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.PasswordHasher.HashPassword(System.String)">
+            <summary>Tworzy parę (hash, sól) dla podanego hasła.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.PasswordHasher.VerifyPassword(System.String,System.String,System.String)">
+            <summary>Weryfikuje hasło w formie jawnej względem zapisanych danych.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.PasswordHasher.ValidatePasswordStrength(System.String)">
+            <summary>Polityka siły hasła: min. 8 znaków, cyfra oraz znak specjalny.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.Patient">
+            <summary>
+            Agregat <c>Patient</c> — karta pacjenta SOR. Hermetyzuje stan kliniczny, kod Triage,
+            przypisanie do strefy oraz blokadę współbieżnej modyfikacji (BR-20).
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.Pesel">
+            <summary>PESEL — klucz biznesowy karty pacjenta (BR-18).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.Complaint">
+            <summary>Zgłaszane dolegliwości / powód przyjęcia.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.State">
+            <summary>Aktualny stan pacjenta w przepływie klinicznym.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.ZoneId">
+            <summary>Strefa, w której pacjent aktualnie przebywa (null = jeszcze nieprzydzielony).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.RegisteredAtUtc">
+            <summary>Data rejestracji w module wstępnym SOR.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.ZoneAssignedAtUtc">
+            <summary>Data przypisania do strefy — podstawa wyliczania czasu oczekiwania.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.ClosedAtUtc">
+            <summary>Data zamknięcia karty.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.LockedBy">
+            <summary>Login użytkownika aktualnie blokującego kartę — realizuje BR-20.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.Diagnosis">
+            <summary>Rozpoznanie ICD-10 — warunek poprawności zamknięcia karty (BR-09).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.CurrentTriage">
+            <summary>Aktualna ocena Triage (najnowsza w historii).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.Register(System.Guid,System.String,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,System.DateTimeOffset)">
+            <summary>Rejestracja pacjenta w module wstępnym SOR (BR-18).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.AssignTriage(SOR.Domain.Entities.TriageAssessment)">
+            <summary>
+            Wykonanie oceny Triage. Na podstawie kodu Triage i progu ważności system automatycznie
+            proponuje strefę docelową (BR-01a: Czerwony → Część ratunkowa).
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.RequiresRetriage(System.DateTimeOffset)">
+            <summary>Ponowna ocena Triage — dozwolona przy zmianie stanu klinicznego.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.AssignToZone(System.Guid,System.DateTimeOffset)">
+            <summary>Przypisanie pacjenta do strefy (wymaga wcześniejszego Triage — BR-01a).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.MarkAwaitingTransport">
+            <summary>Wydanie pacjenta do transportu — stan poprzedzający zamknięcie karty (BR-11).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Patient.HasOpenOrders">
+            <summary>Reguła BR-10: pacjent bez otwartych zleceń nie może zostać wydany z SOR.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.SetDiagnosis(SOR.Domain.ValueObjects.Icd10Code)">
+            <summary>Ustawienie rozpoznania ICD-10 (wymagane przed zamknięciem karty).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.Close(System.DateTimeOffset,System.Boolean)">
+            <summary>
+            Próba zamknięcia karty pacjenta. Waliduje reguły BR-09/BR-10/BR-11 i w razie naruszenia
+            rzuca <see cref="T:SOR.Domain.Common.PatientCardClosureBlockedException"/> z listą powodów.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.CheckClosureBlockers(System.Boolean)">
+            <summary>Bezpieczna wersja zamknięcia zwracająca listę powodów blokady zamiast wyjątku (dla UI).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.AcquireLock(System.String,System.DateTimeOffset,System.TimeSpan)">
+            <summary>
+            Przejmuje blokadę logiczną karty. Wygasłe blokady (starsze niż timeout) są przejmowane automatycznie.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.ReleaseLock(System.String)">
+            <summary>Zwalnia blokadę karty.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.ValidatePesel(System.String)">
+            <summary>Walidacja numeru PESEL — suma kontrolna modulo 11 (BR-18).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.RecordTransfer(SOR.Domain.Entities.ZoneTransfer)">
+            <summary>Rejestruje przeniesienie pacjenta w historii podróży po strefach (BR-19).</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.StaffZoneAssignment">
+            <summary>
+            Agregat <c>StaffZoneAssignment</c> — przypisanie pracownika do strefy wraz z pełną historią rotacji.
+            Kluczowy element dziedziny: każda zmiana strefy (z grafiku, manualna, rekomendowana, zlecona przez
+            koordynatora) jest zapisywana jako osobny wpis z przyczyną, dlatego historia jest w pełni odtwarzalna.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.UserId">
+            <summary>Pracownik, którego dotyczy przypisanie.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.ZoneId">
+            <summary>Strefa, do której pracownik jest przypisany.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.Kind">
+            <summary>Rodzaj przypisania (z grafiku / manualne / rekomendowane / zlecone / zwolnienie).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.Reason">
+            <summary>Uzasadnienie — wymagane dla manualnych zmian i rekomendacji (BR-05).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.EffectiveFromUtc">
+            <summary>Momentalna od kiedy przypisanie obowiązuje.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.EffectiveToUtc">
+            <summary>Moment zakończenia przypisania (ustawiany przy zmianie strefy).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.SupersedesAssignmentId">
+            <summary>Wpis, który ten przypisanie zastępuje — tworzy spójny łańcuch historii rotacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.IsActive">
+            <summary>Czy przypisanie jest nadal obowiązujące.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.StaffZoneAssignment.History">
+            <summary>Historia wcześniejszych przypisań tego samego pracownika (najnowsze na początku).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.FromRoster(System.Guid,System.Guid,System.Guid,System.DateTimeOffset)">
+            <summary>Wyznaczenie strefy z grafiku przy starcie dyżuru (BR-16).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.Manual(System.Guid,System.Guid,System.Guid,SOR.Domain.ValueObjects.ReassignmentReason,System.DateTimeOffset,System.Nullable{System.Guid})">
+            <summary>
+            Manualna zmiana strefy przez użytkownika (BR-05). Wymaga uzasadnienia.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.Recommended(System.Guid,System.Guid,System.Guid,SOR.Domain.ValueObjects.ReassignmentReason,System.DateTimeOffset,System.Nullable{System.Guid})">
+            <summary>Przyjęcie rekomendacji systemu dotyczącej rotacji (BR-07).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.OrderedByCoordinator(System.Guid,System.Guid,System.Guid,SOR.Domain.ValueObjects.ReassignmentReason,System.DateTimeOffset,System.Nullable{System.Guid})">
+            <summary>Rotacja zlecona przez koordynatora oddziału (BR-08).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.Release(System.Guid,System.Guid,System.DateTimeOffset,System.Nullable{System.Guid})">
+            <summary>Zakończenie dyżuru / zwolnienie ze strefy.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.Close(System.DateTimeOffset)">
+            <summary>Zamknięcie przypisania wyznaczone momentem <paramref name="endedAtUtc"/>.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.RaiseReassignmentEvent(System.Guid,System.String,System.Guid)">
+            <summary>Podpięcie parametrów wymaganych do zgłoszenia zdarzenia po udanej zmianie strefy.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.EnsureReasonRequired">
+            <summary>
+            Reguły BR-05 — walidacja samego przypisania przed zapisaniem w dzienniku.
+            Dla przypisań innych niż wyznaczenie z grafiku uzasadnienie jest obligatoryjne.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.EnsureZoneSpecified">
+            <summary>Reguła BR-01c: przypisanie musi wskazywać istniejącą strefę (poza zwolnieniem).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.StaffZoneAssignment.DescribeChange">
+            <summary>Opis zmiany do dziennika audytu.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.TriageAssessment">
+            <summary>
+            Encja <c>TriageAssessment</c> — pojedyncza ocena segregacji medycznej.
+            Encja (a nie osobny agregat) należąca do karty pacjenta; historia ocen jest chronologiczna.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.TriageAssessment.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.AssessedByUserId">
+            <summary>Użytkownik wykonujący ocenę (lekarz lub pielęgniarka/ratownik).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.Category">
+            <summary>Przyznany kod Triage.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.ClinicalJustification">
+            <summary>Uzasadnienie kliniczne — pole wymagane formalnie.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.VitalSignsSummary">
+            <summary>Podsumowanie parametrów życiowych (RR, HR, GCS, SpO2).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.Policy">
+            <summary>Polityka (maks. czas oczekiwania i waga) wyprowadzona z kategorii.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.MaxWaitTime">
+            <summary>Maksymalny dopuszczalny czas oczekiwania wynikający z kodu Triage.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.TriageAssessment.LoadWeight">
+            <summary>Waga pacjenta w kalkulatorze obciążenia strefy.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.TriageAssessment.IsWaitingTimeExceeded(System.DateTimeOffset)">
+            <summary>Czy pacjent oczekuje dłużej niż dopuszczalne (BR-01b — alert nadgodzinowy).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.TriageAssessment.IsRetriageNeeded(System.DateTimeOffset)">
+            <summary>Zalecany czas do ponownej oceny — 15 minut lub 1/3 czasu maksymalnego.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.TriageAssessment.Create(System.Guid,System.Guid,System.Guid,SOR.Domain.Enums.TriageCategory,System.String,System.String,System.DateTimeOffset)">
+            <summary>Fabryka z walidacją kompletności oceny (BR-01).</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.User">
+            <summary>
+            Agregat <c>User</c> — pracownik SOR. Przechowuje wyłącznie hash hasła (PBKDF2, sól per użytkownik),
+            nigdy hasła w postaci jawnej. Rola steruje kontekstem uprawnień po zalogowaniu.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.User.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.User.Login">
+            <summary>Login (bez rozróżniania wielkości liter — normalizowany do małych liter).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.User.PasswordHash">
+            <summary>Hash hasła w formacie PBKDF2 (base64).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.User.PasswordSalt">
+            <summary>Sól losowa dla hasła (base64) — zapobiega atakom rainbow table.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.User.Role">
+            <summary>Rola użytkownika — wpływa na uprawnienia kontekstowe.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.User.LastLoginAtUtc">
+            <summary>Data ostatniego udanego logowania.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.User.ProfessionalLicenseNumber">
+            <summary>Numer PWZ / identyfikator zawodowy — pole wymagane przez formalny wymóg identyfikacji.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.User.VerifyPassword(System.String)">
+            <summary>Weryfikacja hasła w formie jawnej (wymaga zabezpieczenia przed timing attack w serwisie logowania).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.User.RegisterLogin(System.DateTimeOffset)">
+            <summary>Rejestracja udanego logowania (audytowalne).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.User.ChangePassword(System.String)">
+            <summary>Zmiana hasła przez użytkownika — natychmiastowa, bez sesji starego hasła.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.User.CanManageAllZones">
+            <summary>Reguła BR-12: koordynator widzi wszystkie strefy, lekarz/pielęgniarka tylko własną.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.User.CanOrderRotationOf(SOR.Domain.Entities.User)">
+            <summary>Reguła BR-13: koordynator może zlecić rotację innym pracownikom.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.Zone">
+            <summary>
+            Agregat <c>Zone</c> reprezentuje fizyczny obszar SOR. Tożsamość wynika z kodu strefy (kod domenowy),
+            który jest jednocześnie stabilnym kluczem w grafiku i w dzienniku audytu.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Zone.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Zone.Code">
+            <summary>Kod domenowy strefy (BR-01): <c>TRI</c>, <c>EMG</c>, <c>INT</c>, <c>TRM</c>.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Zone.Name">
+            <summary>Nazwa wyświetlana strefy.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Zone.Kind">
+            <summary>Typ strefy — steruje regułami i kolorystyką pulpitu.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Zone.Capacity">
+            <summary>Zdolność przyjęciowa strefy (liczba stanowisk/łóżek).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Zone.IsActive">
+            <summary>Strefa jest aktywna — może przyjmować pacjentów i personel.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Zone.Create(System.Guid,System.String,System.String,SOR.Domain.Enums.ZoneKind,System.Int32)">
+            <summary>Fabryka tworząca strefę z pełną walidacją BR-01/BR-02.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Zone.EnsureCanAcceptPatient(System.Int32)">
+            <summary>Reguła BR-04: strefa nie przyjmuje pacjentów powyżej zdolności przyjęciowej.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Zone.CanAcceptRotation">
+            <summary>Określa, czy strefa jest strefą docelową dla rotacji (strefa aktywna).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Zone.ChangeCapacity(System.Int32)">
+            <summary>Zmiana zdolności przyjęciowej — operacja administracyjna.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Zone.Deactivate">
+            <summary>Deaktywacja strefy (np. trwa remont gabinetu zabiegowego).</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.ZoneTransfer">
+            <summary>
+            Encja <c>ZoneTransfer</c> — trwały zapis przeniesienia pacjenta między strefami.
+            Umożliwia pełną rekonstrukcję trasy pacjenta w oddziale (BR-19).
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.ZoneTransfer.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.ZoneTransfer.FromZoneId">
+            <summary>Strefa źródłowa — <see cref="F:System.Guid.Empty"/> oznacza pierwsze przypisanie z triage.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.ZoneTransfer.Reason">
+            <summary>Powód przeniesienia — pole wymagane (BR-19).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.ZoneTransfer.IsInitialAssignment">
+            <summary>Czy jest to pierwsze przypisanie pacjenta do strefy (z modułu triage).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.ZoneTransfer.InitialAssignment(System.Guid,System.Guid,System.Guid,System.Guid,System.DateTimeOffset,System.String)">
+            <summary>Fabryka dla pierwszego przypisania pacjenta do strefy po triage.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.AuditActionType">
+            <summary>Kody zdarzeń dziennika audytu — kompletna lista akcji śledzonych w systemie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.LoginAttempt">
+            <summary>Próba uwierzytelnienia (sukces lub niepowodzenie).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.Logout">
+            <summary>Udany logout.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.ZoneContextAssignedFromRoster">
+            <summary>Automatyczne dopasowanie strefy z grafiku po zalogowaniu.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.ZoneReassignedManually">
+            <summary>Manualna zmiana strefy przez użytkownika.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.RotationRecommendationAccepted">
+            <summary>Akceptacja rekomendacji rotacji (kliknięcie „Przejdź i wesprzyj strefę”).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.PatientRegistered">
+            <summary>Rejestracja pacjenta w module wstępnym.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.TriageAssessed">
+            <summary>Wykonanie oceny Triage.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.PatientZoneChanged">
+            <summary>Zmiana przypisania pacjenta do strefy.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.OrderCreated">
+            <summary>Utworzenie zlecenia lekarskiego.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.OrderStatusChanged">
+            <summary>Zmiana statusu zlecenia.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.PatientCardClosureAttempt">
+            <summary>Próba zamknięcia karty pacjenta (sukces lub odrzucenie).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.ZoneOverloadDetected">
+            <summary>Wykryto przekroczenie progu obciążenia strefy.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.RotationRecommendationGenerated">
+            <summary>Wygenerowano rekomendację rotacji personelu.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.ConcurrentModificationBlocked">
+            <summary>Odrzucono konflikt współbieżnej modyfikacji pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.MedicalOrderType">
+            <summary>Typ zlecenia lekarskiego — wpływa na uprawnienia do jego zamknięcia.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderType.Lab">
+            <summary>Badanie laboratoryjne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderType.Imaging">
+            <summary>Badanie obrazowe (RTG, TK, USG).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderType.Procedure">
+            <summary>Zabieg / procedura.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderType.Medication">
+            <summary>Podanie leku.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderType.Consultation">
+            <summary>Konsultacja specjalistyczna.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderType.Observation">
+            <summary>Obserwacja hemodynamiczna.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.MedicalOrderState">
+            <summary>Cykl życia zlecenia lekarskiego.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderState.Open">
+            <summary>Zlecenie otwarte — blokuje zamknięcie karty pacjenta.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderState.InProgress">
+            <summary>Zlecenie w trakcie realizacji.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderState.Completed">
+            <summary>Zlecenie zrealizowane — nie blokuje zamknięcia karty.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicalOrderState.Cancelled">
+            <summary>Zlecenie anulowane przez lekarza — nie blokuje zamknięcia karty.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.PatientGender">
+            <summary>Płeć biologiczna pacjenta — wymagana w nagłym zgłoszeniu do SOR.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientGender.Female">
+            <summary>Płeć żeńska.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientGender.Male">
+            <summary>Płeć męska.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientGender.Other">
+            <summary>Inna / nieokreślona.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.PatientState">
+            <summary>Stan pacjenta w przepływie klinicznym SOR.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientState.Registered">
+            <summary>Pacjent zarejestrowany w module wstępnym, oczekuje na Triage.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientState.Triaged">
+            <summary>Przesegregowany, oczekuje na przydział do strefy.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientState.InTreatment">
+            <summary>Przyjęty do strefy, trwa diagnostyka lub leczenie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientState.AwaitingTransport">
+            <summary>Przygotowywany do transportu poza SOR — łóżko zwalniane.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientState.TransferredOut">
+            <summary>Wydany do oddziału / oddziału chirurgicznego.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.PatientState.Closed">
+            <summary>Karta zamknięta — zakończona obsługa w SOR.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.ReassignmentKind">
+            <summary>Kierunek zmiany przypisania personelu do strefy.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentKind.ScheduledFromRoster">
+            <summary>Wyznaczenie strefy z grafiku przy rozpoczęciu dyżuru.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentKind.ManualReassignment">
+            <summary>Manualna zmiana strefy z podaniem przyczyny przez użytkownika.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentKind.RecommendedRotation">
+            <summary>Przyjęcie rekomendacji systemu dotyczącej rotacji.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentKind.CoordinatorOrder">
+            <summary>Przeniesienie podyktowane przez koordynatora oddziału.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentKind.Release">
+            <summary>Zakończenie dyżuru / zwolnienie ze strefy.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.ReassignmentReasonCode">
+            <summary>Predefiniowane przyczyny manualnej zmiany strefy (wartości słownika <c>ReassignmentReason</c>).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.ResuscitationSupport">
+            <summary>Wsparcie resuscytacji / obszaru Kod Czerwony.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.EmergencySubstitute">
+            <summary>Nagłe zastępstwo nieobecnego pracownika.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.TraumaSurge">
+            <summary>Wzrost napływu pacjentów urazowych.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.InternalSurge">
+            <summary>Wzrost napływu pacjentów internistycznych.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.TriageSupport">
+            <summary>Wsparcie triage — wzmożony napływ do punktu przyjęć.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.ImagingCoordination">
+            <summary>Koordynacja rozległego badania obrazowego.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.RegulatedBreak">
+            <summary>Przerwa / odpoczynek regulacyjny.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.EquipmentFailure">
+            <summary>Błąd lub zły stan techniczny stanowiska.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ReassignmentReasonCode.Other">
+            <summary>Inny powód — wymaga wpisu w polu tekstowym.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.TriageCategory">
+            <summary>
+            Pięciostopniowa skala segregacji medycznej (Triage) obowiązująca w SOR.
+            Wartości liczbowe odzwierciedlają rosnącą pilność i są używane do ważenia obciążenia strefy.
+            </summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.TriageCategory.Red">
+            <summary>Kod Czerwony — stan bezpośredniego zagrożenia życia, leczenie natychmiastowe (0 min).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.TriageCategory.Orange">
+            <summary>Kod Pomarańczowy — stan bardzo pilny, leczenie do 10 minut.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.TriageCategory.Yellow">
+            <summary>Kod Żółty — stan pilny, maksymalny czas oczekiwania 60 minut.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.TriageCategory.Green">
+            <summary>Kod Zielony — pacjent stabilny, przewidywany czas oczekiwania do 240 minut.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.TriageCategory.Blue">
+            <summary>Kod Niebieski — pacjent mało pilny, przewidywany czas oczekiwania do 480 minut.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.UserRole">
+            <summary>Rola użytkownika w systemie — determinuje zakres uprawnień kontekstowych.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.UserRole.Physician">
+            <summary>Lekarz / lekarz SOR — pełne uprawnienia kliniczne w strefie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.UserRole.Nurse">
+            <summary>Pielęgniarka lub ratownik triage — triage, wykonanie zleceń, brak rozpoznawania.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.UserRole.Coordinator">
+            <summary>Koordynator / ordynator — nadzór nad grafikiem, rotacją i wszystkimi strefami.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.ZoneKind">
+            <summary>Fizyczna strefa oddziału SOR (moduł wstępny Triage traktowany jest jako strefa organizacyjna).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneKind.Triage">
+            <summary>Moduł wstępny: punkt przyjęć, rejestracja i segregacja medyczna pacjentów.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneKind.Emergency">
+            <summary>Część ratunkowa — obszar resuscytacyjno-zabiegowy (Trauma Room), Kod Czerwony.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneKind.Internal">
+            <summary>Część internistyczna — obserwacja, diagnostyka wielonarządowa, bilans płynów.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneKind.Trauma">
+            <summary>Część urazowo-ortopedyczna — zaopatrzenie chirurgiczne, procedury urazowe.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.ZoneLoadStatus">
+            <summary>
+            Status obciążenia strefy wyliczany przez kalkulator obciążenia.
+            Progi zgodne z parametrami konfiguracyjnymi obiektu <c>ZoneLoadThresholds</c>.
+            </summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneLoadStatus.Optimal">
+            <summary>Obciążenie w normie — nie wymaga interwencji.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneLoadStatus.Elevated">
+            <summary>Podwyższone obciążenie — system obserwuje strefę.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneLoadStatus.Warning">
+            <summary>Ostrzeżenie — przekroczony próg krytyczny, uruchomiona rekomendacja rotacji.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.ZoneLoadStatus.Overloaded">
+            <summary>Przeciążenie krytyczne — pacjent czerwony bez wolnego personelu lub skrajny wskaźnik.</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.Icd10Code">
+            <summary>
+            Kod rozpoznania wg klasyfikacji ICD-10. Obiekt wartości wymuszający poprawny format
+            (litera + 2 cyfry + opcjonalny kropkowy rozwinięcie), co realizuje regułę BR-09.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.Icd10Code.Value">
+            <summary>Znormalizowana postać kodu (bez spacji, wielkie litery).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.Icd10Code.ChapterLetter">
+            <summary>Litera kategorii rozdziału (np. <c>S</c> dla urazów, <c>I</c> dla chorób układu krążenia).</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.Icd10Code.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core owned type).</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.Icd10Code.Icd10Pattern">
+            <remarks>
+            Pattern:<br/>
+            <code>^[A-Z][0-9]{2}(\\.[0-9A-Z]{1,4})?$</code><br/>
+            Options:<br/>
+            <code>RegexOptions.CultureInvariant</code><br/>
+            Explanation:<br/>
+            <code>
+            ○ Match if at the beginning of the string.<br/>
+            ○ Match a character in the set [A-Z].<br/>
+            ○ Match a character in the set [0-9] exactly 2 times.<br/>
+            ○ Optional (greedy).<br/>
+                ○ 1st capture group.<br/>
+                    ○ Match '.'.<br/>
+                    ○ Match a character in the set [0-9A-Z] atomically at least 1 and at most 4 times.<br/>
+            ○ Match if at the end of the string or if before an ending newline.<br/>
+            </code>
+            </remarks>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.Icd10Code.Create(System.String)">
+            <summary>Tworzy obiekt wartości lub rzuca <see cref="T:SOR.Domain.Common.ValidationException"/>.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.Icd10Code.TryCreate(System.String,SOR.Domain.ValueObjects.Icd10Code@)">
+            <summary>Próba utworzenia bez wyjątku — używana przy walidacji danych wejściowych z bazy.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.Icd10Code.Exists">
+            <summary>Czy kod istnieje — używane w warunku kompletności karty pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.LoadRatio">
+            <summary>
+            Wskaźnik obciążenia strefy — wynik kalkulacji ważonej sumy pacjentów na liczbę personelu.
+            Obiekt wartości z klasyfikacją statusu i gotowym komunikatem diagnostycznym dla UI.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.LoadRatio.Value">
+            <summary>Ważona suma pacjentów na jednego przypisanego pracownika.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.LoadRatio.ActivePatientCount">
+            <summary>Liczba pacjentów aktywnych w strefie (bez pacjentów zamkniętych).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.LoadRatio.StaffCount">
+            <summary>Liczba personelu aktualnie przypisanego do strefy.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.LoadRatio.Rationale">
+            <summary>Opis przyczyny przyznania statusu (np. „Pacjent czerwony bez wolnego personelu”).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.LoadRatio.RequiresIntervention">
+            <summary>Czy strefa wymaga interwencji rotacyjnej.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.LoadRatio.Create(System.Decimal,System.Int32,System.Int32,SOR.Domain.Enums.ZoneLoadStatus,System.String)">
+            <summary>Fabryka wyniku kalkulacji — waliduje spójność składowych.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.LoadRatio.FromPlainCounts(System.Int32,System.Int32,SOR.Domain.ValueObjects.ZoneLoadThresholds)">
+            <summary>Buduje wskaźnik z prostej (nieważonej) liczby pacjentów — używane w testach i prezentacji.</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.PatientLoadSnapshot">
+            <summary>
+            Lekki, niemutowalny obraz pacjenta używany przez kalkulator obciążenia.
+            Celowo oddzielony od encji <c>Patient</c>, aby kalkulator nie zależał od warstwy trwałości.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PatientLoadSnapshot.#ctor(System.Guid,System.String,SOR.Domain.Enums.TriageCategory,SOR.Domain.Enums.PatientState,System.TimeSpan)">
+            <summary>
+            Lekki, niemutowalny obraz pacjenta używany przez kalkulator obciążenia.
+            Celowo oddzielony od encji <c>Patient</c>, aby kalkulator nie zależał od warstwy trwałości.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.PatientLoadSnapshot.IsActive">
+            <summary>Czy pacjent wlicza się do obciążenia strefy.</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.ReassignmentReason">
+            <summary>
+            Uzasadnienie manualnej zmiany strefy. Obiekt wartości realizujący regułę BR-05:
+            przyczyna jest obligatoryjna, a kod <see cref="F:SOR.Domain.Enums.ReassignmentReasonCode.Other"/>
+            wymaga dodatkowego opisu tekstowego.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ReassignmentReason.Comment">
+            <summary>Dodatkowy opis (wymagany dla kodu <see cref="F:SOR.Domain.Enums.ReassignmentReasonCode.Other"/>, opcjonalny dla pozostałych).</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.ReassignmentReason.#ctor">
+            <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core owned type).</summary>
+        </member>
+        <member name="F:SOR.Domain.ValueObjects.ReassignmentReason.Descriptions">
+            <summary>Słownik opisów kodów używany przez warstwę prezentacji (ComboBox).</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.ReassignmentReason.Create(SOR.Domain.Enums.ReassignmentReasonCode,System.String,System.DateTimeOffset,SOR.Domain.Common.IClock)">
+            <summary>Fabryka walidująca kompletność uzasadnienia.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ReassignmentReason.RequiresDescription">
+            <summary>Czy powód wymagał rozwinięcia opisem (służy do walidacji w UI).</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.TriagePolicy">
+            <summary>
+            Opisuje reguły biznesowe pojedynczego kodu Triage: maksymalny dopuszczalny czas oczekiwania
+            oraz wagę w obliczaniu obciążenia strefy (im wyższy kod, tym większe zużycie zasobów).
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.TriagePolicy.MaxWaitTime">
+            <summary>Maksymalny czas oczekiwania na interwencję zgodny z wewnętrznymi procedurami SOR.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.TriagePolicy.LoadWeight">
+            <summary>Waga pacjenta w kalkulatorze obciążenia strefy.</summary>
+        </member>
+        <member name="F:SOR.Domain.ValueObjects.TriagePolicy.Policies">
+            <summary>Tablica reguł — jedyne źródło prawdy dla progów czasowych i wag.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.TriagePolicy.For(SOR.Domain.Enums.TriageCategory)">
+            <summary>Zwraca politykę dla wskazanego kodu Triage.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.TriagePolicy.IsWaitingTimeExceeded(System.DateTimeOffset,System.DateTimeOffset)">
+            <summary>Czy pacjent przekroczył dopuszczalny czas oczekiwania.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.TriagePolicy.IsImmediate">
+            <summary>Czy kod oznacza pacjenta wymagającego natychmiastowej interwencji.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.TriagePolicy.Describe">
+            <summary>Opis przyjazny dla warstwy prezentacji.</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.ZoneLoadThresholds">
+            <summary>
+            Progowe wartości kalkulatora obciążenia strefy (BR-06). Obiekt wartości z pełną walidacją,
+            dzięki czemu niedozwolone konfiguracje (odwrócone progi) są odrzucane przy starcie systemu.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ZoneLoadThresholds.Default">
+            <summary>Domyślna konfiguracja zgodna z założeniami projektowymi.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ZoneLoadThresholds.WarningRatio">
+            <summary>Próg podwyższonego obciążenia (status <see cref="F:SOR.Domain.Enums.ZoneLoadStatus.Elevated"/>).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ZoneLoadThresholds.CriticalRatio">
+            <summary>Próg krytyczny — np. &gt; 5 pacjentów żółtych/pomarańczowych na jednego lekarza (BR-06).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ZoneLoadThresholds.OverloadRatio">
+            <summary>Próg skrajnego przeciążenia wymagający natychmiastowej rotacji.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ZoneLoadThresholds.RedPatientWithoutStaffIsCritical">
+            <summary>BR-06b: obecność pacjenta czerwonego bez wolnego personelu zawsze oznacza przeciążenie.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.ZoneLoadThresholds.MinimumStaffCount">
+            <summary>Minimalna liczba personelu, przy której wskaźnik jest liczony (ochrona przed dzieleniem przez zero).</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.ZoneLoadThresholds.ClassifyByRatio(System.Decimal)">
+            <summary>
+            Mapuje wartość wskaźnika na status obciążenia. Osobna metoda domena, nie interfejsu,
+            ponieważ decyzja należy do kontekstu strefy (BR-06).
+            </summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Icd10Pattern_0">
+            <summary>Custom <see cref="T:System.Text.RegularExpressions.Regex"/>-derived type for the Icd10Pattern method.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Icd10Pattern_0.Instance">
+            <summary>Cached, thread-safe singleton instance.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Icd10Pattern_0.#ctor">
+            <summary>Initializes the instance.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Icd10Pattern_0.RunnerFactory">
+            <summary>Provides a factory for creating <see cref="T:System.Text.RegularExpressions.RegexRunner"/> instances to be used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Icd10Pattern_0.RunnerFactory.CreateInstance">
+            <summary>Creates an instance of a <see cref="T:System.Text.RegularExpressions.RegexRunner"/> used by methods on <see cref="T:System.Text.RegularExpressions.Regex"/>.</summary>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Icd10Pattern_0.RunnerFactory.Runner">
+            <summary>Provides the runner that contains the custom logic implementing the specified regular expression.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Icd10Pattern_0.RunnerFactory.Runner.Scan(System.ReadOnlySpan{System.Char})">
+            <summary>Scan the <paramref name="inputSpan"/> starting from base.runtextstart for the next match.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Icd10Pattern_0.RunnerFactory.Runner.TryFindNextPossibleStartingPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Search <paramref name="inputSpan"/> starting from base.runtextpos for the next location a match could possibly start.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if a possible match was found; false if no more matches are possible.</returns>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Icd10Pattern_0.RunnerFactory.Runner.TryMatchAtCurrentPosition(System.ReadOnlySpan{System.Char})">
+            <summary>Determine whether <paramref name="inputSpan"/> at base.runtextpos is a match for the regular expression.</summary>
+            <param name="inputSpan">The text being scanned by the regular expression.</param>
+            <returns>true if the regular expression matches at the current position; otherwise, false.</returns>
+        </member>
+        <member name="T:System.Text.RegularExpressions.Generated.Utilities">
+            <summary>Helper methods used by generated <see cref="T:System.Text.RegularExpressions.Regex"/>-derived implementations.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout">
+            <summary>Default timeout value set in <see cref="T:System.AppContext"/>, or <see cref="F:System.Text.RegularExpressions.Regex.InfiniteMatchTimeout"/> if none was set.</summary>
+        </member>
+        <member name="F:System.Text.RegularExpressions.Generated.Utilities.s_hasTimeout">
+            <summary>Whether <see cref="F:System.Text.RegularExpressions.Generated.Utilities.s_defaultTimeout"/> is non-infinite.</summary>
+        </member>
+        <member name="M:System.Text.RegularExpressions.Generated.Utilities.StackPush(System.Int32[]@,System.Int32@,System.Int32,System.Int32)">
+            <summary>Pushes 2 values onto the backtracking stack.</summary>
+        </member>
+    </members>
+</doc>
