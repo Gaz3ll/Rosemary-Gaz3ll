@@ -53,11 +53,14 @@ public sealed class AuthenticationService : IAuthenticationService
 
         if (IsLockedOut(normalizedLogin))
         {
-            throw await RecordFailureAsync(
-                normalizedLogin,
+            // Próba wykonana w trakcie blokady nie może modyfikować licznika ani przedłużać
+            // blokady — inaczej każde ponowienie kliknięcia odracza odblokowanie o kolejne
+            // LockoutSeconds, czyli konto pozostawałoby zablokowane bezterminowo.
+            await RecordBlockedAttemptAsync(normalizedLogin, cancellationToken).ConfigureAwait(false);
+
+            throw new AuthenticationException(
                 "Konto czasowo zablokowane po serii nieudanych prób logowania.",
-                "SOR-APP-012",
-                cancellationToken).ConfigureAwait(false);
+                "SOR-APP-012");
         }
 
         var user = await _unitOfWork.Users
@@ -290,6 +293,26 @@ public sealed class AuthenticationService : IAuthenticationService
         await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return new AuthenticationException(reason, code);
+    }
+
+    /// <summary>
+    /// Audytuje próbę logowania wykonaną w trakcie blokady konta. Świadomie nie korzysta
+    /// z <see cref="RecordFailureAsync"/>, aby nie zwiększać licznika nieudanych prób
+    /// ani nie przedłużać blokady — zobacz <see cref="LoginAsync"/>.
+    /// </summary>
+    private async Task RecordBlockedAttemptAsync(string login, CancellationToken cancellationToken)
+    {
+        await _auditLog.RecordAsync(
+            AuditActionType.LoginAttempt,
+            null,
+            login,
+            null,
+            nameof(User),
+            "Próba logowania w trakcie blokady konta.",
+            false,
+            cancellationToken).ConfigureAwait(false);
+
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Wykonuje kosztowny hash, aby wyrównać czas odpowiedzi dla nieistniejących kont.</summary>

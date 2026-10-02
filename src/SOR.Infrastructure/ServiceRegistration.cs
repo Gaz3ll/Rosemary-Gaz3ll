@@ -74,6 +74,11 @@ public static class ServiceRegistration
         services.AddScoped<IPatientService, PatientService>();
         services.AddScoped<IZoneLoadMonitoringService, ZoneLoadMonitoringService>();
 
+        // Katalogi referencyjne i pakiety medyczne (katalog leków, ICD-10, pakiety).
+        services.AddScoped<IMedicationCatalogService, MedicationCatalogService>();
+        services.AddScoped<IMedicalBundleService, MedicalBundleService>();
+        services.AddScoped<IIcd10CatalogService, Icd10CatalogService>();
+
         return services;
     }
 

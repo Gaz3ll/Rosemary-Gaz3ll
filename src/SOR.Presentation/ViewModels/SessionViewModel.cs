@@ -228,6 +228,12 @@ public sealed class SessionViewModel : ObservableObject
     public RelayCommand DismissRecommendationCommand { get; }
 
     /// <summary>
+    /// Zdarzenie zmiany stanu sesji (zalogowanie / wylogowanie). Widok wykorzystuje je
+    /// do pobrania danych referencyjnych formularza dopiero dla aktywnej sesji.
+    /// </summary>
+    public event EventHandler? SessionStateChanged;
+
+    /// <summary>
     /// Uwierzytelnia użytkownika i ustala strefę kontekstową.
     /// Wyjątki domenowe i aplikacyjne są mapowane na komunikaty dla użytkownika zamiast
     /// być raportowane jako błędy techniczne.
@@ -263,6 +269,10 @@ public sealed class SessionViewModel : ObservableObject
 
             await LoadZonesAsync().ConfigureAwait(true);
             ApplySessionContext();
+
+            // Widok ładuje po zalogowaniu dane referencyjne (formularz leków, pakiety),
+            // których nie należy pobierać przed uzyskaniem sesji.
+            SessionStateChanged?.Invoke(this, EventArgs.Empty);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -467,6 +477,10 @@ public sealed class SessionViewModel : ObservableObject
         OnPropertyChanged(nameof(IsCoordinator));
         OnPropertyChanged(nameof(HasRecommendation));
         OnPropertyChanged(nameof(CurrentZoneName));
+
+        // Powiadamia widoki zależne od sesji (m.in. formularz leków), aby porzuciły
+        // dane poprzedniego użytkownika.
+        SessionStateChanged?.Invoke(this, EventArgs.Empty);
     }
 
     private static string DescribeReason(ReassignmentReasonCode code) => code switch

@@ -298,7 +298,7 @@ public sealed class ScenarioTests : IAsyncLifetime
             var day = 1 + (i % 28);
 
             var patient = await patients.RegisterPatientAsync(
-                GeneratePesel(year, month, day, i % 2 == 0),
+                GeneratePesel(year, month, day, i % 2 != 0),
                 "Test",
                 "Obciążenie",
                 new DateOnly(year, month, day),
@@ -386,9 +386,14 @@ public sealed class ScenarioTests : IAsyncLifetime
     }
 
     /// <summary>Generuje poprawny numer PESEL (11 cyfr wraz z cyfrą kontrolną).</summary>
-    private static string GeneratePesel(int year, int month, int day, bool isFemale)    {
-        var encodedMonth = isFemale ? month + 20 : month;
-        var baseNumber = $"{year % 100:00}{encodedMonth:00}{day:00}{(2000 + (isFemale ? 20 : 0)):0000}";
+    private static string GeneratePesel(int year, int month, int day, bool isFemale)
+    {
+        // Miesiąc zakodowany przesunięciem: +20 dla kobiet, +40 dla mężczyzn.
+        var encodedMonth = isFemale ? month + 20 : month + 40;
+
+        // Ostatnia cyfra numeru seryjnego koduje płeć: nieparzysta — kobieta, parzysta — mężczyzna.
+        var serial = 1000 + (isFemale ? 1 : 0);
+        var baseNumber = $"{year % 100:00}{encodedMonth:00}{day:00}{serial:0000}";
 
         int[] weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
         var sum = 0;

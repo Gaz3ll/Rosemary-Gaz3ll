@@ -90,6 +90,7 @@ public sealed class PatientRepository : EntityFrameworkRepository<Patient>, IPat
             .Include(p => p.CurrentTriage)
             .Include(p => p.Orders)
             .Include(p => p.Transfers)
+            .Include(p => p.Administrations)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
 }
 

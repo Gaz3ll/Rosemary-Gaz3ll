@@ -131,6 +131,53 @@ public interface IZoneTransferRepository : IRepository<ZoneTransfer>
 }
 
 /// <summary>
+/// Repozytorium rejestru podanych leków. Encja należy do agregatu pacjenta, ale — podobnie jak
+/// ocena Triage i przeniesienie — musi zostać jawnie dodana do kontekstu, aby EF Core wykonał
+/// INSERT, a nie aktualizację nieistniejącego wiersza.
+/// </summary>
+public interface IMedicationAdministrationRepository : IRepository<MedicationAdministration>
+{
+    /// <summary>Historia podanych leków pacjenta (najnowsze na początku).</summary>
+    Task<IReadOnlyList<MedicationAdministration>> GetByPatientAsync(Guid patientId, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Repozytorium katalogu leków SOR — wyszukiwanie po nazwie, kodzie i kategorii.</summary>
+public interface IMedicationRepository : IRepository<Medication>
+{
+    /// <summary>Wyszukuje leki po wolnym tekście (nazwa, synonim, kod, grupa) z opcjonalnym filtrem kategorii.</summary>
+    Task<IReadOnlyList<Medication>> SearchAsync(
+        string? term,
+        MedicationCategory? category,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Leki oznaczone jako wymagające ścisłego nadzoru (BR-15) — ostrzeżenia w karcie pacjenta.</summary>
+    Task<IReadOnlyList<Medication>> GetHighAlertAsync(CancellationToken cancellationToken = default);
+}
+
+/// <summary>Repozytorium pakietów medycznych (zestawów diagnostyczno-terapeutycznych).</summary>
+public interface IMedicalBundleRepository : IRepository<MedicalBundle>
+{
+    /// <summary>Pakiet wraz z uporządkowanymi krokami.</summary>
+    Task<MedicalBundle?> GetWithItemsAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Wszystkie aktywne pakiety wraz z krokami.</summary>
+    Task<IReadOnlyList<MedicalBundle>> GetActiveWithItemsAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Wyszukuje pakiety po wolnym tekście (nazwa, kod, wskazania).</summary>
+    Task<IReadOnlyList<MedicalBundle>> SearchAsync(string? term, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Repozytorium katalogu rozpoznań ICD-10.</summary>
+public interface IIcd10CatalogRepository : IRepository<Icd10CatalogEntry>
+{
+    /// <summary>Wyszukuje rozpoznania po fragmencie kodu lub opisu.</summary>
+    Task<IReadOnlyList<Icd10CatalogEntry>> SearchAsync(string? term, CancellationToken cancellationToken = default);
+
+    /// <summary>Rozpoznanie dokładnie o danym kodzie.</summary>
+    Task<Icd10CatalogEntry?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+}
+
+/// <summary>
 /// Jednostka pracy (Unit of Work) — granica transakcji. Zatwierdzenie jest atomowe:
 /// rotacja personelu i przeniesienie pacjenta zapisywane są w całości albo wcale.
 /// </summary>
@@ -171,4 +218,16 @@ public interface IUnitOfWork : IAsyncDisposable
 
     /// <summary>Repozytorium historii przeniesień pacjenta.</summary>
     IZoneTransferRepository ZoneTransfers { get; }
+
+    /// <summary>Repozytorium katalogu leków.</summary>
+    IMedicationRepository Medications { get; }
+
+    /// <summary>Repozytorium pakietów medycznych.</summary>
+    IMedicalBundleRepository MedicalBundles { get; }
+
+    /// <summary>Repozytorium katalogu ICD-10.</summary>
+    IIcd10CatalogRepository Icd10Catalog { get; }
+
+    /// <summary>Repozytorium rejestru podanych leków.</summary>
+    IMedicationAdministrationRepository MedicationAdministrations { get; }
 }

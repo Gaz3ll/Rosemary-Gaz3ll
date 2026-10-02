@@ -38,6 +38,16 @@ public sealed class SorDbContext : DbContext
 
     public DbSet<AuditLogEntry> AuditLogEntries => Set<AuditLogEntry>();
 
+    public DbSet<Medication> Medications => Set<Medication>();
+
+    public DbSet<MedicationAdministration> MedicationAdministrations => Set<MedicationAdministration>();
+
+    public DbSet<Icd10CatalogEntry> Icd10CatalogEntries => Set<Icd10CatalogEntry>();
+
+    public DbSet<MedicalBundle> MedicalBundles => Set<MedicalBundle>();
+
+    public DbSet<MedicalBundleItem> MedicalBundleItems => Set<MedicalBundleItem>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);

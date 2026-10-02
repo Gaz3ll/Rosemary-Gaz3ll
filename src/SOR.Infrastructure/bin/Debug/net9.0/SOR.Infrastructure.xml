@@ -4,6 +4,21 @@
         <name>SOR.Infrastructure</name>
     </assembly>
     <members>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.MedicationConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Medication"/> — katalog leków SOR.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.MedicationAdministrationConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.MedicationAdministration"/> — rejestr podanych leków.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.Icd10CatalogEntryConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Icd10CatalogEntry"/> — katalog kodów ICD-10.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.MedicalBundleConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.MedicalBundle"/> — pakiety medyczne.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.MedicalBundleItemConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.MedicalBundleItem"/> — pozycje pakietów medycznych.</summary>
+        </member>
         <member name="T:SOR.Infrastructure.Persistence.Configurations.PatientConfiguration">
             <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Patient"/> — tabela kart pacjentów.</summary>
         </member>
@@ -50,13 +65,34 @@
             <summary>Czy baza danych znajduje się na nośniku lokalnym (wpływa na tryb blokowania pliku).</summary>
         </member>
         <member name="T:SOR.Infrastructure.Persistence.DatabaseInitializer">
-            <summary>
-            Inicjalizator trwałego magazynu danych: tworzy schemat bazy SQLite, weryfikuje
-            dostępność ścieżki pliku i raportuje błędy wejścia-wyjścia w postaci kontrolowanych wyjątków.
-            </summary>
+             <summary>
+             Inicjalizator trwałego magazynu danych: tworzy schemat bazy SQLite, wykrywa schemat
+             nieaktualny po rozbudowie modelu domenowego oraz raportuje błędy wejścia-wyjścia
+             w postaci kontrolowanych wyjątków.
+            
+             <para>
+             <c>EnsureCreated</c> z definicji jest bezczynny, gdy plik bazy już istnieje — nie potrafi
+             dodać tabel pojawiających się w nowszej wersji modelu. Bez poniższej kontroli aplikacja
+             uruchomiłaby się bez błędu, a pierwsze zapytanie do nowej tabele zakończyłoby się
+             wyjątkiem „no such table". Dlatego przed utworzeniem schematu porównujemy listę tabel
+             z modelem i — jeśli brakuje którejkolwiek — przebudowujemy schemat od zera.
+             </para>
+             </summary>
         </member>
         <member name="M:SOR.Infrastructure.Persistence.DatabaseInitializer.EnsureCreatedAsync(System.Threading.CancellationToken)">
-            <summary>Tworzy schemat bazy, jeśli jeszcze nie istnieje. Odporny na blokady pliku.</summary>
+            <summary>
+            Tworzy schemat bazy, jeśli jeszcze nie istnieje, a w razie niezgodności schematu
+            z bieżącym modelem domenowym odtwarza go. Odporny na blokady pliku.
+            </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseInitializer.FindMissingTablesAsync(System.Threading.CancellationToken)">
+            <summary>Zwraca nazwy tabel zdefiniowanych w modelu, których brakuje w pliku bazy.</summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseInitializer.RecreateSchemaAsync(System.Threading.CancellationToken)">
+            <summary>
+            Usuwa dotychczasowe tabele i pozwala <c>EnsureCreated</c> odtworzyć schemat
+            zgodny z bieżącym modelem. Dane zostają odtworzone przez <c>DatabaseSeeder</c>.
+            </summary>
         </member>
         <member name="T:SOR.Infrastructure.Persistence.DatabaseSeeder">
             <summary>
@@ -68,6 +104,75 @@
         </member>
         <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedAsync(System.Threading.CancellationToken)">
             <summary>Wypełnia bazę danymi startowymi, jeśli nie zawiera jeszcze żadnych stref.</summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedCatalogAsync(System.Threading.CancellationToken)">
+            <summary>
+            Generuje dane referencyjne: katalog leków, katalog kodów ICD-10 oraz pakiety medyczne.
+            Wywoływana niezależnie od danych oddziału, aby katalogi były dostępne również wtedy,
+            gdy strefy zostały wygenerowane wcześniej.
+            </summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Icd10CatalogSeed">
+             <summary>
+             Dane referencyjne: katalog kodów ICD-10 w zakresie praktyki SOR.
+            
+             <para>
+             Zbiór obejmuje rozdziały najczęściej wykorzystywane w segregacji i kodowaniu rozpoznań
+             w izbie przyjęć: choroby układu krążenia, oddechowego, nerwowego, urazy, zatrucia,
+             choroby zakaźne oraz objawy wymagające diagnostyki różnicowej. Opisy podano w polskiej
+             nomenklaturze kodowania chorób i problemów medycznych. Katalog pełni funkcję
+             podręcznika kodownika i podpowiedzi — nie zastępuje rozpoznania klinicznego.
+             </para>
+             </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.Icd10CatalogSeed.Build(SOR.Domain.Common.IIdGenerator)">
+            <summary>Buduje katalog kodów ICD-10 dla typowych rozpoznań SOR.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.MedicalBundleSeed">
+             <summary>
+             Dane referencyjne: pakiety medyczne (zestawy postępowania) dla typowych stanów nagłych.
+            
+             <para>
+             Pakiet to wzorzec, nie automatyczne zlecenie — po zastosowaniu każda pozycja staje się
+             zwykłym, edytowalnym zleceniem lekarskim, więc lekarz zachowuje pełną kontrolę (BR-13).
+             Zawartość odzwierciedla typowe postępowanie na izbie przyjęć i ma charakter wyłącznie
+             poglądowy; przed użyciem w praktyce wymaga weryfikacji z wytycznymi oddziału.
+             </para>
+             </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.MedicalBundleSeed.Build(SOR.Domain.Common.IIdGenerator,System.Collections.Generic.IReadOnlyList{SOR.Domain.Entities.Medication})">
+            <summary>Buduje pakiety medyczne wraz z pozycjami.</summary>
+            <param name="idGenerator">Generator identyfikatorów.</param>
+            <param name="medications">Katalog leków — pozycje farmakologiczne odwołują się do jego kodów.</param>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.MedicationCatalogSeed">
+             <summary>
+             Dane referencyjne: katalog leków możliwych do podania w SOR.
+            
+             <para>
+             Zawartość odwzorowuje typowy formularz oddziału ratunkowego — leki przeciwbólowe,
+             antybiotyki o szerokim spektrum, leki ratujące życie, antykoagulanty, preparaty dożylne
+             i odtrutniki. Opisy dawek mają charakter wyłącznie poglądowy i służą do zasilenia
+             interfejsu w ramach projektu; nie stanowią instrukcji klinicznej ani Charakterystyki
+             Produktu Lekarskiego. Wartości dawek należy zweryfikować zgodnie z aktualną ChPL
+             i wewnętrznymi standardami oddziału.
+             </para>
+             </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.MedicationCatalogSeed.Build(SOR.Domain.Common.IIdGenerator)">
+            <summary>Buduje pełny katalog leków.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.MedicationRepository">
+            <summary>Repozytorium katalogu leków — wyszukiwanie po wolnym tekście i filtrze kategorii.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.MedicalBundleRepository">
+            <summary>Repozytorium pakietów medycznych wraz z ich krokami.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.MedicationAdministrationRepository">
+            <summary>Repozytorium rejestru podanych leków — jawnie dodanie wymusza INSERT.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.Icd10CatalogRepository">
+            <summary>Repozytorium katalogu rozpoznań ICD-10.</summary>
         </member>
         <member name="T:SOR.Infrastructure.Persistence.Repositories.EntityFrameworkRepository`1">
             <summary>

@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\pwswProj\\src\\SOR.Domain\\SOR.Domain.csproj",
+      "projectUniqueName": "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj",
       "projectName": "SOR.Domain",
-      "projectPath": "D:\\pwswProj\\src\\SOR.Domain\\SOR.Domain.csproj",
+      "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj",
       "packagesPath": "C:\\Users\\wikto\\.nuget\\packages\\",
-      "outputPath": "D:\\pwswProj\\src\\SOR.Domain\\obj\\",
+      "outputPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\wikto\\AppData\\Roaming\\NuGet\\NuGet.Config"

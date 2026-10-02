@@ -43,5 +43,14 @@ public enum AuditActionType
     RotationRecommendationGenerated = 13,
 
     /// <summary>Odrzucono konflikt współbieżnej modyfikacji pacjenta.</summary>
-    ConcurrentModificationBlocked = 14
+    ConcurrentModificationBlocked = 14,
+
+    /// <summary>Odnotowano podanie leku pacjentowi.</summary>
+    MedicationAdministered = 15,
+
+    /// <summary>Zastosowano pakiet medyczny na karcie pacjenta.</summary>
+    MedicalBundleApplied = 16,
+
+    /// <summary>Ustawiono lub cofnięto rozpoznanie ICD-10.</summary>
+    DiagnosisChanged = 17
 }

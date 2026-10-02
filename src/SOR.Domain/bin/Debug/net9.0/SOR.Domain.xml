@@ -319,6 +319,92 @@
         <member name="M:SOR.Domain.Entities.DutyRoster.FindActiveShiftFor(System.Guid,System.DateTimeOffset)">
             <summary>Wyszukuje aktywny dyżur użytkownika w danym momencie — podstawa kontekstowego logowania.</summary>
         </member>
+        <member name="T:SOR.Domain.Entities.Icd10CatalogEntry">
+             <summary>
+             Pozycja katalogu kodów ICD-10 — dane referencyjne wspierające kodowanie rozpoznań (BR-09).
+            
+             <para>
+             Rola katalogu to weryfikacja poprawności wpisanego kodu oraz podpowiedź opisu. Sam fakt
+             istnienia kodu w katalogu nie jest wystarczający — rozpoznanie weryfikuje osoba
+             uprawniona (BR-13). Katalog obejmuje rozdziały najczęściej spotykane w SOR i oznaczony
+             jest flagą <see cref="P:SOR.Domain.Entities.Icd10CatalogEntry.IsEmergencyRelevant"/>, aby kodownicy mogli filtrować zbiór roboczy.
+             </para>
+             </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Icd10CatalogEntry.Code">
+            <summary>Kod ICD-10 w formacie <c>X00</c> lub <c>X00.0</c>.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Icd10CatalogEntry.Description">
+            <summary>Polski opis rozpoznania.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Icd10CatalogEntry.Chapter">
+            <summary>Rozdział ICD-10, np. „IX. Choroby układu krążenia".</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Icd10CatalogEntry.Category">
+            <summary>Grupa/kategoria nadrzędna, np. „Krwawienia wewnętrzne".</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Icd10CatalogEntry.IsEmergencyRelevant">
+            <summary>Czy rozpoznanie należy do typowego zakresu praktyki SOR.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.MedicalBundle">
+             <summary>
+             Pakiety medyczne — gotowe zestawy postępowania dla typowych stanów nagłych.
+            
+             <para>
+             Pakiet to wzorzec postępowania, a nie automatyczne zlecenie. Zastosowanie pakietu
+             materializuje jego pozycje w zleceniach lekarskich i rejestrze podanych leków, dlatego
+             każda zastosowana pozycja jest od tej chwili zwykłym, edytowalnym zleceniem — lekarz
+             może je anulować lub zmienić dawkę. Dzięki temu pakiet nie omija reguły BR-13.
+             </para>
+             </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundle.Code">
+            <summary>Katalogowy kod pakietu, np. <c>PAK-SOR-003</c>.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundle.Name">
+            <summary>Nazwa pakietu, np. „Ból brzucha — diagnostyka i leczenie".</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundle.Indication">
+            <summary>Wskazanie kliniczne, dla którego pakiet się sprawdza.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundle.Chapter">
+            <summary>Grupa tematyczna pakietów (np. „Bóle brzucha", „Urazy", „Zatrucia").</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundle.Items">
+            <summary>Pozycje składające się na pakiet, uporządkowane wg kolejności realizacji.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.MedicalBundle.AddItem(System.Guid,System.Int32,SOR.Domain.Enums.MedicalOrderType,System.String,System.Nullable{SOR.Domain.Enums.MedicationRoute},System.Nullable{System.Guid},System.String,System.Boolean)">
+            <summary>Dodaje pozycję do pakietu — dozwolone wyłącznie przed zastosowaniem pakietu.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.MedicalBundleItem">
+             <summary>
+             Pozycja pakietu medycznego — pojedynczy krok postępowania.
+            
+             <para>
+             Pozycja może wskazywać lek katalogowy (wtedy po zastosowaniu pakietu powstaje zarówno
+             zlecenie typu <see cref="F:SOR.Domain.Enums.MedicalOrderType.Medication"/>, jak i wpis w rejestrze podanych
+             leków) albo być krokiem niefarmakologicznym — badaniem, zabiegiem lub obserwacją.
+             </para>
+             </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundleItem.Sequence">
+            <summary>Kolejność realizacji w pakiecie (1 = pierwszy).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundleItem.Description">
+            <summary>Opis kroku — trafia do zlecenia lekarskiego po zastosowaniu pakietu.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundleItem.Route">
+            <summary>Droga podania dla pozycji farmakologicznych.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundleItem.MedicationId">
+            <summary>Preparat z katalogu, jeżeli pozycja dotyczy podania leku.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundleItem.Dose">
+            <summary>Dawka zgodna z pozycją katalogu leku.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicalBundleItem.RequiresOrder">
+            <summary>Czy pozycja wymaga zlecenia lekarskego, czy tylko odnotowania podania.</summary>
+        </member>
         <member name="T:SOR.Domain.Entities.MedicalOrder">
             <summary>Encja <c>MedicalOrder</c> — zlecenie lekarskie. Otwarte zlecenia blokują zamknięcie karty (BR-10).</summary>
         </member>
@@ -342,6 +428,84 @@
         </member>
         <member name="M:SOR.Domain.Entities.MedicalOrder.EnsureCanBeCompletedBy(SOR.Domain.Enums.UserRole)">
             <summary>Reguła BR-13: zlecenie lekarskie może oznaczyć jako zrealizowane wyłącznie lekarz lub koordynator.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.Medication">
+             <summary>
+             Lek z katalogu SOR — pozycja katalogu możliwych do podania preparatów, a nie zlecenie.
+            
+             <para>
+             Katalog jest danymi referencyjnymi: opisuje preparat dostępny w oddziale, typową dawkę
+             dla pacjenta dorosłego, maksymalną dawkę dobową oraz ostrzeżenia. Encja jest niemutowalna
+             po utworzeniu — zmiana formulariusza (np. wycofanie leku) realizowana jest przez
+             <see cref="M:SOR.Domain.Entities.Medication.Deactivate"/>, aby nie kasować historii podanych dawek.
+             </para>
+             </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Code">
+            <summary>Katalogowy kod leku, np. <c>LEK-EMG-0012</c>.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Name">
+            <summary>Międzynarodowa nazwa niezależna (INN) — nazwa substancji czynnej po polsku.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Form">
+            <summary>Postać leku, np. „ampułka", „tabletki", „worek 500 ml".</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Strength">
+            <summary>Moc preparatu, np. „500 mg/ml".</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Route">
+            <summary>Droga podania zgodna z Charakterystyką Produktu leczniczego.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.TypicalDose">
+            <summary>Typowa dawka jednorazowa dla pacjenta dorosłego (opis tekstowy).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.MaxDailyDose">
+            <summary>Maksymalna dawka dobowa (opis tekstowy).</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.IsAvailable">
+            <summary>Czy preparat jest aktualnie dostępny w oddziale.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Contraindications">
+            <summary>Przeciwwskazania i najważniejsze ostrzeżenia kliniczne.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.Notes">
+            <summary>Dodatkowe uwagi dotyczące podania w warunkach SOR.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Medication.DisplayName">
+            <summary>Opis gotowy do wyświetlenia na liście wyboru.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Medication.Deactivate">
+            <summary>Wycofanie preparatu z formularza — nie usuwa historii podanych dawek.</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Medication.Activate">
+            <summary>Przywrócenie preparatu do formularza.</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.MedicationAdministration">
+             <summary>
+             Rejestr podanego leku — fakty kliniczny, nie zlecenie. Odpowiada pytaniu
+             „co faktycznie podano pacjentowi, kto podał i kiedy".
+            
+             <para>
+             Odrębność od <see cref="T:SOR.Domain.Entities.MedicalOrder"/> jest istotna: zlecenie wyraża intencję lekarza,
+             a podanie potwierdza wykonanie. Powiązanie jest opcjonalne, ponieważ lek może zostać
+             podany doraźnie (np. w znieczuleniu) bez wcześniejszego zlecenia pisemnego.
+             </para>
+             </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicationAdministration.MedicationId">
+            <summary>Preparat z katalogu, który został podany.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicationAdministration.AdministeredByUserId">
+            <summary>Użytkownik, który faktycznie podał lek.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicationAdministration.Dose">
+            <summary>Podana dawka zgodnie z zleceniem, np. „500 mg i.v.".</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicationAdministration.Route">
+            <summary>Droga podania.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.MedicationAdministration.MedicalOrderId">
+            <summary>Powiązane zlecenie lekarskie, jeżeli podanie wynikało ze zlecenia.</summary>
         </member>
         <member name="T:SOR.Domain.Entities.PasswordHasher">
             <summary>
@@ -397,6 +561,9 @@
         <member name="P:SOR.Domain.Entities.Patient.CurrentTriage">
             <summary>Aktualna ocena Triage (najnowsza w historii).</summary>
         </member>
+        <member name="P:SOR.Domain.Entities.Patient.Administrations">
+            <summary>Rejestr leków faktycznie podanych pacjentowi w trakcie pobytu w SOR.</summary>
+        </member>
         <member name="M:SOR.Domain.Entities.Patient.Register(System.Guid,System.String,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,System.DateTimeOffset)">
             <summary>Rejestracja pacjenta w module wstępnym SOR (BR-18).</summary>
         </member>
@@ -418,8 +585,17 @@
         <member name="P:SOR.Domain.Entities.Patient.HasOpenOrders">
             <summary>Reguła BR-10: pacjent bez otwartych zleceń nie może zostać wydany z SOR.</summary>
         </member>
+        <member name="M:SOR.Domain.Entities.Patient.RecordAdministration(SOR.Domain.Entities.MedicationAdministration)">
+            <summary>
+            Odnotowanie faktycznego podania preparatu. Wpis powstaje dopiero po podaniu —
+            samo zlecenie nie oznacza podania, dlatego rejestr jest prowadzony oddzielnie od zleceń.
+            </summary>
+        </member>
         <member name="M:SOR.Domain.Entities.Patient.SetDiagnosis(SOR.Domain.ValueObjects.Icd10Code)">
             <summary>Ustawienie rozpoznania ICD-10 (wymagane przed zamknięciem karty).</summary>
+        </member>
+        <member name="M:SOR.Domain.Entities.Patient.ClearDiagnosis">
+            <summary>Cofnięcie rozpoznania — dopuszczalne tylko do czasu zamknięcia karty.</summary>
         </member>
         <member name="M:SOR.Domain.Entities.Patient.Close(System.DateTimeOffset,System.Boolean)">
             <summary>
@@ -437,9 +613,6 @@
         </member>
         <member name="M:SOR.Domain.Entities.Patient.ReleaseLock(System.String)">
             <summary>Zwalnia blokadę karty.</summary>
-        </member>
-        <member name="M:SOR.Domain.Entities.Patient.ValidatePesel(System.String)">
-            <summary>Walidacja numeru PESEL — suma kontrolna modulo 11 (BR-18).</summary>
         </member>
         <member name="M:SOR.Domain.Entities.Patient.RecordTransfer(SOR.Domain.Entities.ZoneTransfer)">
             <summary>Rejestruje przeniesienie pacjenta w historii podróży po strefach (BR-19).</summary>
@@ -702,6 +875,15 @@
         <member name="F:SOR.Domain.Enums.AuditActionType.ConcurrentModificationBlocked">
             <summary>Odrzucono konflikt współbieżnej modyfikacji pacjenta.</summary>
         </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.MedicationAdministered">
+            <summary>Odnotowano podanie leku pacjentowi.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.MedicalBundleApplied">
+            <summary>Zastosowano pakiet medyczny na karcie pacjenta.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.DiagnosisChanged">
+            <summary>Ustawiono lub cofnięto rozpoznanie ICD-10.</summary>
+        </member>
         <member name="T:SOR.Domain.Enums.MedicalOrderType">
             <summary>Typ zlecenia lekarskiego — wpływa na uprawnienia do jego zamknięcia.</summary>
         </member>
@@ -737,6 +919,99 @@
         </member>
         <member name="F:SOR.Domain.Enums.MedicalOrderState.Cancelled">
             <summary>Zlecenie anulowane przez lekarza — nie blokuje zamknięcia karty.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.MedicationRoute">
+            <summary>Droga podania leku — determinuje sposób realizacji zlecenia na SOR.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Oral">
+            <summary>Doustnie (per os).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Intravenous">
+            <summary>Dożylnie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Intramuscular">
+            <summary>Domięśniowo.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Subcutaneous">
+            <summary>Podskórnie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Inhalation">
+            <summary>Wewnątrzopłucnowo (płucna).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Mucosal">
+            <summary>Na błonę śluzową (np. donosowo, podjęzykowo).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.IntravenousBloodProduct">
+            <summary>Donaczowo (krew i preparaty krwiopochodne).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationRoute.Tube">
+            <summary>Przez z sondę / sondę żołądkową.</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.MedicationCategory">
+            <summary>Grupa terapeutyczna leku — upraszcza nawigację w katalogu.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Analgesic">
+            <summary>Leki przeciwbólowe i przeciwzapalne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Antibiotic">
+            <summary>Antybiotyki i leki przeciwinfekcyjne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Resuscitation">
+            <summary>Leki ratujące życie i resuscytacyjne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Antithrombotic">
+            <summary>Leki przeciwzakrzepowe i antyagregacyjne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Cardiovascular">
+            <summary>Leki układu krążenia (kardiologiczne).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Neurologic">
+            <summary>Leki neurologiczne i psychiatryczne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Antiepileptic">
+            <summary>Leki przeciwpadaczkowe.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Antihistamine">
+            <summary>Leki przeciwhistaminowe.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Hormonal">
+            <summary>Leki hormonalne i endokrynologiczne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Metabolic">
+            <summary>Leki metaboliczne (cukrzyca, gospodarka potasowa).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.FluidAndBlood">
+            <summary>Płyny i preparaty krwiopochodne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Anesthetic">
+            <summary>Środki znieczulające i sedatywne.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.LocalAnesthetic">
+            <summary>Leki miejscowe.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Toxicology">
+            <summary>Leki stosowane w zatruciach i odtruwaniu.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationCategory.Topical">
+            <summary>Preparaty stosowane miejscowo (dezynfekcja, opatrunki).</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.MedicationSafety">
+            <summary>Charakterystyka bezpieczeństwa leku — steruje ostrzeżeniami w interfejsie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationSafety.Standard">
+            <summary>Lek standardowy, brak szczególnych ograniczeń.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationSafety.ModifiedRelease">
+            <summary>Lek o przedłużonym uwalnianiu — nie należy kruszyć ani dzielić tabletki.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationSafety.HighAlert">
+            <summary>Lek podwyższonego ryzyka (wymaga weryfikacji dawki i drogi podania).</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationSafety.BloodProduct">
+            <summary>Produkt krwiopochodny — wymaga zgodności dawki i grupy.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.MedicationSafety.Antidote">
+            <summary>Lek o działaniu antagonistycznym — grozi interakcją i maskowaniem objawów.</summary>
         </member>
         <member name="T:SOR.Domain.Enums.PatientGender">
             <summary>Płeć biologiczna pacjenta — wymagana w nagłym zgłoszeniu do SOR.</summary>
@@ -969,6 +1244,99 @@
         </member>
         <member name="P:SOR.Domain.ValueObjects.PatientLoadSnapshot.IsActive">
             <summary>Czy pacjent wlicza się do obciążenia strefy.</summary>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.PeselNumber">
+             <summary>
+             Numer PESEL jako obiekt wartościowy (BR-18).
+            
+             <para>
+             Walidacja obejmuje trzy niezależne warstwy, zgodnie z formatem zdefiniowanym w rozporządzeniu
+             w sprawie dokumentów osobistych:
+             </para>
+             <list type="number">
+             <item>11 cyfr — brak liter, spacji i znaków rozdzielających;</item>
+             <item>poprawna suma kontrolna modulo 11 (wagi <c>1,3,7,9,1,3,7,9,1,3</c>);</item>
+             <item>poprawna data urodzenia zakodowana w pierwszych sześciu cyfrach.</item>
+             </list>
+            
+             <para>
+             Zakodowany miesiąc niesie informację o płci i stuleciu: jest zapisany z przesunięciem
+             o 20 (kobiety XX i mężczyźni XXI wieku), 40 (mężczyźni XX i kobiety XXI wieku),
+             60 lub 80 (dalsze stulecia). Zakresy przesunięcia pokrywają się między stuleciami,
+             więc numer sam w sobie nie rozstrzyga, czy czytamy XX czy XXI wiek — stulecie ustala
+             dopasowanie do daty zadeklarowanej w formularzu (<see cref="M:SOR.Domain.ValueObjects.PeselNumber.MatchesDateOfBirth(System.DateOnly)"/>).
+             </para>
+            
+             <para>
+             Płeć koduje jednoznacznie dziesiąta cyfra numeru seryjnego: parzysta oznacza mężczyznę,
+             nieparzysta kobietę. Walidacja nie odrzuca prawidłowych numerów osób urodzonych
+             w różnych stuleciach, a jednocześnie odrzuca daty nieistniejące (np. 30 lutego).
+             </para>
+             </summary>
+        </member>
+        <member name="F:SOR.Domain.ValueObjects.PeselNumber.Weights">
+            <summary>Wagi użyte do obliczania cyfry kontrolnej.</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.PeselNumber.Value">
+            <summary>Znormalizowany numer PESEL (11 cyfr).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.PeselNumber.DateOfBirth">
+            <summary>Data urodzenia odczytana z numeru PESEL (stulecie ustalane heurystycznie).</summary>
+        </member>
+        <member name="P:SOR.Domain.ValueObjects.PeselNumber.Gender">
+            <summary>
+            Płeć zakodowana w numerze (do weryfikacji zgodności z danymi zadeklarowanymi).
+            Źródłem jest parzystość dziesiątej cyfry (parzysta — mężczyzna, nieparzysta — kobieta),
+            a nie przesunięcie miesiąca: przesunięcie o 20 oznacza kobietę urodzoną w XX wieku
+            albo mężczyznę urodzonego w XXI wieku, więc samo nie rozstrzyga płci.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.MatchesDateOfBirth(System.DateOnly)">
+            <summary>
+            Sprawdza zgodność z datą urodzenia podaną w formularzu bez rozstrzygania stulecia.
+            Numer PESEL koduje tylko dwie cyfry roku, więc zakodowana data odpowiada każdemu
+            stuleciu o zgodnych dwóch cyfrach roku — np. 21.06.1925 i 21.06.2025 mają ten sam zapis.
+            </summary>
+            <param name="dateOfBirth">Data urodzenia zadeklarowana przez użytkownika.</param>
+            <returns><c>true</c>, gdy dzień, miesiąc i dwie cyfry roku się zgadzają.</returns>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.TryParse(System.String,SOR.Domain.ValueObjects.PeselNumber@)">
+            <summary>
+            Próba utworzenia obiektu wartościowego z surowego wejścia użytkownika.
+            </summary>
+            <param name="raw">Wprowadzony numer — spacje i myślniki są ignorowane.</param>
+            <param name="pesel">Znormalizowany numer poprawny.</param>
+            <returns><c>true</c>, gdy numer spełnia wszystkie kryteria walidacji.</returns>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.Create(System.String)">
+            <summary>Walidacja z komunikatem błędu gotowym do pokazania użytkownikowi.</summary>
+            <exception cref="T:SOR.Domain.Common.ValidationException">Gdy numer jest nieprawidłowy.</exception>
+        </member>
+        <member name="T:SOR.Domain.ValueObjects.PeselNumber.GenderEncoded">
+            <summary>Płeć zakodowana w numerze PESEL.</summary>
+        </member>
+        <member name="F:SOR.Domain.ValueObjects.PeselNumber.GenderEncoded.Female">
+            <summary>Płeć żeńska (dziesiąta cyfra nieparzysta).</summary>
+        </member>
+        <member name="F:SOR.Domain.ValueObjects.PeselNumber.GenderEncoded.Male">
+            <summary>Płeć męska (dziesiąta cyfra parzysta).</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.Normalize(System.String)">
+            <summary>Usuwa spacje, myślniki i kropki; zwraca <c>null</c>, gdy po oczyszczeniu nie ma 11 znaków.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.TryReadDateOfBirth(System.String,System.DateOnly@)">
+            <summary>
+            Odczytuje datę urodzenia z sześciu pierwszych cyfr. Miesiąc z przesunięciem 20/40/60/80
+            wskazuje płeć i potowę stulecia; rok powstaje po odjęciu przesunięcia.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.TryReadMonthAndDay(System.String,System.Int32@,System.Int32@)">
+            <summary>
+            Odczytuje miesiąc i dzień z pierwszych sześciu cyfr, zwalniając numer z przesunięcia
+            zależnego od płci i stulecia. Sam numer nie pozwala rozstrzygnąć, czy kobieta urodziła
+            się w XX, czy mężczyzna w XXI wieku — dlatego stulecie ustala osobno dopasowanie
+            do daty zadeklarowanej w formularzu.
+            </summary>
         </member>
         <member name="T:SOR.Domain.ValueObjects.ReassignmentReason">
             <summary>

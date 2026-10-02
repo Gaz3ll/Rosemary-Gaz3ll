@@ -35,6 +35,7 @@ public sealed record PatientDetailsDto(
     DateTimeOffset? ZoneAssignedAtUtc,
     IReadOnlyList<MedicalOrderDto> Orders,
     IReadOnlyList<ZoneTransferDto> Transfers,
+    IReadOnlyList<MedicationAdministrationDto> Administrations,
     IReadOnlyList<string> ClosureBlockers);
 
 /// <summary>Wynik operacji zapisu zlecenia lekarskiego.</summary>

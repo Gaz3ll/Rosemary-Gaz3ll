@@ -35,6 +35,8 @@ public sealed class DatabaseSeeder
     /// <summary>Wypełnia bazę danymi startowymi, jeśli nie zawiera jeszcze żadnych stref.</summary>
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
+        await SeedCatalogAsync(cancellationToken).ConfigureAwait(false);
+
         if (await _context.Zones.AnyAsync(cancellationToken).ConfigureAwait(false))
         {
             _logger.LogInformation("Baza zawiera już dane — pomijam generowanie danych startowych.");
@@ -100,6 +102,41 @@ public sealed class DatabaseSeeder
         _logger.LogInformation("Dane startowe wygenerowane pomyślnie.");
     }
 
+    /// <summary>
+    /// Generuje dane referencyjne: katalog leków, katalog kodów ICD-10 oraz pakiety medyczne.
+    /// Wywoływana niezależnie od danych oddziału, aby katalogi były dostępne również wtedy,
+    /// gdy strefy zostały wygenerowane wcześniej.
+    /// </summary>
+    private async Task SeedCatalogAsync(CancellationToken cancellationToken)
+    {
+        var medications = MedicationCatalogSeed.Build(_idGenerator);
+        var icd10Entries = Icd10CatalogSeed.Build(_idGenerator);
+        var bundles = MedicalBundleSeed.Build(_idGenerator, medications);
+
+        if (await _context.Medications.AnyAsync(cancellationToken).ConfigureAwait(false) is false)
+        {
+            _context.Medications.AddRange(medications);
+        }
+
+        if (await _context.Icd10CatalogEntries.AnyAsync(cancellationToken).ConfigureAwait(false) is false)
+        {
+            _context.Icd10CatalogEntries.AddRange(icd10Entries);
+        }
+
+        if (await _context.MedicalBundles.AnyAsync(cancellationToken).ConfigureAwait(false) is false)
+        {
+            _context.MedicalBundles.AddRange(bundles);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
+
+        _logger.LogInformation(
+            "Katalogi referencyjne gotowe: {Medications} leków, {Icd10} kodów ICD-10, {Bundles} pakietów medycznych.",
+            medications.Count,
+            icd10Entries.Count,
+            bundles.Count);
+    }
+
     private void SeedPatients(
         DateTimeOffset now,
         Zone emergency,
@@ -111,41 +148,41 @@ public sealed class DatabaseSeeder
         User nurse)
     {
         // Pacjenci z założonym rozkładem kodów Triage — część ratunkowa celowo przeciążona.
-        AddPatient("85041400844", "Marek", "Zieliński", new DateOnly(1985, 4, 14), PatientGender.Male,
+        AddPatient("85441410008", "Marek", "Zieliński", new DateOnly(1985, 4, 14), PatientGender.Male,
             "Wypadek komunikacyjny, krwawienie wewnętrzne", TriageCategory.Red, emergency, emergencyDoctor, 40, now,
             "S72.1");
 
-        AddPatient("90111200315", "Katarzyna", "Wójcik", new DateOnly(1990, 11, 12), PatientGender.Female,
+        AddPatient("90311210011", "Katarzyna", "Wójcik", new DateOnly(1990, 11, 12), PatientGender.Female,
             "Ból w klatce piersiowej, podejrzenie OZW", TriageCategory.Orange, emergency, emergencyDoctor, 12, now, "I21.4");
 
-        AddPatient("72030800834", "Piotr", "Krawczyk", new DateOnly(1972, 3, 8), PatientGender.Male,
+        AddPatient("72430810026", "Piotr", "Krawczyk", new DateOnly(1972, 3, 8), PatientGender.Male,
             "Krwiak podtwardówkowy, zaburzenia świadomości", TriageCategory.Orange, emergency, emergencyDoctor, 8, now, "S06.5");
 
-        AddPatient("55092100293", "Barbara", "Michalak", new DateOnly(1955, 9, 21), PatientGender.Female,
+        AddPatient("55292110034", "Barbara", "Michalak", new DateOnly(1955, 9, 21), PatientGender.Female,
             "Ciężka niewydolność oddechowa", TriageCategory.Yellow, emergency, emergencyDoctor, 35, now, "J96.1");
 
-        AddPatient("88020400820", "Michał", "Król", new DateOnly(1988, 2, 4), PatientGender.Male,
+        AddPatient("88420410040", "Michał", "Król", new DateOnly(1988, 2, 4), PatientGender.Male,
             "Złamanie otwarte kości przedramienia", TriageCategory.Yellow, emergency, emergencyDoctor, 50, now, "S52.5");
 
-        AddPatient("63071700272", "Halina", "Pawlak", new DateOnly(1963, 7, 17), PatientGender.Female,
+        AddPatient("63271710054", "Halina", "Pawlak", new DateOnly(1963, 7, 17), PatientGender.Female,
             "Zatorowość płucna", TriageCategory.Red, internalZone, internalDoctor, 25, now, "I26.9");
 
-        AddPatient("78051900856", "Andrzej", "Górski", new DateOnly(1978, 5, 19), PatientGender.Male,
+        AddPatient("78451910063", "Andrzej", "Górski", new DateOnly(1978, 5, 19), PatientGender.Male,
             "Ciężkie zatrucie pokarmowe z odwodnieniem", TriageCategory.Yellow, internalZone, internalDoctor, 70, now, "A05.9");
 
-        AddPatient("34010600213", "Grażyna", "Nowak", new DateOnly(1934, 1, 6), PatientGender.Female,
+        AddPatient("34210610077", "Grażyna", "Nowak", new DateOnly(1934, 1, 6), PatientGender.Female,
             "Ostra niewydolność serca — obrzęki", TriageCategory.Green, internalZone, internalDoctor, 120, now, "I50.9");
 
-        AddPatient("41082300881", "Tadeusz", "Lis", new DateOnly(1941, 8, 23), PatientGender.Male,
+        AddPatient("41482310086", "Tadeusz", "Lis", new DateOnly(1941, 8, 23), PatientGender.Male,
             "Hipoglikemia — stan podostry", TriageCategory.Green, internalZone, internalDoctor, 95, now, "E16.2");
 
-        AddPatient("96031800838", "Jakub", "Baran", new DateOnly(1996, 3, 18), PatientGender.Male,
+        AddPatient("96431810105", "Jakub", "Baran", new DateOnly(1996, 3, 18), PatientGender.Male,
             "Upadek z wysokości — złamanie miednicy", TriageCategory.Orange, trauma, traumaDoctor, 18, now, "S32.4");
 
-        AddPatient("69022600222", "Iwona", "Dąbrowska", new DateOnly(1969, 2, 26), PatientGender.Female,
+        AddPatient("69222610118", "Iwona", "Dąbrowska", new DateOnly(1969, 2, 26), PatientGender.Female,
             "Zwichnięcie barku", TriageCategory.Yellow, trauma, traumaDoctor, 45, now, "S43.4");
 
-        AddPatient("11110500913", "Stanisław", "Jabłoński", new DateOnly(2011, 11, 5), PatientGender.Male,
+        AddPatient("11310510128", "Stanisław", "Jabłoński", new DateOnly(2011, 11, 5), PatientGender.Male,
             "Złamanie kości nadgarstka", TriageCategory.Green, trauma, traumaDoctor, 80, now, "S62.1");
 
         void AddPatient(

@@ -185,6 +185,56 @@ public sealed class PersistenceTests : IAsyncLifetime
         Assert.Equal("nieznany", saved.ActorLogin);
     }
 
+    [Fact]
+    public async Task SchematNieaktualny_PowodujeOdtworzenieBazyIKatalogow()
+    {
+        // Symulacja bazy z poprzedniej wersji aplikacji: plik istnieje, ale brakuje
+        // w nim tabel katalogu leków, pakietów i ICD-10 dodanych w nowej wersji.
+        var services = BuildServices();
+        await using (var provider = services.BuildServiceProvider())
+        {
+            await provider.InitializeDatabaseAsync();
+        }
+
+        Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+
+        // Kolejność ma znaczenie — tabele podrzędne usuwamy przed nadrzędnymi (klucze obce).
+        var staleTables = new[]
+        {
+            "MedicalBundleItems",
+            "MedicationAdministrations",
+            "MedicalBundles",
+            "Medications",
+            "Icd10Catalog"
+        };
+
+        using (var connection = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={_databasePath}"))
+        {
+            connection.Open();
+
+            foreach (var table in staleTables)
+            {
+                using var command = connection.CreateCommand();
+                command.CommandText = $"DROP TABLE IF EXISTS \"{table}\";";
+                command.ExecuteNonQuery();
+            }
+        }
+
+        // Ponowne uruchomienie aplikacji musi odtworzyć schemat i dane referencyjne.
+        await using (var provider = services.BuildServiceProvider())
+        {
+            await provider.InitializeDatabaseAsync();
+        }
+
+        await using var scope = services.BuildServiceProvider().CreateAsyncScope();
+        var context = scope.ServiceProvider.GetRequiredService<SorDbContext>();
+
+        Assert.Equal(4, await context.Zones.CountAsync());
+        Assert.True(await context.Medications.CountAsync() > 0);
+        Assert.True(await context.Icd10CatalogEntries.CountAsync() > 0);
+        Assert.True(await context.MedicalBundles.CountAsync() > 0);
+    }
+
     private ServiceCollection BuildServices()
     {
         var services = new ServiceCollection();

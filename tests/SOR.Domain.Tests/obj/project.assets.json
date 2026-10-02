@@ -2059,11 +2059,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\pwswProj\\tests\\SOR.Domain.Tests\\SOR.Domain.Tests.csproj",
+      "projectUniqueName": "C:\\Rosemary-Gaz3ll\\tests\\SOR.Domain.Tests\\SOR.Domain.Tests.csproj",
       "projectName": "SOR.Domain.Tests",
-      "projectPath": "D:\\pwswProj\\tests\\SOR.Domain.Tests\\SOR.Domain.Tests.csproj",
+      "projectPath": "C:\\Rosemary-Gaz3ll\\tests\\SOR.Domain.Tests\\SOR.Domain.Tests.csproj",
       "packagesPath": "C:\\Users\\wikto\\.nuget\\packages\\",
-      "outputPath": "D:\\pwswProj\\tests\\SOR.Domain.Tests\\obj\\",
+      "outputPath": "C:\\Rosemary-Gaz3ll\\tests\\SOR.Domain.Tests\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\wikto\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -2079,14 +2079,14 @@
         "net9.0": {
           "targetAlias": "net9.0",
           "projectReferences": {
-            "D:\\pwswProj\\src\\SOR.Application\\SOR.Application.csproj": {
-              "projectPath": "D:\\pwswProj\\src\\SOR.Application\\SOR.Application.csproj"
+            "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj": {
+              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj"
             },
-            "D:\\pwswProj\\src\\SOR.Domain\\SOR.Domain.csproj": {
-              "projectPath": "D:\\pwswProj\\src\\SOR.Domain\\SOR.Domain.csproj"
+            "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj": {
+              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj"
             },
-            "D:\\pwswProj\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj": {
-              "projectPath": "D:\\pwswProj\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj"
+            "C:\\Rosemary-Gaz3ll\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj": {
+              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj"
             }
           }
         }

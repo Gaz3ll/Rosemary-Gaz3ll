@@ -49,6 +49,19 @@ public interface IPatientService
         string? reason,
         CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Odnotowanie faktycznego podania leku z katalogu SOR. Dawka jest weryfikowana
+    /// względem pozycji katalogowej, a powiązane zlecenie przechodzi w stan „w realizacji".
+    /// </summary>
+    Task<PatientDetailsDto> RecordMedicationAdministrationAsync(
+        Guid patientId,
+        Guid medicationId,
+        string dose,
+        MedicationRoute route,
+        Guid? medicalOrderId = null,
+        string? notes = null,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Ustawienie rozpoznania ICD-10.</summary>
     Task<PatientDetailsDto> SetDiagnosisAsync(Guid patientId, string icd10Code, CancellationToken cancellationToken = default);
 

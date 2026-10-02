@@ -4,6 +4,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SOR.Infrastructure;
+using SOR.Presentation.Services;
 using SOR.Presentation.ViewModels;
 
 namespace SOR.Presentation;
@@ -59,6 +60,9 @@ public partial class App : System.Windows.Application
 
         _scope = _serviceProvider.CreateAsyncScope();
         _scopeCreated = true;
+
+        // Motyw jest stosowany przed utworzeniem okna, aby widok startował już w właściwych kolorach.
+        _scope.ServiceProvider.GetRequiredService<IThemeService>().Initialize();
 
         var mainViewModel = _scope.ServiceProvider.GetRequiredService<MainViewModel>();
         var window = new MainWindow { DataContext = mainViewModel };

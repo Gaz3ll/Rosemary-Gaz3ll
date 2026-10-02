@@ -47,9 +47,15 @@ public static class EntityMapper
     public static PatientDetailsDto ToDetailsDto(
         this Patient patient,
         string? zoneName,
-        DateTimeOffset nowUtc)
+        DateTimeOffset nowUtc,
+        IReadOnlyDictionary<Guid, string>? medicationNames = null)
     {
         ArgumentNullException.ThrowIfNull(patient);
+
+        var administrations = patient.Administrations
+            .OrderByDescending(a => a.AdministeredAtUtc)
+            .Select(a => a.ToDto(ResolveMedicationName(medicationNames, a.MedicationId)))
+            .ToList();
 
         return new PatientDetailsDto(
             patient.Id,
@@ -67,7 +73,18 @@ public static class EntityMapper
             patient.ZoneAssignedAtUtc,
             patient.Orders.Select(o => o.ToDto()).ToList(),
             patient.Transfers.Select(t => t.ToDto(zoneName)).ToList(),
+            administrations,
             patient.CheckClosureBlockers(transportCompleted: true));
+    }
+
+    private static string ResolveMedicationName(IReadOnlyDictionary<Guid, string>? medicationNames, Guid medicationId)
+    {
+        if (medicationNames is not null && medicationNames.TryGetValue(medicationId, out var name))
+        {
+            return name;
+        }
+
+        return "(preparat usunięty z katalogu)";
     }
 
     public static MedicalOrderDto ToDto(this MedicalOrder order)
@@ -166,6 +183,88 @@ public static class EntityMapper
             assignment.EffectiveFromUtc,
             assignment.EffectiveToUtc,
             assignment.IsActive);
+    }
+
+    public static MedicationDto ToDto(this Medication medication)
+    {
+        ArgumentNullException.ThrowIfNull(medication);
+
+        return new MedicationDto(
+            medication.Id,
+            medication.Code,
+            medication.Name,
+            medication.Form,
+            medication.Strength,
+            medication.Category,
+            medication.Route,
+            medication.TypicalDose,
+            medication.MaxDailyDose,
+            medication.Safety,
+            medication.IsAvailable,
+            medication.Contraindications,
+            medication.Notes);
+    }
+
+    public static MedicalBundleItemDto ToDto(this MedicalBundleItem item, string? medicationName)
+    {
+        ArgumentNullException.ThrowIfNull(item);
+
+        return new MedicalBundleItemDto(
+            item.Id,
+            item.Sequence,
+            item.OrderType,
+            item.Description,
+            item.Route,
+            item.MedicationId,
+            medicationName,
+            item.Dose,
+            item.IsUrgent);
+    }
+
+    public static MedicalBundleDto ToDto(
+        this MedicalBundle bundle,
+        IReadOnlyDictionary<Guid, string> medicationNames)
+    {
+        ArgumentNullException.ThrowIfNull(bundle);
+        ArgumentNullException.ThrowIfNull(medicationNames);
+
+        var items = bundle.Items
+            .OrderBy(i => i.Sequence)
+            .Select(i => i.ToDto(
+                i.MedicationId is not null && medicationNames.TryGetValue(i.MedicationId.Value, out var name)
+                    ? name
+                    : null))
+            .ToList();
+
+        return new MedicalBundleDto(bundle.Id, bundle.Code, bundle.Name, bundle.Indication, bundle.Chapter, items);
+    }
+
+    public static Icd10CatalogEntryDto ToDto(this Icd10CatalogEntry entry)
+    {
+        ArgumentNullException.ThrowIfNull(entry);
+
+        return new Icd10CatalogEntryDto(
+            entry.Id,
+            entry.Code,
+            entry.Description,
+            entry.Chapter,
+            entry.Category,
+            entry.IsEmergencyRelevant);
+    }
+
+    public static MedicationAdministrationDto ToDto(this MedicationAdministration administration, string medicationName)
+    {
+        ArgumentNullException.ThrowIfNull(administration);
+
+        return new MedicationAdministrationDto(
+            administration.Id,
+            administration.MedicationId,
+            medicationName,
+            administration.Dose,
+            administration.Route,
+            administration.AdministeredAtUtc,
+            administration.MedicalOrderId,
+            administration.Notes);
     }
 
     public static AuditLogEntryDto ToDto(this AuditLogEntry entry, string? actorDisplayName)

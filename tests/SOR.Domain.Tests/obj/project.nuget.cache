@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "/NiOs8RwDps=",
+  "dgSpecHash": "efbp6L6z4+c=",
   "success": true,
-  "projectFilePath": "D:\\pwswProj\\tests\\SOR.Domain.Tests\\SOR.Domain.Tests.csproj",
+  "projectFilePath": "C:\\Rosemary-Gaz3ll\\tests\\SOR.Domain.Tests\\SOR.Domain.Tests.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\wikto\\.nuget\\packages\\microsoft.codecoverage\\17.11.1\\microsoft.codecoverage.17.11.1.nupkg.sha512",
     "C:\\Users\\wikto\\.nuget\\packages\\microsoft.data.sqlite\\9.0.0\\microsoft.data.sqlite.9.0.0.nupkg.sha512",

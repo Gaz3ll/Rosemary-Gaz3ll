@@ -22,8 +22,12 @@ public static class PresentationServiceRegistration
             System.Windows.Application.Current?.Dispatcher
             ?? System.Windows.Threading.Dispatcher.CurrentDispatcher));
 
+        // Motyw jest stanem procesu, a nie sesji — jeden wybór obowiązuje przez cały czas pracy.
+        services.AddSingleton<IThemeService, ThemeService>();
+
         services.AddScoped<SessionViewModel>();
         services.AddScoped<PatientBoardViewModel>();
+        services.AddScoped<MedicationCatalogViewModel>();
         services.AddScoped<MainViewModel>();
 
         return services;

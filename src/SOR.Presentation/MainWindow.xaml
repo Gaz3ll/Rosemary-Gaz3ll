@@ -9,21 +9,23 @@
         Height="820" Width="1280"
         WindowStartupLocation="CenterScreen">
 
-    <Grid Background="#F2F5F8">
+    <!-- Wszystkie kolory pochodzą ze słownika motywu (DynamicResource), dzięki czemu
+         przełącznik motywu przemalowuje aplikację bez zmiany tego pliku. -->
+    <Grid Background="{DynamicResource AppBackgroundBrush}">
 
         <!-- ===================== EKRAN LOGOWANIA ===================== -->
-        <Border Background="#F2F5F8"
+        <Border Background="{DynamicResource AppBackgroundBrush}"
                 Visibility="{Binding Session.IsAuthenticated, Converter={StaticResource InverseBoolToVisibility}}">
-            <Border Width="380" Padding="28" Background="White" CornerRadius="8"
+            <Border Width="380" Padding="28" Background="{DynamicResource SurfaceBrush}" CornerRadius="8"
                     HorizontalAlignment="Center" VerticalAlignment="Center"
-                    BorderBrush="#D5DCE3" BorderThickness="1">
+                    BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="1">
                 <Border.Effect>
                     <DropShadowEffect BlurRadius="18" ShadowDepth="2" Opacity="0.15" />
                 </Border.Effect>
                 <StackPanel>
                     <TextBlock Text="System Obsługi Ratunkowej" FontSize="20" FontWeight="Bold" />
                     <TextBlock Text="Logowanie kontekstowe — strefa wynika z grafiku dyżurów (BR-02)."
-                               TextWrapping="Wrap" Foreground="#555555" Margin="0,4,0,16" />
+                               TextWrapping="Wrap" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,16" />
 
                     <TextBlock Text="Login" Style="{StaticResource FieldLabel}" />
                     <TextBox Text="{Binding Session.Login, UpdateSourceTrigger=PropertyChanged}" />
@@ -35,11 +37,16 @@
                             Margin="0,16,0,0" Padding="12,8" />
 
                     <TextBlock Text="{Binding Session.ErrorMessage}"
-                               Foreground="#C0392B" TextWrapping="Wrap" Margin="0,10,0,0"
+                               Foreground="{DynamicResource DangerBrush}" TextWrapping="Wrap" Margin="0,10,0,0"
                                Visibility="{Binding Session.HasError, Converter={StaticResource BoolToVisibility}}" />
 
-                    <TextBlock Margin="0,18,0,0" Foreground="#888888" TextWrapping="Wrap"
-                               Text="Konta demonstracyjne: ordynator / lekarz.trm / lekarz.emg / lekarz.int / piel.triage (hasła z dokumentacji)." />
+                    <DockPanel Margin="0,18,0,0">
+                        <Button DockPanel.Dock="Right"
+                                Content="{Binding ThemeToggleLabel}"
+                                Command="{Binding ToggleThemeCommand}" />
+                        <TextBlock Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap" VerticalAlignment="Center"
+                                   Text="Konta demonstracyjne: ordynator / lekarz.trm / lekarz.emg / lekarz.int / piel.triage (hasła z dokumentacji)." />
+                    </DockPanel>
                 </StackPanel>
             </Border>
         </Border>
@@ -54,23 +61,28 @@
             </Grid.RowDefinitions>
 
             <!-- Nagłówek sesji -->
-            <Border Grid.Row="0" Background="#1F3A5F" Padding="16,10">
+            <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" Padding="16,10">
                 <DockPanel>
-                    <Button DockPanel.Dock="Right" Content="Wyloguj"
-                            Command="{Binding Session.LogoutCommand}" MinWidth="100" />
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Content="{Binding ThemeToggleLabel}"
+                                Command="{Binding ToggleThemeCommand}" MinWidth="110" />
+                        <Button Content="Wyloguj"
+                                Command="{Binding Session.LogoutCommand}" MinWidth="100" />
+                    </StackPanel>
                     <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Zalogowany: " Foreground="#BBD3EA" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Session.DisplayName}" Foreground="White"
+                        <TextBlock Text="Zalogowany: " Foreground="{DynamicResource TextOnAccentMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Session.DisplayName}" Foreground="{DynamicResource TextOnAccentBrush}"
                                    FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,20,0" />
-                        <TextBlock Text="Strefa robocza: " Foreground="#BBD3EA" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Session.CurrentZoneName}" Foreground="White"
+                        <TextBlock Text="Strefa robocza: " Foreground="{DynamicResource TextOnAccentMutedBrush}" VerticalAlignment="Center" />
+                        <TextBlock Text="{Binding Session.CurrentZoneName}" Foreground="{DynamicResource TextOnAccentBrush}"
                                    FontWeight="SemiBold" VerticalAlignment="Center" />
                     </StackPanel>
                 </DockPanel>
             </Border>
 
             <!-- Baner rekomendacji rotacji (BR-07) -->
-            <Border Grid.Row="1" Background="#FFF4CE" BorderBrush="#E0B400" BorderThickness="0,0,0,1"
+            <Border Grid.Row="1" Background="{DynamicResource WarningBackgroundBrush}"
+                    BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="0,0,0,1"
                     Padding="16,8"
                     Visibility="{Binding Session.HasRecommendation, Converter={StaticResource BoolToVisibility}}">
                 <DockPanel>
@@ -83,197 +95,413 @@
                 </DockPanel>
             </Border>
 
-            <!-- Obszar roboczy -->
-            <Grid Grid.Row="2" Margin="10">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="360" />
-                    <ColumnDefinition Width="*" />
-                    <ColumnDefinition Width="380" />
-                </Grid.ColumnDefinitions>
-
-                <!-- Kolumna 1: rejestracja, kolejka triage, zmiana strefy -->
-                <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-                    <StackPanel Margin="0,0,10,0">
-                        <TextBlock Text="Rejestracja pacjenta (BR-03)" Style="{StaticResource SectionHeader}" />
-                        <TextBlock Text="PESEL (11 cyfr)" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.Pesel, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Imię" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.FirstName, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Nazwisko" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.LastName, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Data urodzenia (RRRR-MM-DD)" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.DateOfBirth, UpdateSourceTrigger=PropertyChanged}" />
-                        <TextBlock Text="Płeć" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding Board.Genders}" SelectedItem="{Binding Board.Gender}" />
-                        <TextBlock Text="Zgłaszane dolegliwości" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.Complaint, UpdateSourceTrigger=PropertyChanged}"
-                                 AcceptsReturn="True" Height="48" TextWrapping="Wrap" />
-                        <Button Content="Zarejestruj pacjenta" Command="{Binding Board.RegisterPatientCommand}"
-                                Margin="0,8,0,0" />
-
-                        <TextBlock Text="Kolejka oczekujących na Triage" Style="{StaticResource SectionHeader}" />
-                        <DataGrid ItemsSource="{Binding Board.AwaitingTriage}"
-                                  SelectedItem="{Binding Board.SelectedTriagePatient}"
-                                  AutoGenerateColumns="False" Height="160" IsReadOnly="True"
-                                  HeadersVisibility="Column" GridLinesVisibility="Horizontal">
-                            <DataGrid.Columns>
-                                <DataGridTextColumn Header="PESEL" Binding="{Binding Pesel, Mode=OneWay}" Width="100" />
-                                <DataGridTextColumn Header="Pacjent" Binding="{Binding FullName, Mode=OneWay}" Width="*" />
-                                <DataGridTextColumn Header="Triage" Binding="{Binding Triage, Mode=OneWay}" Width="70" />
-                                <DataGridCheckBoxColumn Header="!" Binding="{Binding IsWaitingTimeExceeded, Mode=OneWay}" Width="30" />
-                            </DataGrid.Columns>
-                        </DataGrid>
-
-                        <TextBlock Text="Ocena Triage i przydział strefy" Style="{StaticResource SectionHeader}" />
-                        <TextBlock Text="Kategoria" Style="{StaticResource FieldLabel}" />
-                        <ComboBox ItemsSource="{Binding Board.TriageCategories}"
-                                  SelectedItem="{Binding Board.TriageCategory}" />
-                        <TextBlock Text="Uzasadnienie kliniczne" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.ClinicalJustification, UpdateSourceTrigger=PropertyChanged}"
-                                 AcceptsReturn="True" Height="44" TextWrapping="Wrap" />
-                        <TextBlock Text="Parametry życiowe" Style="{StaticResource FieldLabel}" />
-                        <TextBox Text="{Binding Board.VitalSigns, UpdateSourceTrigger=PropertyChanged}"
-                                 AcceptsReturn="True" Height="44" TextWrapping="Wrap" />
-                        <Button Content="Wykonaj Triage" Command="{Binding Board.PerformTriageCommand}"
-                                Margin="0,8,0,0" />
-
-                        <Expander Header="Wniosek o zmianę strefy (BR-05)" Margin="0,16,0,0" IsExpanded="True">
-                            <StackPanel>
-                                <TextBlock Text="Strefa docelowa" Style="{StaticResource FieldLabel}" />
-                                <ComboBox ItemsSource="{Binding Session.Zones}"
-                                          SelectedItem="{Binding Session.SelectedZoneForChange}"
-                                          DisplayMemberPath="ZoneName" />
-                                <TextBlock Text="Przyczyna" Style="{StaticResource FieldLabel}" />
-                                <ComboBox ItemsSource="{Binding Session.Reasons}"
-                                          SelectedValue="{Binding Session.SelectedReasonCode}"
-                                          SelectedValuePath="Code"
-                                          DisplayMemberPath="Label" />
-                                <TextBlock Text="Komentarz (wymagany dla przyczyny „Inny”)" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding Session.ReasonComment, UpdateSourceTrigger=PropertyChanged}"
-                                         TextWrapping="Wrap" AcceptsReturn="True" Height="44" />
-                                <Button Content="Wyślij wniosek" Command="{Binding Session.RequestZoneChangeCommand}"
-                                        Margin="0,8,0,0" />
-                            </StackPanel>
-                        </Expander>
-                    </StackPanel>
-                </ScrollViewer>
-
-                <!-- Kolumna 2: obciążenie strefy i lista pacjentów -->
-                <Grid Grid.Column="1" Margin="10,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="Auto" />
-                        <RowDefinition Height="*" />
-                    </Grid.RowDefinitions>
-
-                    <Border Grid.Row="0" Background="White" CornerRadius="6" Padding="12"
-                            BorderBrush="#D5DCE3" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="Obciążenie bieżącej strefy (BR-06)" Style="{StaticResource SectionHeader}" />
-                            <ProgressBar Height="22" Minimum="0" Maximum="100"
-                                         Value="{Binding Board.ZoneOccupancyPercent, Mode=OneWay}" />
-                            <DockPanel Margin="0,6,0,0">
-                                <TextBlock DockPanel.Dock="Right" Text="{Binding Board.LoadStatusDescription}" />
-                                <TextBlock Text="{Binding Board.FreeBeds, StringFormat='Wolne miejsca: {0}'}" />
-                            </DockPanel>
-                        </StackPanel>
-                    </Border>
-
-                    <TextBlock Grid.Row="1" Text="Pacjenci w strefie" Style="{StaticResource SectionHeader}" />
-
-                    <DataGrid Grid.Row="2" ItemsSource="{Binding Board.ZonePatients}"
-                              SelectedItem="{Binding Board.SelectedPatient}"
-                              AutoGenerateColumns="False" IsReadOnly="True"
-                              HeadersVisibility="Column" GridLinesVisibility="Horizontal">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="PESEL" Binding="{Binding Pesel, Mode=OneWay}" Width="110" />
-                            <DataGridTextColumn Header="Pacjent" Binding="{Binding FullName, Mode=OneWay}" Width="*" />
-                            <DataGridTextColumn Header="Triage" Binding="{Binding Triage, Mode=OneWay}" Width="70" />
-                            <DataGridTextColumn Header="Stan" Binding="{Binding State, Mode=OneWay}" Width="90" />
-                            <DataGridTextColumn Header="Zlecenia" Binding="{Binding OpenOrderCount, Mode=OneWay}" Width="65" />
-                            <DataGridCheckBoxColumn Header="Blokada" Binding="{Binding IsLocked, Mode=OneWay}" Width="60" />
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </Grid>
-
-                <!-- Kolumna 3: karta pacjenta -->
-                <Border Grid.Column="2" Background="White" CornerRadius="6" Padding="12"
-                        BorderBrush="#D5DCE3" BorderThickness="1">
+            <!-- Zakładki: pulpit strefy oraz formularz leków z pakietami -->
+            <TabControl Grid.Row="2" Margin="10"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource SurfaceBorderBrush}">
+                <TabItem Header="Pulpit strefy">
                     <Grid>
-                        <TextBlock Text="Wybierz pacjenta, aby otworzyć kartę."
-                                   Foreground="#888888" TextWrapping="Wrap"
-                                   VerticalAlignment="Top"
-                                   Visibility="{Binding Board.HasSelectedDetails, Converter={StaticResource InverseBoolToVisibility}}" />
-                        <ScrollViewer VerticalScrollBarVisibility="Auto"
-                                      Visibility="{Binding Board.HasSelectedDetails, Converter={StaticResource BoolToVisibility}}">
-                            <StackPanel DataContext="{Binding Board.SelectedPatientDetails}">
-                                <TextBlock Text="{Binding FullName}" FontSize="18" FontWeight="Bold" />
-                                <TextBlock Margin="0,4,0,0">
-                                    <Run Text="PESEL: " /><Run Text="{Binding Pesel, Mode=OneWay}" />
-                                </TextBlock>
-                                <TextBlock>
-                                    <Run Text="Strefa: " /><Run Text="{Binding ZoneName, Mode=OneWay}" />
-                                </TextBlock>
-                                <TextBlock>
-                                    <Run Text="Triage: " /><Run Text="{Binding Triage, Mode=OneWay}" />
-                                    <Run Text="   Stan: " /><Run Text="{Binding State, Mode=OneWay}" />
-                                </TextBlock>
-                                <TextBlock TextWrapping="Wrap">
-                                    <Run Text="Rozpoznanie: " /><Run Text="{Binding Diagnosis, Mode=OneWay}" />
-                                </TextBlock>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="360" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="380" />
+                        </Grid.ColumnDefinitions>
 
-                                <TextBlock Text="Blokady zamknięcia karty" Style="{StaticResource SectionHeader}" />
-                                <ItemsControl ItemsSource="{Binding ClosureBlockers}">
-                                    <ItemsControl.ItemTemplate>
+                        <!-- Kolumna 1: rejestracja, kolejka triage, zmiana strefy -->
+                        <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="0,8,10,0">
+                                <TextBlock Text="Rejestracja pacjenta (BR-03)" Style="{StaticResource SectionHeader}" />
+                                <TextBlock Text="PESEL (11 cyfr)" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.Pesel, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Imię" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.FirstName, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Nazwisko" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.LastName, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Data urodzenia (RRRR-MM-DD)" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.DateOfBirth, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Płeć" Style="{StaticResource FieldLabel}" />
+                                <ComboBox ItemsSource="{Binding Board.Genders}"
+                                          SelectedItem="{Binding Board.Gender}">
+                                    <ComboBox.ItemTemplate>
                                         <DataTemplate>
-                                            <TextBlock Text="{Binding}" TextWrapping="Wrap" Foreground="#C0392B" />
+                                            <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
                                         </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="Zgłaszane dolegliwości" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.Complaint, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" Height="48" TextWrapping="Wrap" />
+                                <Button Content="Zarejestruj pacjenta" Command="{Binding Board.RegisterPatientCommand}"
+                                        Margin="0,8,0,0" />
 
-                                <TextBlock Text="Zlecenia lekarskie" Style="{StaticResource SectionHeader}" />
-                                <DataGrid ItemsSource="{Binding Orders}" AutoGenerateColumns="False"
-                                          IsReadOnly="True" Height="120" HeadersVisibility="Column"
-                                          GridLinesVisibility="Horizontal">
+                                <TextBlock Text="Kolejka oczekujących na Triage" Style="{StaticResource SectionHeader}" />
+                                <DataGrid ItemsSource="{Binding Board.AwaitingTriage}"
+                                          SelectedItem="{Binding Board.SelectedTriagePatient}"
+                                          Height="160">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Typ" Binding="{Binding Type, Mode=OneWay}" Width="110" />
-                                        <DataGridTextColumn Header="Opis" Binding="{Binding Description, Mode=OneWay}" Width="*" />
-                                        <DataGridTextColumn Header="Stan" Binding="{Binding State, Mode=OneWay}" Width="90" />
+                                        <DataGridTextColumn Header="PESEL" Binding="{Binding Pesel, Mode=OneWay}" Width="100" />
+                                        <DataGridTextColumn Header="Pacjent" Binding="{Binding FullName, Mode=OneWay}" Width="*" />
+                                        <DataGridTextColumn Header="Triage" Width="80">
+                                            <DataGridTextColumn.Binding>
+                                                <Binding Path="Triage" Mode="OneWay"
+                                                         Converter="{StaticResource PolishEnum}" />
+                                            </DataGridTextColumn.Binding>
+                                        </DataGridTextColumn>
+                                        <DataGridCheckBoxColumn Header="!" Binding="{Binding IsWaitingTimeExceeded, Mode=OneWay}" Width="30" />
                                     </DataGrid.Columns>
                                 </DataGrid>
 
-                                <TextBlock Text="Dodaj zlecenie" Style="{StaticResource SectionHeader}" />
-                                <ComboBox ItemsSource="{Binding DataContext.Board.OrderTypes, RelativeSource={RelativeSource AncestorType=Window}}"
-                                          SelectedItem="{Binding DataContext.Board.OrderType, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                <TextBox Text="{Binding DataContext.Board.OrderDescription, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" />
-                                <CheckBox Content="Pilne" Margin="0,4"
-                                          IsChecked="{Binding DataContext.Board.OrderUrgent, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                <Button Content="Dodaj zlecenie"
-                                        Command="{Binding DataContext.Board.AddOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <TextBlock Text="Ocena Triage i przydział strefy" Style="{StaticResource SectionHeader}" />
+                                <TextBlock Text="Kategoria" Style="{StaticResource FieldLabel}" />
+                                <ComboBox ItemsSource="{Binding Board.TriageCategories}"
+                                          SelectedItem="{Binding Board.TriageCategory}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <TextBlock Text="Uzasadnienie kliniczne" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.ClinicalJustification, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" Height="44" TextWrapping="Wrap" />
+                                <TextBlock Text="Parametry życiowe" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Board.VitalSigns, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" Height="44" TextWrapping="Wrap" />
+                                <Button Content="Wykonaj Triage" Command="{Binding Board.PerformTriageCommand}"
+                                        Margin="0,8,0,0" />
 
-                                <TextBlock Text="Rozpoznanie ICD-10 (BR-13)" Style="{StaticResource SectionHeader}" />
-                                <TextBox Text="{Binding DataContext.Board.Icd10Code, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" />
-                                <Button Content="Zapisz rozpoznanie"
-                                        IsEnabled="{Binding DataContext.Board.CanEnterDiagnosis, RelativeSource={RelativeSource AncestorType=Window}}"
-                                        Command="{Binding DataContext.Board.SetDiagnosisCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                <Expander Header="Wniosek o zmianę strefy (BR-05)" Margin="0,16,0,0" IsExpanded="True">
+                                    <StackPanel>
+                                        <TextBlock Text="Strefa docelowa" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox ItemsSource="{Binding Session.Zones}"
+                                                  SelectedItem="{Binding Session.SelectedZoneForChange}"
+                                                  DisplayMemberPath="ZoneName" />
+                                        <TextBlock Text="Przyczyna" Style="{StaticResource FieldLabel}" />
+                                        <ComboBox ItemsSource="{Binding Session.Reasons}"
+                                                  SelectedValue="{Binding Session.SelectedReasonCode}"
+                                                  SelectedValuePath="Code"
+                                                  DisplayMemberPath="Label" />
+                                        <TextBlock Text="Komentarz (wymagany dla przyczyny „Inny”)" Style="{StaticResource FieldLabel}" />
+                                        <TextBox Text="{Binding Session.ReasonComment, UpdateSourceTrigger=PropertyChanged}"
+                                                 TextWrapping="Wrap" AcceptsReturn="True" Height="44" />
+                                        <Button Content="Wyślij wniosek" Command="{Binding Session.RequestZoneChangeCommand}"
+                                                Margin="0,8,0,0" />
+                                    </StackPanel>
+                                </Expander>
+                            </StackPanel>
+                        </ScrollViewer>
 
-                                <TextBlock Text="Operacje na karcie" Style="{StaticResource SectionHeader}" />
-                                <UniformGrid Columns="1">
-                                    <Button Content="Przejmij blokadę"
-                                            Command="{Binding DataContext.Board.LockCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                    <Button Content="Zwolnij blokadę"
-                                            Command="{Binding DataContext.Board.UnlockCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                    <Button Content="Zamknij kartę"
-                                            Command="{Binding DataContext.Board.CloseCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                </UniformGrid>
+                        <!-- Kolumna 2: obciążenie strefy i lista pacjentów -->
+                        <Grid Grid.Column="1" Margin="10,8,10,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <Border Grid.Row="0" Style="{StaticResource SurfaceCard}">
+                                <StackPanel>
+                                    <TextBlock Text="Obciążenie bieżącej strefy (BR-06)" Style="{StaticResource SectionHeader}" />
+                                    <ProgressBar Height="22" Minimum="0" Maximum="100"
+                                                 Value="{Binding Board.ZoneOccupancyPercent, Mode=OneWay}" />
+                                    <DockPanel Margin="0,6,0,0">
+                                        <TextBlock DockPanel.Dock="Right" Text="{Binding Board.LoadStatusDescription}" />
+                                        <TextBlock Text="{Binding Board.FreeBeds, StringFormat='Wolne miejsca: {0}'}" />
+                                    </DockPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <TextBlock Grid.Row="1" Text="Pacjenci w strefie" Style="{StaticResource SectionHeader}" />
+
+                            <DataGrid Grid.Row="2" ItemsSource="{Binding Board.ZonePatients}"
+                                      SelectedItem="{Binding Board.SelectedPatient}">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="PESEL" Binding="{Binding Pesel, Mode=OneWay}" Width="110" />
+                                    <DataGridTextColumn Header="Pacjent" Binding="{Binding FullName, Mode=OneWay}" Width="*" />
+                                    <DataGridTextColumn Header="Triage" Width="80">
+                                        <DataGridTextColumn.Binding>
+                                            <Binding Path="Triage" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                        </DataGridTextColumn.Binding>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Stan" Width="110">
+                                        <DataGridTextColumn.Binding>
+                                            <Binding Path="State" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                        </DataGridTextColumn.Binding>
+                                    </DataGridTextColumn>
+                                    <DataGridTextColumn Header="Zlecenia" Binding="{Binding OpenOrderCount, Mode=OneWay}" Width="65" />
+                                    <DataGridCheckBoxColumn Header="Blokada" Binding="{Binding IsLocked, Mode=OneWay}" Width="60" />
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </Grid>
+
+                        <!-- Kolumna 3: karta pacjenta -->
+                        <Border Grid.Column="2" Style="{StaticResource SurfaceCard}" Margin="0,8,0,0">
+                            <Grid>
+                                <TextBlock Text="Wybierz pacjenta, aby otworzyć kartę."
+                                           Foreground="{DynamicResource TextMutedBrush}" TextWrapping="Wrap"
+                                           VerticalAlignment="Top"
+                                           Visibility="{Binding Board.HasSelectedDetails, Converter={StaticResource InverseBoolToVisibility}}" />
+                                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                              Visibility="{Binding Board.HasSelectedDetails, Converter={StaticResource BoolToVisibility}}">
+                                    <StackPanel DataContext="{Binding Board.SelectedPatientDetails}">
+                                        <TextBlock Text="{Binding FullName}" FontSize="18" FontWeight="Bold" />
+                                        <TextBlock Margin="0,4,0,0">
+                                            <Run Text="PESEL: " /><Run Text="{Binding Pesel, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock>
+                                            <Run Text="Strefa: " /><Run Text="{Binding ZoneName, Mode=OneWay}" />
+                                        </TextBlock>
+                                        <TextBlock>
+                                            <Run Text="Triage: " />
+                                            <Run Text="{Binding Triage, Mode=OneWay, Converter={StaticResource PolishEnum}}" />
+                                            <Run Text="   Stan: " />
+                                            <Run Text="{Binding State, Mode=OneWay, Converter={StaticResource PolishEnum}}" />
+                                        </TextBlock>
+                                        <TextBlock TextWrapping="Wrap">
+                                            <Run Text="Rozpoznanie: " /><Run Text="{Binding Diagnosis, Mode=OneWay}" />
+                                        </TextBlock>
+
+                                        <TextBlock Text="Blokady zamknięcia karty" Style="{StaticResource SectionHeader}" />
+                                        <ItemsControl ItemsSource="{Binding ClosureBlockers}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" TextWrapping="Wrap"
+                                                               Foreground="{DynamicResource DangerBrush}" />
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
+                                        <TextBlock Text="Zlecenia lekarskie" Style="{StaticResource SectionHeader}" />
+                                        <DataGrid ItemsSource="{Binding Orders}" Height="120">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Typ" Width="120">
+                                                    <DataGridTextColumn.Binding>
+                                                        <Binding Path="Type" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                                    </DataGridTextColumn.Binding>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Opis" Binding="{Binding Description, Mode=OneWay}" Width="*" />
+                                                <DataGridTextColumn Header="Stan" Width="100">
+                                                    <DataGridTextColumn.Binding>
+                                                        <Binding Path="State" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                                    </DataGridTextColumn.Binding>
+                                                </DataGridTextColumn>
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+
+                                        <TextBlock Text="Dodaj zlecenie" Style="{StaticResource SectionHeader}" />
+                                        <ComboBox ItemsSource="{Binding DataContext.Board.OrderTypes, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  SelectedItem="{Binding DataContext.Board.OrderType, RelativeSource={RelativeSource AncestorType=Window}}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <TextBox Text="{Binding DataContext.Board.OrderDescription, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" />
+                                        <CheckBox Content="Pilne" Margin="0,4"
+                                                  IsChecked="{Binding DataContext.Board.OrderUrgent, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                        <Button Content="Dodaj zlecenie"
+                                                Command="{Binding DataContext.Board.AddOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+
+                                        <TextBlock Text="Rozpoznanie ICD-10 (BR-13)" Style="{StaticResource SectionHeader}" />
+                                        <TextBox Text="{Binding DataContext.Board.Icd10Code, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" />
+                                        <Button Content="Zapisz rozpoznanie"
+                                                IsEnabled="{Binding DataContext.Board.CanEnterDiagnosis, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                Command="{Binding DataContext.Board.SetDiagnosisCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+
+                                        <TextBlock Text="Podane leki" Style="{StaticResource SectionHeader}" />
+                                        <DataGrid ItemsSource="{Binding Administrations}" Height="140">
+                                            <DataGrid.Columns>
+                                                <DataGridTextColumn Header="Preparat" Binding="{Binding MedicationName, Mode=OneWay}" Width="*" />
+                                                <DataGridTextColumn Header="Dawka" Binding="{Binding Dose, Mode=OneWay}" Width="90" />
+                                                <DataGridTextColumn Header="Droga" Width="90">
+                                                    <DataGridTextColumn.Binding>
+                                                        <Binding Path="Route" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                                    </DataGridTextColumn.Binding>
+                                                </DataGridTextColumn>
+                                                <DataGridTextColumn Header="Godzina" Binding="{Binding AdministeredAtUtc, StringFormat='HH:mm', Mode=OneWay}" Width="60" />
+                                            </DataGrid.Columns>
+                                        </DataGrid>
+
+                                        <TextBlock Text="Operacje na karcie" Style="{StaticResource SectionHeader}" />
+                                        <UniformGrid Columns="1">
+                                            <Button Content="Przejmij blokadę"
+                                                    Command="{Binding DataContext.Board.LockCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                            <Button Content="Zwolnij blokadę"
+                                                    Command="{Binding DataContext.Board.UnlockCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                            <Button Content="Zamknij kartę"
+                                                    Command="{Binding DataContext.Board.CloseCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </ScrollViewer>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </TabItem>
+
+                <!-- ===================== FORMULARZ LEKÓW I PAKIETY ===================== -->
+                <TabItem Header="Formularz i pakiety">
+                    <Grid Margin="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*" />
+                            <ColumnDefinition Width="6" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+
+                        <!-- Kolumna 1: formularz leków + pakiety -->
+                        <Grid Grid.Column="0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="*" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="Formularz leków oddziału" Style="{StaticResource SectionHeader}" />
+                            <Grid Grid.Row="1" Margin="0,0,0,10">
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                    <RowDefinition Height="Auto" />
+                                </Grid.RowDefinitions>
+
+                                <DockPanel Grid.Row="0">
+                                    <Button DockPanel.Dock="Right" Content="Szukaj"
+                                            Command="{Binding Catalog.SearchMedicationsCommand}" MinWidth="90" />
+                                    <TextBox Text="{Binding Catalog.MedicationTerm, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,0,8,0" />
+                                </DockPanel>
+
+                                <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,4">
+                                    <TextBlock Text="Grupa terapeutyczna:" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <ComboBox Width="260" Margin="8,0,0,0"
+                                              ItemsSource="{Binding Catalog.MedicationCategoryFilters}"
+                                              DisplayMemberPath="Label"
+                                              SelectedItem="{Binding Catalog.MedicationCategoryFilter}" />
+                                </StackPanel>
+
+                                <DataGrid Grid.Row="2" ItemsSource="{Binding Catalog.Medications}"
+                                          SelectedItem="{Binding Catalog.SelectedMedication}">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Kod" Binding="{Binding Code, Mode=OneWay}" Width="110" />
+                                        <DataGridTextColumn Header="Preparat" Binding="{Binding Name, Mode=OneWay}" Width="*" />
+                                        <DataGridTextColumn Header="Moc" Binding="{Binding Strength, Mode=OneWay}" Width="90" />
+                                        <DataGridTextColumn Header="Postać" Binding="{Binding Form, Mode=OneWay}" Width="90" />
+                                        <DataGridTextColumn Header="Grupa" Width="130">
+                                            <DataGridTextColumn.Binding>
+                                                <Binding Path="Category" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                            </DataGridTextColumn.Binding>
+                                        </DataGridTextColumn>
+                                        <DataGridTextColumn Header="Droga" Width="100">
+                                            <DataGridTextColumn.Binding>
+                                                <Binding Path="Route" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
+                                            </DataGridTextColumn.Binding>
+                                        </DataGridTextColumn>
+                                        <DataGridCheckBoxColumn Header="!" Binding="{Binding RequiresCloseMonitoring, Mode=OneWay}" Width="30" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+
+                                <StackPanel Grid.Row="3" Margin="0,8,0,0" DataContext="{Binding Catalog.SelectedMedication}">
+                                    <TextBlock Style="{StaticResource FieldLabel}" TextWrapping="Wrap">
+                                        <Run Text="Dawka typowa: " />
+                                        <Run Text="{Binding TypicalDose, Mode=OneWay}" />
+                                        <Run Text="   Maksymalnie dobowo: " />
+                                        <Run Text="{Binding MaxDailyDose, Mode=OneWay}" />
+                                    </TextBlock>
+                                    <TextBlock Style="{StaticResource FieldLabel}" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource WarningBrush}"
+                                               Text="{Binding DataContext.Catalog.SelectedMedicationWarnings, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock Grid.Row="2" Text="Pakiety medyczne" Style="{StaticResource SectionHeader}" />
+                            <Grid Grid.Row="3">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="2*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto" />
+                                    <RowDefinition Height="*" />
+                                </Grid.RowDefinitions>
+
+                                <DockPanel Grid.Row="0" Grid.ColumnSpan="2">
+                                    <Button DockPanel.Dock="Right" Content="Szukaj"
+                                            Command="{Binding Catalog.SearchBundlesCommand}" MinWidth="90" />
+                                    <TextBox Text="{Binding Catalog.BundleTerm, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,0,8,0" />
+                                </DockPanel>
+
+                                <ListBox Grid.Row="1" Grid.Column="0" Margin="0,4,8,0"
+                                         ItemsSource="{Binding Catalog.Bundles}"
+                                         SelectedItem="{Binding Catalog.SelectedBundle}"
+                                         DisplayMemberPath="Name" />
+
+                                <DockPanel Grid.Row="1" Grid.Column="1">
+                                    <Button Content="Zastosuj pakiet" DockPanel.Dock="Top"
+                                            Command="{Binding Catalog.ApplyBundleCommand}" />
+                                    <ListBox ItemsSource="{Binding Catalog.SelectedBundle.Items}"
+                                             DisplayMemberPath="Description" />
+                                </DockPanel>
+                            </Grid>
+                        </Grid>
+
+                        <!-- Kolumna 2: selektor -->
+                        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"
+                                      Background="{DynamicResource SurfaceBorderBrush}" />
+
+                        <!-- Kolumna 3: zlecenie/podanie leku oraz rozpoznania ICD-10 -->
+                        <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
+                            <StackPanel Margin="8,0,0,0">
+                                <TextBlock Text="Zlecenie i podanie leku" Style="{StaticResource SectionHeader}" />
+                                <TextBlock Style="{StaticResource FieldLabel}" TextWrapping="Wrap"
+                                           Text="{Binding Catalog.SelectedMedication.DisplayName, StringFormat='Wybrany preparat: {0}'}" />
+                                <TextBlock Text="Dawka" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Catalog.AdministrationDose, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="Notatka z podania" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Catalog.AdministrationNotes, UpdateSourceTrigger=PropertyChanged}"
+                                         AcceptsReturn="True" Height="44" TextWrapping="Wrap" />
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Zleć podanie" Margin="0,6,6,0"
+                                            Command="{Binding Catalog.OrderSelectedMedicationCommand}" />
+                                    <Button Content="Odnotuj podanie" Margin="0,6,0,0"
+                                            Command="{Binding Catalog.RecordAdministrationCommand}" />
+                                </StackPanel>
+
+                                <TextBlock Text="Rozpoznania ICD-10" Style="{StaticResource SectionHeader}" />
+                                <DockPanel>
+                                    <Button DockPanel.Dock="Right" Content="Szukaj"
+                                            Command="{Binding Catalog.SearchDiagnosesCommand}" MinWidth="90" />
+                                    <TextBox Text="{Binding Catalog.Icd10Term, UpdateSourceTrigger=PropertyChanged}"
+                                             Margin="0,0,8,0" />
+                                </DockPanel>
+                                <DataGrid ItemsSource="{Binding Catalog.Diagnoses}"
+                                          SelectedItem="{Binding Catalog.SelectedDiagnosis}"
+                                          Height="220">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Kod" Binding="{Binding Code, Mode=OneWay}" Width="90" />
+                                        <DataGridTextColumn Header="Rozpoznanie" Binding="{Binding Description, Mode=OneWay}" Width="*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                                <TextBlock Text="Kod rozpoznania" Style="{StaticResource FieldLabel}" />
+                                <TextBox Text="{Binding Catalog.Icd10Code, UpdateSourceTrigger=PropertyChanged}" />
+                                <Button Content="Zapisz rozpoznanie do karty"
+                                        IsEnabled="{Binding Board.CanEnterDiagnosis}"
+                                        Command="{Binding Catalog.AssignDiagnosisCommand}" />
+
+                                <TextBlock Style="{StaticResource FieldLabel}" TextWrapping="Wrap"
+                                           Text="{Binding Catalog.StatusMessage, StringFormat='Status: {0}'}" />
                             </StackPanel>
                         </ScrollViewer>
                     </Grid>
-                </Border>
-            </Grid>
+                </TabItem>
+            </TabControl>
 
             <!-- Pasek statusu -->
-            <Border Grid.Row="3" Background="#E8EDF2" Padding="16,6" BorderBrush="#D5DCE3" BorderThickness="0,1,0,0">
+            <Border Grid.Row="3" Background="{DynamicResource StatusBarBrush}" Padding="16,6"
+                    BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="0,1,0,0">
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Content="Odśwież pulpit"
                             Command="{Binding Board.RefreshCommand}" MinWidth="120" />

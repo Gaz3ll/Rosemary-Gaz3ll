@@ -147,11 +147,24 @@ public sealed class PatientBoardViewModel : ObservableObject
         set => SetProperty(ref _selectedTriagePatient, value);
     }
 
-    /// <summary>Karta wybrana na pulpicie — pozwala sprawdzić blokadę przed edycją.</summary>
+    /// <summary>
+    /// Karta wybrana na pulpicie — pozwala sprawdzić blokadę przed edycją.
+    /// Zmiana zaznaczenia ładuje pełne szczegóły karty: bez tego zdarzenia panel szczegółów
+    /// (sterowany przez <see cref="HasSelectedDetails"/>) nigdy nie stałby się widoczny.
+    /// </summary>
     public PatientCardDto? SelectedPatient
     {
         get => _selectedPatient;
-        set => SetProperty(ref _selectedPatient, value);
+        set
+        {
+            if (!SetProperty(ref _selectedPatient, value))
+            {
+                return;
+            }
+
+            SelectedPatientDetails = null;
+            SelectPatientCommand.Execute(null);
+        }
     }
 
     /// <summary>Pełne szczegóły karty (okno szczegółów pacjenta).</summary>
@@ -169,6 +182,12 @@ public sealed class PatientBoardViewModel : ObservableObject
     }
 
     public bool HasSelectedDetails => _selectedPatientDetails is not null;
+
+    /// <summary>
+    /// Podmienia zawartość otwartej karty pacjenta. Używane przez widoki zależne
+    /// (np. formularz leków), które wykonują operację na tej samej karcie.
+    /// </summary>
+    public void ShowDetails(PatientDetailsDto details) => SelectedPatientDetails = details;
 
     /// <summary>BR-13: rozpoznanie ICD-10 wprowadza wyłącznie lekarz lub koordynator.</summary>
     public bool CanEnterDiagnosis => _session.CurrentUser?.CanEnterDiagnosis == true;
@@ -275,6 +294,8 @@ public sealed class PatientBoardViewModel : ObservableObject
 
         IsBusy = true;
 
+        var selectedPatientId = _selectedPatient?.Id;
+
         try
         {
             var awaiting = await _patientService.GetAwaitingTriageAsync().ConfigureAwait(true);
@@ -286,6 +307,13 @@ public sealed class PatientBoardViewModel : ObservableObject
                 Replace(AwaitingTriage, awaiting);
                 Replace(ZonePatients, inZone);
                 ZoneLoad = load;
+
+                // Odtworzenie zaznaczenia po przebudowie listy — inaczej karta pacjenta
+                // zamykałaby się po każdej operacji wywołującej odświeżenie pulpitu.
+                if (selectedPatientId is not null)
+                {
+                    SelectedPatient = ZonePatients.FirstOrDefault(p => p.Id == selectedPatientId.Value);
+                }
             }).ConfigureAwait(true);
         }
         catch (Exception exception) when (exception is not OperationCanceledException)

@@ -14,6 +14,7 @@ public sealed class Patient : Entity<Guid>
     private readonly List<TriageAssessment> _triageHistory = new();
     private readonly List<MedicalOrder> _orders = new();
     private readonly List<ZoneTransfer> _transfers = new();
+    private readonly List<MedicationAdministration> _administrations = new();
 
     /// <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
     private Patient() { }
@@ -83,6 +84,9 @@ public sealed class Patient : Entity<Guid>
 
     public IReadOnlyCollection<ZoneTransfer> Transfers => _transfers.AsReadOnly();
 
+    /// <summary>Rejestr leków faktycznie podanych pacjentowi w trakcie pobytu w SOR.</summary>
+    public IReadOnlyCollection<MedicationAdministration> Administrations => _administrations.AsReadOnly();
+
     public string FullName => $"{LastName} {FirstName}";
 
     // ---------- Fabryka ----------
@@ -103,7 +107,7 @@ public sealed class Patient : Entity<Guid>
             throw new ValidationException("Identyfikator pacjenta jest wymagany.", nameof(id));
         }
 
-        ValidatePesel(pesel);
+        var peselNumber = PeselNumber.Create(pesel);
 
         if (string.IsNullOrWhiteSpace(firstName) || string.IsNullOrWhiteSpace(lastName))
         {
@@ -116,7 +120,31 @@ public sealed class Patient : Entity<Guid>
             throw new ValidationException("Data urodzenia pacjenta jest nieprawidłowa.", nameof(dateOfBirth));
         }
 
-        return new Patient(id, pesel.Trim(), firstName.Trim(), lastName.Trim(), dateOfBirth, gender, complaint?.Trim())
+        // BR-18: numer PESEL sam koduje datę urodzenia i płeć. Rozbieżność z danymi
+        // deklarowanymi w formularzu oznacza pomyłkę w rejestracji, więc jest odrzucana
+        // zamiast być cicho pomijana. Stulecie nie jest porównywane — PESEL koduje tylko
+        // dwie cyfry roku, a zakodowany miesiąc (21–32) oznacza kobietę z XX wieku
+        // albo mężczyznę z XXI wieku.
+        if (!peselNumber.MatchesDateOfBirth(dateOfBirth))
+        {
+            throw new ValidationException(
+                $"Data urodzenia ({dateOfBirth:yyyy-MM-dd}) nie zgadza się z datą zakodowaną "
+                + "w numerze PESEL — dzień, miesiąc i dwie cyfry roku muszą być zgodne (BR-18).",
+                nameof(dateOfBirth));
+        }
+
+        var expectedGender = peselNumber.Gender == PeselNumber.GenderEncoded.Female
+            ? PatientGender.Female
+            : PatientGender.Male;
+
+        if (gender != expectedGender)
+        {
+            throw new ValidationException(
+                "Płeć nie zgadza się z płcią zakodowaną w numerze PESEL (BR-18).",
+                nameof(gender));
+        }
+
+        return new Patient(id, peselNumber.Value, firstName.Trim(), lastName.Trim(), dateOfBirth, gender, complaint?.Trim())
         {
             RegisteredAtUtc = registeredAtUtc
         };
@@ -213,6 +241,25 @@ public sealed class Patient : Entity<Guid>
     /// <summary>Reguła BR-10: pacjent bez otwartych zleceń nie może zostać wydany z SOR.</summary>
     public bool HasOpenOrders => OpenOrders.Any();
 
+    // ---------- Rejestr podanych leków ----------
+
+    /// <summary>
+    /// Odnotowanie faktycznego podania preparatu. Wpis powstaje dopiero po podaniu —
+    /// samo zlecenie nie oznacza podania, dlatego rejestr jest prowadzony oddzielnie od zleceń.
+    /// </summary>
+    public MedicationAdministration RecordAdministration(MedicationAdministration administration)
+    {
+        ArgumentNullException.ThrowIfNull(administration);
+
+        if (State is PatientState.Closed or PatientState.TransferredOut)
+        {
+            throw new ValidationException("Nie można odnotować podania leku w zamkniętej karcie pacjenta.", nameof(administration));
+        }
+
+        _administrations.Add(administration);
+        return administration;
+    }
+
     // ---------- Rozpoznanie i zamknięcie ----------
 
     /// <summary>Ustawienie rozpoznania ICD-10 (wymagane przed zamknięciem karty).</summary>
@@ -220,6 +267,17 @@ public sealed class Patient : Entity<Guid>
     {
         ArgumentNullException.ThrowIfNull(diagnosis);
         Diagnosis = diagnosis;
+    }
+
+    /// <summary>Cofnięcie rozpoznania — dopuszczalne tylko do czasu zamknięcia karty.</summary>
+    public void ClearDiagnosis()
+    {
+        if (State is PatientState.Closed or PatientState.TransferredOut)
+        {
+            throw new ValidationException("Nie można zmienić rozpoznania w zamkniętej karcie pacjenta.", nameof(State));
+        }
+
+        Diagnosis = null;
     }
 
     /// <summary>
@@ -288,27 +346,6 @@ public sealed class Patient : Entity<Guid>
     }
 
     // ---------- Walidacja ----------
-
-    /// <summary>Walidacja numeru PESEL — suma kontrolna modulo 11 (BR-18).</summary>
-    private static void ValidatePesel(string? pesel)
-    {
-        var value = pesel?.Trim() ?? string.Empty;
-
-        if (value.Length != 11 || !value.All(char.IsDigit))
-        {
-            throw new ValidationException("PESEL musi składać się z 11 cyfr (BR-18).", nameof(pesel));
-        }
-
-        int[] weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
-        var sum = weights.Select((w, i) => w * int.Parse(value[i].ToString())).Sum();
-        var control = sum % 11;
-        var expected = control == 10 ? 0 : control;
-
-        if (expected != int.Parse(value[10].ToString()))
-        {
-            throw new ValidationException($"PESEL '{value}' nie przechodzi walidacji sumy kontrolnej (BR-18).", nameof(pesel));
-        }
-    }
 
     private static int CalculateAge(DateOnly dateOfBirth, DateTimeOffset nowUtc)
     {

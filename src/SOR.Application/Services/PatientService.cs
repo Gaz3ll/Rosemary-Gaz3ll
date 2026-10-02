@@ -280,6 +280,13 @@ public sealed class PatientService : IPatientService
 
         patient.AddOrder(order);
 
+        // Jawne dodanie do kontekstu — kolejka EF Core nie zgłaszałaby zlecenia
+        // odnalezionego w kolekcji pacjenta jako Added, a wykonałaby UPDATE
+        // nieistniejącego wiersza (analogicznie do ocen Triage i przeniesień).
+        await _unitOfWork.MedicalOrders
+            .AddAsync(order, cancellationToken)
+            .ConfigureAwait(false);
+
         await _auditLog.RecordAsync(
             AuditActionType.OrderCreated,
             actor.Id,
@@ -351,6 +358,111 @@ public sealed class PatientService : IPatientService
 
         return await GetPatientAsync(patientId, cancellationToken).ConfigureAwait(false);
     }
+
+    public async Task<PatientDetailsDto> RecordMedicationAdministrationAsync(
+        Guid patientId,
+        Guid medicationId,
+        string dose,
+        MedicationRoute route,
+        Guid? medicalOrderId = null,
+        string? notes = null,
+        CancellationToken cancellationToken = default)
+    {
+        var actor = RequireAuthenticatedUser();
+        var now = _clock.UtcNow;
+
+        var patient = await GetPatientEntityAsync(patientId, cancellationToken).ConfigureAwait(false);
+        patient.AcquireLock(actor.Login, now, LockTimeout);
+
+        var medication = await _unitOfWork.Medications
+            .GetByIdAsync(medicationId, cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new EntityNotFoundException(nameof(Medication), medicationId);
+
+        if (!medication.IsAvailable)
+        {
+            throw new SorApplicationException(
+                $"Preparat '{medication.DisplayName}' został wycofany z formularza oddziału.",
+                "SOR-APP-053");
+        }
+
+        // Dawka podana musi pochodzić z katalogu — inaczej pacjentowi podano by lek spoza SOR.
+        if (!MatchesCatalogDose(medication, dose))
+        {
+            throw new SorApplicationException(
+                $"Dawka „{dose}” nie odpowiada pozycji katalogowej leku {medication.Code} " +
+                $"(typowo: {medication.TypicalDose}).",
+                "SOR-APP-054");
+        }
+
+        var administration = MedicationAdministration.Record(
+            _idGenerator.NewId(),
+            patient.Id,
+            medication.Id,
+            actor.Id,
+            dose,
+            route,
+            now,
+            medicalOrderId,
+            notes);
+
+        patient.RecordAdministration(administration);
+
+        // Jawne dodanie do kontekstu wymusza INSERT (analogicznie do ocen Triage i przeniesień).
+        await _unitOfWork.MedicationAdministrations
+            .AddAsync(administration, cancellationToken)
+            .ConfigureAwait(false);
+
+        if (medicalOrderId is not null)
+        {
+            var order = await _unitOfWork.MedicalOrders
+                .GetByIdAsync(medicalOrderId.Value, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (order is not null && order.PatientId == patient.Id && order.State == MedicalOrderState.Open)
+            {
+                order.ChangeState(MedicalOrderState.InProgress, now, reason: null);
+            }
+        }
+
+        await _auditLog.RecordAsync(
+            AuditActionType.MedicationAdministered,
+            actor.Id,
+            actor.Login,
+            administration.Id,
+            nameof(MedicationAdministration),
+            $"Podano {medication.DisplayName} w dawce {dose}, droga: {route}; pacjent {patient.FullName}.",
+            true,
+            cancellationToken).ConfigureAwait(false);
+
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        return await GetPatientAsync(patientId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Luźne dopasowanie dawki do katalogu: porównujemy znormalizowany zapis, aby dopuścić
+    /// równoważne zapisy (np. „1 g" wobec „1000 mg"), ale odrzucamy dawki spoza katalogu.
+    /// </summary>
+    private static bool MatchesCatalogDose(Medication medication, string dose)
+    {
+        if (string.IsNullOrWhiteSpace(dose))
+        {
+            return false;
+        }
+
+        var provided = NormalizeDose(dose);
+        var typical = NormalizeDose(medication.TypicalDose);
+        var max = NormalizeDose(medication.MaxDailyDose);
+
+        return provided.Contains(typical, StringComparison.Ordinal) || provided.Contains(max, StringComparison.Ordinal);
+    }
+
+    private static string NormalizeDose(string value) =>
+        new string(value
+            .Where(c => char.IsLetterOrDigit(c) || c is '.' or ',' or '-')
+            .Select(c => char.IsLetter(c) ? char.ToLowerInvariant(c) : c == ',' ? '.' : c)
+            .ToArray());
 
     public async Task<PatientDetailsDto> CloseCardAsync(Guid patientId, bool transportCompleted, CancellationToken cancellationToken = default)
     {
@@ -473,7 +585,31 @@ public sealed class PatientService : IPatientService
             ? null
             : (await _unitOfWork.Zones.GetByIdAsync(patient.ZoneId.Value, cancellationToken).ConfigureAwait(false))?.Name;
 
-        return patient.ToDetailsDto(zoneName, _clock.UtcNow);
+        var medicationNames = await LoadMedicationNamesAsync(patient, cancellationToken).ConfigureAwait(false);
+
+        return patient.ToDetailsDto(zoneName, _clock.UtcNow, medicationNames);
+    }
+
+    /// <summary>Nazwy preparatów występujących w rejestrze podanych leków pacjenta.</summary>
+    private async Task<IReadOnlyDictionary<Guid, string>> LoadMedicationNamesAsync(
+        Patient patient,
+        CancellationToken cancellationToken)
+    {
+        var medicationIds = patient.Administrations
+            .Select(a => a.MedicationId)
+            .Distinct()
+            .ToList();
+
+        if (medicationIds.Count == 0)
+        {
+            return new Dictionary<Guid, string>();
+        }
+
+        var medications = await _unitOfWork.Medications
+            .GetByIdsAsync(medicationIds, cancellationToken)
+            .ConfigureAwait(false);
+
+        return medications.ToDictionary(m => m.Id, m => m.DisplayName);
     }
 
     // ---------- Pomocnicze ----------

@@ -31,6 +31,48 @@
         <member name="M:SOR.Application.DTOs.AuthenticationSuccessDto.#ctor(SOR.Application.DTOs.AuthenticatedUserDto,System.String,System.String)">
             <summary>Komunikat zwracany po udanym logowaniu.</summary>
         </member>
+        <member name="T:SOR.Application.DTOs.MedicationDto">
+            <summary>Pozycja katalogu leków wyświetlana w formularzu SOR.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.MedicationDto.#ctor(System.Guid,System.String,System.String,System.String,System.String,SOR.Domain.Enums.MedicationCategory,SOR.Domain.Enums.MedicationRoute,System.String,System.String,SOR.Domain.Enums.MedicationSafety,System.Boolean,System.String,System.String)">
+            <summary>Pozycja katalogu leków wyświetlana w formularzu SOR.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.MedicationDto.DisplayName">
+            <summary>Nazwa gotowa do wyświetlenia na liście wyboru.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.MedicationDto.RequiresCloseMonitoring">
+            <summary>Czy preparat wymaga weryfikacji dawki i drogi podania (BR-15).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.MedicalBundleItemDto">
+            <summary>Krok pakietu medycznego.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.MedicalBundleItemDto.#ctor(System.Guid,System.Int32,SOR.Domain.Enums.MedicalOrderType,System.String,System.Nullable{SOR.Domain.Enums.MedicationRoute},System.Nullable{System.Guid},System.String,System.String,System.Boolean)">
+            <summary>Krok pakietu medycznego.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.MedicalBundleDto">
+            <summary>Pakiet medyczny wraz z uporządkowanymi krokami.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.MedicalBundleDto.#ctor(System.Guid,System.String,System.String,System.String,System.String,System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicalBundleItemDto})">
+            <summary>Pakiet medyczny wraz z uporządkowanymi krokami.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.MedicalBundleDto.OrderCount">
+            <summary>Liczba kroków wymagających zlecenia lekarskiego.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.Icd10CatalogEntryDto">
+            <summary>Rozpoznanie ICD-10 z katalogu.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.Icd10CatalogEntryDto.#ctor(System.Guid,System.String,System.String,System.String,System.String,System.Boolean)">
+            <summary>Rozpoznanie ICD-10 z katalogu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.Icd10CatalogEntryDto.DisplayName">
+            <summary>Tekst gotowy do wyświetlenia: <c>I10 — Nadciśnienie tętnicze</c>.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.MedicationAdministrationDto">
+            <summary>Wpis rejestru podanych leków.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.MedicationAdministrationDto.#ctor(System.Guid,System.Guid,System.String,System.String,SOR.Domain.Enums.MedicationRoute,System.DateTimeOffset,System.Nullable{System.Guid},System.String)">
+            <summary>Wpis rejestru podanych leków.</summary>
+        </member>
         <member name="T:SOR.Application.DTOs.PatientCardDto">
             <summary>Widok karty pacjenta na pulpicie strefy.</summary>
         </member>
@@ -40,7 +82,7 @@
         <member name="T:SOR.Application.DTOs.PatientDetailsDto">
             <summary>Pełny widok karty pacjenta (okno szczegółów).</summary>
         </member>
-        <member name="M:SOR.Application.DTOs.PatientDetailsDto.#ctor(System.Guid,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,SOR.Domain.Enums.TriageCategory,System.String,SOR.Domain.Enums.PatientState,System.Nullable{System.Guid},System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicalOrderDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.ZoneTransferDto},System.Collections.Generic.IReadOnlyList{System.String})">
+        <member name="M:SOR.Application.DTOs.PatientDetailsDto.#ctor(System.Guid,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,SOR.Domain.Enums.TriageCategory,System.String,SOR.Domain.Enums.PatientState,System.Nullable{System.Guid},System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicalOrderDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.ZoneTransferDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicationAdministrationDto},System.Collections.Generic.IReadOnlyList{System.String})">
             <summary>Pełny widok karty pacjenta (okno szczegółów).</summary>
         </member>
         <member name="T:SOR.Application.DTOs.MedicalOrderDto">
@@ -143,6 +185,64 @@
         <member name="P:SOR.Application.Interfaces.ZoneCapacityExceededException.Capacity">
             <summary>Zdolność przyjęciowa strefy w chwili przekroczenia.</summary>
         </member>
+        <member name="T:SOR.Application.Interfaces.IMedicationCatalogService">
+            <summary>
+            Serwis katalogu leków — odczyt formularza SOR. Katalog jest danymi referencyjnymi,
+            dlatego serwis udostępnia wyłącznie odczyt; decyzję o podaniu podejmuje lekarz
+            w karcie pacjenta (<see cref="T:SOR.Application.Interfaces.IPatientService"/>).
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationCatalogService.SearchAsync(System.String,System.Nullable{SOR.Domain.Enums.MedicationCategory},System.Threading.CancellationToken)">
+            <summary>Wyszukuje preparaty po nazwie, kodzie, postaci lub mocy.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationCatalogService.GetAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera pojedynczy preparat z katalogu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationCatalogService.GetHighAlertAsync(System.Threading.CancellationToken)">
+            <summary>Preparaty o podwyższonym ryzyku — wymagają potwierdzenia przed podaniem.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationCatalogService.GetCategoriesAsync(System.Threading.CancellationToken)">
+            <summary>Lista grup terapeutycznych występujących w katalogu (do filtrów widoku).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IMedicalBundleService">
+            <summary>Serwis pakietów medycznych — odczyt definicji i zastosowanie pakietu na karcie pacjenta.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleService.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>Wszystkie pakiety dostępne w oddziale.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleService.SearchAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Wyszukuje pakiety po nazwie, kodzie lub wskazaniu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleService.GetAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pobiera pojedynczy pakiet wraz z krokami.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleService.ApplyAsync(System.Guid,System.Guid,System.Collections.Generic.IReadOnlyCollection{System.Guid},System.Threading.CancellationToken)">
+            <summary>
+            Tworzy dla pacjenta zlecenia odpowiadające krokom pakietu. Pozycje farmakologiczne
+            trafiają również do rejestru podanych leków. Gdy <paramref name="itemIds"/> jest null,
+            realizowane są wszystkie kroki pakietu.
+            </summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IIcd10CatalogService">
+            <summary>Serwis katalogu rozpoznań ICD-10.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IIcd10CatalogService.SearchAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Wyszukuje rozpoznania po fragmencie kodu lub opisu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IIcd10CatalogService.GetEmergencyRelevantAsync(System.Threading.CancellationToken)">
+            <summary>Rozpoznania typowe dla SOR — używane jako domyślna lista w karcie pacjenta.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IIcd10CatalogService.AssignAsync(System.Guid,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Ustawia rozpoznanie pacjenta, weryfikując kod względem katalogu. Pusta wartość usuwa rozpoznanie.
+            </summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.MedicationCategoryOptionDto">
+            <summary>Grupa terapeutyczna wraz z liczbą preparatów — źródło danych dla filtrów katalogu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.MedicationCategoryOptionDto.#ctor(SOR.Domain.Enums.MedicationCategory,System.Int32)">
+            <summary>Grupa terapeutyczna wraz z liczbą preparatów — źródło danych dla filtrów katalogu.</summary>
+        </member>
         <member name="T:SOR.Application.Interfaces.IDomainEventPublisher">
              <summary>
              Punkt publikacji zdarzeń domenowych dla warstwy aplikacji.
@@ -184,6 +284,12 @@
         </member>
         <member name="M:SOR.Application.Interfaces.IPatientService.ChangeOrderStateAsync(System.Guid,SOR.Domain.Enums.MedicalOrderState,System.String,System.Threading.CancellationToken)">
             <summary>Zmiana statusu zlecenia.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientService.RecordMedicationAdministrationAsync(System.Guid,System.Guid,System.String,SOR.Domain.Enums.MedicationRoute,System.Nullable{System.Guid},System.String,System.Threading.CancellationToken)">
+            <summary>
+            Odnotowanie faktycznego podania leku z katalogu SOR. Dawka jest weryfikowana
+            względem pozycji katalogowej, a powiązane zlecenie przechodzi w stan „w realizacji".
+            </summary>
         </member>
         <member name="M:SOR.Application.Interfaces.IPatientService.SetDiagnosisAsync(System.Guid,System.String,System.Threading.CancellationToken)">
             <summary>Ustawienie rozpoznania ICD-10.</summary>
@@ -338,6 +444,46 @@
         <member name="M:SOR.Application.Interfaces.IZoneTransferRepository.GetByPatientAsync(System.Guid,System.Threading.CancellationToken)">
             <summary>Historia przeniesień pacjenta w kolejności chronologicznej.</summary>
         </member>
+        <member name="T:SOR.Application.Interfaces.IMedicationAdministrationRepository">
+            <summary>
+            Repozytorium rejestru podanych leków. Encja należy do agregatu pacjenta, ale — podobnie jak
+            ocena Triage i przeniesienie — musi zostać jawnie dodana do kontekstu, aby EF Core wykonał
+            INSERT, a nie aktualizację nieistniejącego wiersza.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationAdministrationRepository.GetByPatientAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Historia podanych leków pacjenta (najnowsze na początku).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IMedicationRepository">
+            <summary>Repozytorium katalogu leków SOR — wyszukiwanie po nazwie, kodzie i kategorii.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationRepository.SearchAsync(System.String,System.Nullable{SOR.Domain.Enums.MedicationCategory},System.Threading.CancellationToken)">
+            <summary>Wyszukuje leki po wolnym tekście (nazwa, synonim, kod, grupa) z opcjonalnym filtrem kategorii.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicationRepository.GetHighAlertAsync(System.Threading.CancellationToken)">
+            <summary>Leki oznaczone jako wymagające ścisłego nadzoru (BR-15) — ostrzeżenia w karcie pacjenta.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IMedicalBundleRepository">
+            <summary>Repozytorium pakietów medycznych (zestawów diagnostyczno-terapeutycznych).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleRepository.GetWithItemsAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Pakiet wraz z uporządkowanymi krokami.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleRepository.GetActiveWithItemsAsync(System.Threading.CancellationToken)">
+            <summary>Wszystkie aktywne pakiety wraz z krokami.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IMedicalBundleRepository.SearchAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Wyszukuje pakiety po wolnym tekście (nazwa, kod, wskazania).</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IIcd10CatalogRepository">
+            <summary>Repozytorium katalogu rozpoznań ICD-10.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IIcd10CatalogRepository.SearchAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Wyszukuje rozpoznania po fragmencie kodu lub opisu.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IIcd10CatalogRepository.GetByCodeAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Rozpoznanie dokładnie o danym kodzie.</summary>
+        </member>
         <member name="T:SOR.Application.Interfaces.IUnitOfWork">
             <summary>
             Jednostka pracy (Unit of Work) — granica transakcji. Zatwierdzenie jest atomowe:
@@ -379,6 +525,18 @@
         </member>
         <member name="P:SOR.Application.Interfaces.IUnitOfWork.ZoneTransfers">
             <summary>Repozytorium historii przeniesień pacjenta.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.Medications">
+            <summary>Repozytorium katalogu leków.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.MedicalBundles">
+            <summary>Repozytorium pakietów medycznych.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.Icd10Catalog">
+            <summary>Repozytorium katalogu ICD-10.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.MedicationAdministrations">
+            <summary>Repozytorium rejestru podanych leków.</summary>
         </member>
         <member name="T:SOR.Application.Interfaces.IAuthenticationService">
             <summary>Serwis uwierzytelniania (BR-15/BR-16).</summary>
@@ -481,7 +639,7 @@
         <member name="M:SOR.Application.Mapping.EntityMapper.ToCardDto(SOR.Domain.Entities.Patient,System.DateTimeOffset)">
             <summary>Buduje DTO karty pacjenta na pulpicie.</summary>
         </member>
-        <member name="M:SOR.Application.Mapping.EntityMapper.ToDetailsDto(SOR.Domain.Entities.Patient,System.String,System.DateTimeOffset)">
+        <member name="M:SOR.Application.Mapping.EntityMapper.ToDetailsDto(SOR.Domain.Entities.Patient,System.String,System.DateTimeOffset,System.Collections.Generic.IReadOnlyDictionary{System.Guid,System.String})">
             <summary>Buduje pełny DTO karty pacjenta.</summary>
         </member>
         <member name="T:SOR.Application.Services.AuditLogService">
@@ -515,11 +673,30 @@
             do modułu triage (strefa awaryjna) i informuje o tym fakcie użytkownika.
             </summary>
         </member>
+        <member name="M:SOR.Application.Services.AuthenticationService.RecordBlockedAttemptAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+            Audytuje próbę logowania wykonaną w trakcie blokady konta. Świadomie nie korzysta
+            z <see cref="M:SOR.Application.Services.AuthenticationService.RecordFailureAsync(System.String,System.String,System.String,System.Threading.CancellationToken)"/>, aby nie zwiększać licznika nieudanych prób
+            ani nie przedłużać blokady — zobacz <see cref="M:SOR.Application.Services.AuthenticationService.LoginAsync(System.String,System.String,System.Threading.CancellationToken)"/>.
+            </summary>
+        </member>
         <member name="M:SOR.Application.Services.AuthenticationService.PerformDummyHash(System.String)">
             <summary>Wykonuje kosztowny hash, aby wyrównać czas odpowiedzi dla nieistniejących kont.</summary>
         </member>
         <member name="T:SOR.Application.Services.AuthenticationService.LoginAttemptTracker">
             <summary>Stanowa klasa śledząca próby logowania per login.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.MedicationCatalogService">
+            <summary>Serwis katalogu leków — odczyt formularza SOR.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.MedicalBundleService">
+            <summary>Serwis pakietów medycznych — definicje pakietów oraz ich zastosowanie na karcie pacjenta.</summary>
+        </member>
+        <member name="M:SOR.Application.Services.MedicalBundleService.ResolveMedicationNamesAsync(SOR.Domain.Entities.MedicalBundle,System.Threading.CancellationToken)">
+            <summary>Nazwy preparatów występujących w krokach pakietu — pobierane zbiorczo, aby uniknąć N+1.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.Icd10CatalogService">
+            <summary>Serwis katalogu rozpoznań ICD-10.</summary>
         </member>
         <member name="T:SOR.Application.Services.DomainEventPublisher">
              <summary>
@@ -547,6 +724,15 @@
             Serwis pacjenta. Orkiestruje rejestrację, triage, przydział do strefy, zlecenia
             oraz zamknięcie karty, egzekwując reguły BR-01, BR-04, BR-09, BR-10, BR-19 i BR-20.
             </summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientService.MatchesCatalogDose(SOR.Domain.Entities.Medication,System.String)">
+            <summary>
+            Luźne dopasowanie dawki do katalogu: porównujemy znormalizowany zapis, aby dopuścić
+            równoważne zapisy (np. „1 g" wobec „1000 mg"), ale odrzucamy dawki spoza katalogu.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientService.LoadMedicationNamesAsync(SOR.Domain.Entities.Patient,System.Threading.CancellationToken)">
+            <summary>Nazwy preparatów występujących w rejestrze podanych leków pacjenta.</summary>
         </member>
         <member name="M:SOR.Application.Services.PatientService.EnsureStaffOfZoneOrCoordinator(SOR.Application.DTOs.AuthenticatedUserDto,System.Guid)">
             <summary>BR-12: pracownik operuje na pacjentach własnej strefy; koordynator — wszystkich.</summary>

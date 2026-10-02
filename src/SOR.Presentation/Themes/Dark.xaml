@@ -1,0 +1,41 @@
+<!--
+    Paleta ciemna — przeznaczona do pracy nocnej na dyżurze SOR, gdzie jaskrawy interfejs
+    utrudnia obserwację monitora. Zestaw kluczy jest identyczny ze słownikiem Light.xaml.
+-->
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Powierzchnie -->
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#14181D" />
+    <SolidColorBrush x:Key="SurfaceBrush" Color="#1E242B" />
+    <SolidColorBrush x:Key="SurfaceAltBrush" Color="#252C34" />
+    <SolidColorBrush x:Key="SurfaceBorderBrush" Color="#39424D" />
+    <SolidColorBrush x:Key="StatusBarBrush" Color="#1A2027" />
+
+    <!-- Tekst -->
+    <SolidColorBrush x:Key="TextPrimaryBrush" Color="#E8EDF2" />
+    <SolidColorBrush x:Key="TextSecondaryBrush" Color="#B4BFCA" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#8A96A3" />
+    <SolidColorBrush x:Key="TextOnAccentBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextOnAccentMutedBrush" Color="#C6D9EC" />
+
+    <!-- Akcenty -->
+    <SolidColorBrush x:Key="HeaderBrush" Color="#101820" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#3D82BC" />
+    <SolidColorBrush x:Key="AccentHoverBrush" Color="#5599D1" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#E57373" />
+    <SolidColorBrush x:Key="SuccessBrush" Color="#5BC98B" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#E0B400" />
+
+    <!-- Baner ostrzeżenia -->
+    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#4A3D10" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="#8A6F00" />
+
+    <!-- Kolory kategorii Triage — nasycone, aby zachować rozróżnialność na ciemnym tle -->
+    <SolidColorBrush x:Key="TriageRedBrush" Color="#E57373" />
+    <SolidColorBrush x:Key="TriageOrangeBrush" Color="#E8944A" />
+    <SolidColorBrush x:Key="TriageYellowBrush" Color="#D9C24B" />
+    <SolidColorBrush x:Key="TriageGreenBrush" Color="#5BC98B" />
+    <SolidColorBrush x:Key="TriageBlueBrush" Color="#6BAEDD" />
+
+</ResourceDictionary>

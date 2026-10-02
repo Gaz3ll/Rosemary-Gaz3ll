@@ -25,6 +25,10 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
     private readonly IAuditLogRepository _auditEntries;
     private readonly ITriageAssessmentRepository _triageAssessments;
     private readonly IZoneTransferRepository _zoneTransfers;
+    private readonly IMedicationRepository _medications;
+    private readonly IMedicalBundleRepository _medicalBundles;
+    private readonly IIcd10CatalogRepository _icd10Catalog;
+    private readonly IMedicationAdministrationRepository _medicationAdministrations;
 
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
@@ -44,6 +48,10 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
         _auditEntries = new AuditLogRepository(_context);
         _triageAssessments = new TriageAssessmentRepository(_context);
         _zoneTransfers = new ZoneTransferRepository(_context);
+        _medications = new MedicationRepository(_context);
+        _medicalBundles = new MedicalBundleRepository(_context);
+        _icd10Catalog = new Icd10CatalogRepository(_context);
+        _medicationAdministrations = new MedicationAdministrationRepository(_context);
     }
 
     public IPatientRepository Patients => _patients;
@@ -63,6 +71,14 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
     public ITriageAssessmentRepository TriageAssessments => _triageAssessments;
 
     public IZoneTransferRepository ZoneTransfers => _zoneTransfers;
+
+    public IMedicationRepository Medications => _medications;
+
+    public IMedicalBundleRepository MedicalBundles => _medicalBundles;
+
+    public IIcd10CatalogRepository Icd10Catalog => _icd10Catalog;
+
+    public IMedicationAdministrationRepository MedicationAdministrations => _medicationAdministrations;
 
     public bool HasPendingChanges => _context.ChangeTracker.HasChanges();
 
