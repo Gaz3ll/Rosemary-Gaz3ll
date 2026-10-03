@@ -16,6 +16,15 @@
         <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanEnterDiagnosis">
             <summary>BR-13: rozpoznanie ICD-10 może wystawić wyłącznie lekarz lub koordynator.</summary>
         </member>
+        <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanIssueOrders">
+            <summary>BR-13: zlecenie lekarskie może wystawić wyłącznie lekarz lub koordynator.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanConfirmTransport">
+            <summary>BR-13: transport potwierdza lekarz, pielęgniarka lub koordynator — nie ratownik.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanExecuteOrders">
+            <summary>BR-13: zlecenia realizują lekarz, koordynator oraz ratownik medyczny.</summary>
+        </member>
         <member name="M:SOR.Application.DTOs.AuthenticatedUserDto.HasAccessTo(System.Guid)">
             <summary>Czy użytkownik jest zalogowany w podanej strefie (lub jest koordynatorem).</summary>
         </member>
@@ -723,6 +732,23 @@
             <summary>
             Serwis pacjenta. Orkiestruje rejestrację, triage, przydział do strefy, zlecenia
             oraz zamknięcie karty, egzekwując reguły BR-01, BR-04, BR-09, BR-10, BR-19 i BR-20.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientService.AssignToTriageZoneAsync(SOR.Domain.Entities.Patient,SOR.Application.DTOs.AuthenticatedUserDto,System.DateTimeOffset,System.Threading.CancellationToken)">
+             <summary>
+             Przydział automatyczny (WF-04): pacjent triażowany w strefie klinicznej trafia do tej
+             strefy, ponieważ personel pracuje w strefie wynikającej z grafiku dyżurów (BR-02), a nie
+             w strefie wskazanej przez pacjenta. Pracownik modułu triage (TRI) nie przyjmuje pacjenta
+             sam — przydział odbywa się ręcznie, na podstawie zgłaszanych objawów.
+            
+             Brak wolnego miejsca nie cofa oceny Triage: pacjent pozostaje w stanie <c>Triaged</c>
+             i czeka na przydział ręczny, co odpowiada treści tego stanu w modelu domenowym.
+             </summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientService.RecordZoneAssignmentAsync(SOR.Domain.Entities.Patient,SOR.Domain.Entities.Zone,SOR.Application.DTOs.AuthenticatedUserDto,System.DateTimeOffset,SOR.Domain.Entities.ZoneTransfer,System.String,System.Threading.CancellationToken)">
+            <summary>
+            Wspólny zapis przydziału do strefy: przypisanie pacjenta, historia przeniesień oraz wpis
+            audytowy. Nie zamyka transakcji — decyzję o commicie podejmuje wywołujący.
             </summary>
         </member>
         <member name="M:SOR.Application.Services.PatientService.MatchesCatalogDose(SOR.Domain.Entities.Medication,System.String)">

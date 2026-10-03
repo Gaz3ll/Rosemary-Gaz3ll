@@ -129,7 +129,7 @@ public sealed class MedicalBundleService : IMedicalBundleService
         var actor = _authenticationService.CurrentUser
             ?? throw new AuthenticationException("Operacja wymaga aktywnej sesji użytkownika.");
 
-        if (actor.Role == UserRole.Nurse)
+        if (!actor.CanIssueOrders)
         {
             throw new AuthorizationException(
                 "Zastosowanie pakietu medycznego wymaga uprawnień lekarza lub koordynatora (BR-13).");
@@ -350,7 +350,7 @@ public sealed class Icd10CatalogService : IIcd10CatalogService
             ?? throw new AuthenticationException("Operacja wymaga aktywnej sesji użytkownika.");
 
         // BR-13: rozpoznanie może wystawić wyłącznie lekarz lub koordynator.
-        if (actor.Role == UserRole.Nurse)
+        if (!actor.CanEnterDiagnosis)
         {
             throw new AuthorizationException(
                 "Rozpoznanie ICD-10 może wprowadzić wyłącznie lekarz lub koordynator (BR-13).");

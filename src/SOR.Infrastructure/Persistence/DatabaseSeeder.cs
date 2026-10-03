@@ -32,6 +32,21 @@ public sealed class DatabaseSeeder
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
+/// <summary>
+    /// Konta ratowników medycznych — po jednym dla każdej strefy klinicznej (moduł wstępny TRI
+    /// nie ma ratownika). Tablica jest wspólna dla pełnego seedowania i dla uzupełniania
+    /// istniejącej bazy, więc login, hasło i strefa nie rozjeżdżają się między ścieżkami.
+    /// </summary>
+    private static readonly SeedAccount[] ParamedicAccounts =
+    [
+        new("ratownik.emg", "rat. med. Tomasz Baran", "SOR2026!remg", "EMG"),
+        new("ratownik.int", "rat. med. Alicja Nowicka", "SOR2026!rint", "INT"),
+        new("ratownik.trm", "rat. med. Michał Krawczyk", "SOR2026!rtrm", "TRM"),
+    ];
+
+    /// <summary>Konto demonstracyjne personelu wraz z kodem strefy, w której dyżuruje.</summary>
+    private sealed record SeedAccount(string Login, string DisplayName, string Password, string ZoneCode);
+
     /// <summary>Wypełnia bazę danymi startowymi, jeśli nie zawiera jeszcze żadnych stref.</summary>
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
@@ -39,7 +54,8 @@ public sealed class DatabaseSeeder
 
         if (await _context.Zones.AnyAsync(cancellationToken).ConfigureAwait(false))
         {
-            _logger.LogInformation("Baza zawiera już dane — pomijam generowanie danych startowych.");
+            await EnsureParamedicAccountsAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation("Baza zawiera juz dane - pomijam generowanie danych startowych.");
             return;
         }
 
@@ -64,6 +80,18 @@ public sealed class DatabaseSeeder
 
         _context.Users.AddRange(coordinator, emergencyDoctor, traumaDoctor, internalDoctor, nurse, nurseTrauma);
 
+        var paramedics = ParamedicAccounts
+            .Select(account => User.Create(
+                _idGenerator.NewId(),
+                account.Login,
+                account.DisplayName,
+                account.Password,
+                UserRole.Paramedic,
+                $"PWK-{account.ZoneCode}-01"))
+            .ToArray();
+
+        _context.Users.AddRange(paramedics);
+
         // ---------- Grafik dyżuru (aktywny w chwili uruchomienia) ----------
         var shiftStart = now.AddHours(-2);
         var shiftEnd = now.AddHours(8);
@@ -85,6 +113,30 @@ public sealed class DatabaseSeeder
             StaffZoneAssignment.FromRoster(_idGenerator.NewId(), coordinator.Id, emergency.Id, shiftStart),
             StaffZoneAssignment.FromRoster(_idGenerator.NewId(), nurseTrauma.Id, triage.Id, shiftStart));
 
+        var zoneIdsByCode = new Dictionary<string, Guid>(StringComparer.OrdinalIgnoreCase)
+        {
+            [triage.Code] = triage.Id,
+            [emergency.Code] = emergency.Id,
+            [internalZone.Code] = internalZone.Id,
+            [trauma.Code] = trauma.Id,
+        };
+
+        foreach (var (paramedic, account) in paramedics.Zip(ParamedicAccounts))
+        {
+            var zoneId = zoneIdsByCode[account.ZoneCode];
+
+            _context.DutyShifts.Add(DutyShift.Create(
+                _idGenerator.NewId(),
+                paramedic.Id,
+                zoneId,
+                shiftStart,
+                shiftEnd,
+                $"Dyżur ratownika medycznego — część {account.ZoneCode}"));
+
+            _context.StaffZoneAssignments.Add(
+                StaffZoneAssignment.FromRoster(_idGenerator.NewId(), paramedic.Id, zoneId, shiftStart));
+        }
+
         // ---------- Pacjenci ----------
         SeedPatients(now, emergency, internalZone, trauma, emergencyDoctor, traumaDoctor, internalDoctor, nurse);
 
@@ -100,6 +152,69 @@ public sealed class DatabaseSeeder
 
         await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
         _logger.LogInformation("Dane startowe wygenerowane pomyślnie.");
+    }
+
+    /// <summary>
+    /// Uzupełnia istniejącą bazę o konta ratowników medycznych, których jeszcze nie ma.
+    /// Seedowanie startowe jest pomijane, gdy strefy już istnieją, więc bez tej metody dodanie
+    /// nowego konta wymagałoby usunięcia pliku bazy i utraty danych.
+    /// </summary>
+    private async Task EnsureParamedicAccountsAsync(CancellationToken cancellationToken)
+    {
+        var existingLogins = await _context.Users
+            .Select(user => user.Login)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var existing = new HashSet<string>(existingLogins, StringComparer.OrdinalIgnoreCase);
+        var missing = ParamedicAccounts.Where(account => !existing.Contains(account.Login)).ToArray();
+
+        if (missing.Length == 0)
+        {
+            return;
+        }
+
+        var zones = await _context.Zones.ToDictionaryAsync(zone => zone.Code, StringComparer.OrdinalIgnoreCase, cancellationToken)
+            .ConfigureAwait(false);
+
+        var now = _clock.UtcNow;
+        var shiftStart = now.AddHours(-2);
+        var shiftEnd = now.AddHours(8);
+
+        foreach (var account in missing)
+        {
+            if (!zones.TryGetValue(account.ZoneCode, out var zone))
+            {
+                _logger.LogWarning(
+                    "Pominięto konto {Login} — brak strefy {ZoneCode}.",
+                    account.Login,
+                    account.ZoneCode);
+                continue;
+            }
+
+            var paramedic = User.Create(
+                _idGenerator.NewId(),
+                account.Login,
+                account.DisplayName,
+                account.Password,
+                UserRole.Paramedic,
+                $"PWK-{account.ZoneCode}-01");
+
+            _context.Users.Add(paramedic);
+            _context.DutyShifts.Add(DutyShift.Create(
+                _idGenerator.NewId(),
+                paramedic.Id,
+                zone.Id,
+                shiftStart,
+                shiftEnd,
+                $"Dyżur ratownika medycznego — część {zone.Code}"));
+            _context.StaffZoneAssignments.Add(
+                StaffZoneAssignment.FromRoster(_idGenerator.NewId(), paramedic.Id, zone.Id, shiftStart));
+
+            _logger.LogInformation("Dodano konto ratownika medycznego {Login} w strefie {ZoneCode}.", account.Login, account.ZoneCode);
+        }
+
+        await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

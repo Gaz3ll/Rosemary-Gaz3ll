@@ -24,6 +24,7 @@ odwzorowane przez dane startowe i model domeny.
 | `Physician` | Lekarz SOR | Rozpoznanie ICD-10, zlecenia, operacje na pacjentach własnej strefy |
 | `Nurse` | Pielęgniarka / ratownik triage | Rejestracja, Triage, wykonanie zleceń; brak rozpoznania |
 | `Coordinator` | Koordynator / ordynator | Dostęp do wszystkich stref, rotacja innych pracowników, nadzór |
+| `Paramedic` | Ratownik medyczny strefy klinicznej | Realizacja zleceń podania leku i badania obrazowego; brak wystawiania zleceń, rozpoznania i zamknięcia karty |
 
 Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (INT), `Trauma` (TRM).
 

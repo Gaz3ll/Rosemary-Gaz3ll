@@ -119,13 +119,34 @@ public sealed class MedicalOrder : Entity<Guid>
     /// <summary>Reguła BR-13: zlecenie lekarskie może oznaczyć jako zrealizowane wyłącznie lekarz lub koordynator.</summary>
     public void EnsureCanBeCompletedBy(UserRole role)
     {
-        if (role is not (UserRole.Physician or UserRole.Coordinator))
+        if (role is UserRole.Physician or UserRole.Coordinator)
         {
-            throw new ValidationException(
-                "Oznaczenie zlecenia jako zrealizowanego jest możliwe wyłącznie przez lekarza lub koordynatora (BR-13).",
-                nameof(role));
+            return;
         }
+
+        // Ratownik medyczny realizuje zlecenia, których wykonanie należy do jego zakresu
+        // czynności: podanie leku oraz badanie obrazowe. Pozostałe typy zleceń pozostają
+        // w gestii lekarza lub koordynatora.
+        if (role is UserRole.Paramedic)
+        {
+            if (Type is not (MedicalOrderType.Medication or MedicalOrderType.Imaging))
+            {
+                throw new ValidationException(
+                    "Ratownik medyczny może oznaczyć jako zrealizowane wyłącznie zlecenie podania leku " +
+                    "lub badania obrazowego (BR-13).",
+                    nameof(role));
+            }
+
+            return;
+        }
+
+        throw new ValidationException(
+            "Oznaczenie zlecenia jako zrealizowanego jest możliwe wyłącznie przez lekarza lub koordynatora (BR-13).",
+            nameof(role));
     }
+
+    /// <summary>Czy zlecenie pozostaje do realizowania i może zostać oznaczone jako wykonane.</summary>
+    public bool CanBeCompleted => State is MedicalOrderState.Open or MedicalOrderState.InProgress;
 
     private void ValidateTransition(MedicalOrderState newState)
     {

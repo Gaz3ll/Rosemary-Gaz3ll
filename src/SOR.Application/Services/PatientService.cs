@@ -1,4 +1,4 @@
-﻿using SOR.Application.DTOs;
+using SOR.Application.DTOs;
 using SOR.Application.Interfaces;
 using SOR.Application.Mapping;
 using SOR.Domain.Common;
@@ -127,9 +127,82 @@ public sealed class PatientService : IPatientService
             true,
             cancellationToken).ConfigureAwait(false);
 
+        await AssignToTriageZoneAsync(patient, actor, now, cancellationToken).ConfigureAwait(false);
+
+        // Ocena Triage jest zakończonym krokiem: po jej zapisie karta musi być dostępna dla
+        // personelu wykonującego przydział ręczny. Bez zwolnienia blokady (BR-20) następny
+        // użytkownik czekałby na jej wygasanie przez LockTimeout.
+        patient.ReleaseLock(actor.Login);
+
         await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
         return await GetPatientAsync(patientId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Przydział automatyczny (WF-04): pacjent triażowany w strefie klinicznej trafia do tej
+    /// strefy, ponieważ personel pracuje w strefie wynikającej z grafiku dyżurów (BR-02), a nie
+    /// w strefie wskazanej przez pacjenta. Pracownik modułu triage (TRI) nie przyjmuje pacjenta
+    /// sam — przydział odbywa się ręcznie, na podstawie zgłaszanych objawów.
+    ///
+    /// Brak wolnego miejsca nie cofa oceny Triage: pacjent pozostaje w stanie <c>Triaged</c>
+    /// i czeka na przydział ręczny, co odpowiada treści tego stanu w modelu domenowym.
+    /// </summary>
+    private async Task AssignToTriageZoneAsync(
+        Patient patient,
+        AuthenticatedUserDto actor,
+        DateTimeOffset now,
+        CancellationToken cancellationToken)
+    {
+        if (actor.CurrentZoneKind == ZoneKind.Triage)
+        {
+            await _auditLog.RecordAsync(
+                AuditActionType.TriageAssessed,
+                actor.Id,
+                actor.Login,
+                patient.Id,
+                nameof(Patient),
+                $"Triage w module wstępnym — oczekuje na ręczny przydział do strefy.",
+                true,
+                cancellationToken).ConfigureAwait(false);
+
+            return;
+        }
+
+        var zone = await GetZoneAsync(actor.CurrentZoneId, cancellationToken).ConfigureAwait(false);
+        var activeInZone = await _unitOfWork.Patients
+            .CountActiveByZoneAsync(zone.Id, cancellationToken).ConfigureAwait(false);
+
+        if (!zone.CanAcceptPatient(activeInZone))
+        {
+            await _auditLog.RecordAsync(
+                AuditActionType.PatientZoneChanged,
+                actor.Id,
+                actor.Login,
+                patient.Id,
+                nameof(ZoneTransfer),
+                $"Brak wolnych miejsc w strefie '{zone.Name}' — pacjent oczekuje na przydział ręczny.",
+                false,
+                cancellationToken).ConfigureAwait(false);
+
+            return;
+        }
+
+        var transfer = ZoneTransfer.InitialAssignment(
+            _idGenerator.NewId(),
+            patient.Id,
+            zone.Id,
+            actor.Id,
+            now);
+
+        await RecordZoneAssignmentAsync(
+            patient,
+            zone,
+            actor,
+            now,
+            transfer,
+            $"Przydział do strefy '{zone.Name}' — triage wykonany w tej strefie.",
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PatientDetailsDto> AssignToZoneAsync(Guid patientId, Guid zoneId, CancellationToken cancellationToken = default)
@@ -157,8 +230,6 @@ public sealed class PatientService : IPatientService
             throw new ZoneCapacityExceededException(zone.Name, zone.Capacity);
         }
 
-        patient.AssignToZone(zone.Id, now);
-
         var transfer = ZoneTransfer.InitialAssignment(
             _idGenerator.NewId(),
             patient.Id,
@@ -166,6 +237,34 @@ public sealed class PatientService : IPatientService
             actor.Id,
             now);
 
+        await RecordZoneAssignmentAsync(
+            patient,
+            zone,
+            actor,
+            now,
+            transfer,
+            $"Przydział pacjenta {patient.FullName} do strefy '{zone.Name}'.",
+            cancellationToken).ConfigureAwait(false);
+
+        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
+
+        return await GetPatientAsync(patientId, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Wspólny zapis przydziału do strefy: przypisanie pacjenta, historia przeniesień oraz wpis
+    /// audytowy. Nie zamyka transakcji — decyzję o commicie podejmuje wywołujący.
+    /// </summary>
+    private async Task RecordZoneAssignmentAsync(
+        Patient patient,
+        Zone zone,
+        AuthenticatedUserDto actor,
+        DateTimeOffset now,
+        ZoneTransfer transfer,
+        string auditMessage,
+        CancellationToken cancellationToken)
+    {
+        patient.AssignToZone(zone.Id, now);
         patient.RecordTransfer(transfer);
 
         // Jawne dodanie do kontekstu — patrz komentarz przy ocenie Triage powyżej.
@@ -177,13 +276,9 @@ public sealed class PatientService : IPatientService
             actor.Login,
             patient.Id,
             nameof(ZoneTransfer),
-            $"Przydział pacjenta {patient.FullName} do strefy '{zone.Name}'.",
+            auditMessage,
             true,
             cancellationToken).ConfigureAwait(false);
-
-        await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
-
-        return await GetPatientAsync(patientId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<PatientDetailsDto> TransferPatientAsync(
@@ -265,6 +360,14 @@ public sealed class PatientService : IPatientService
         var actor = RequireAuthenticatedUser();
         var now = _clock.UtcNow;
 
+        // BR-13: zlecenie lekarskie może wystawić wyłącznie lekarz lub koordynator.
+        // Ratownik medyczny i pielęgniarka realizują zlecenia, ale ich nie wystawiają.
+        if (!actor.CanIssueOrders)
+        {
+            throw new AuthorizationException(
+                "Zlecenie lekarskie może wystawić wyłącznie lekarz lub koordynator (BR-13).");
+        }
+
         var patient = await GetPatientEntityAsync(patientId, cancellationToken).ConfigureAwait(false);
         patient.AcquireLock(actor.Login, now, LockTimeout);
 
@@ -342,7 +445,7 @@ public sealed class PatientService : IPatientService
         var actor = RequireAuthenticatedUser();
 
         // BR-13: rozpoznanie może wystawić wyłącznie lekarz lub koordynator.
-        if (actor.Role == UserRole.Nurse)
+        if (!actor.CanEnterDiagnosis)
         {
             throw new AuthorizationException(
                 "Rozpoznanie ICD-10 może wprowadzić wyłącznie lekarz lub koordynator (BR-13).");
@@ -471,7 +574,7 @@ public sealed class PatientService : IPatientService
 
         var patient = await GetPatientEntityAsync(patientId, cancellationToken).ConfigureAwait(false);
 
-        if (actor.Role == UserRole.Nurse && !transportCompleted)
+        if (!actor.CanConfirmTransport && !transportCompleted)
         {
             throw new AuthorizationException(
                 "Potwierdzenie transportu pacjenta wymaga uprawnień lekarza lub koordynatora (BR-13).");

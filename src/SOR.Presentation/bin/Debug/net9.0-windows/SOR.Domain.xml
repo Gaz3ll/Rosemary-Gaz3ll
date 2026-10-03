@@ -429,6 +429,9 @@
         <member name="M:SOR.Domain.Entities.MedicalOrder.EnsureCanBeCompletedBy(SOR.Domain.Enums.UserRole)">
             <summary>Reguła BR-13: zlecenie lekarskie może oznaczyć jako zrealizowane wyłącznie lekarz lub koordynator.</summary>
         </member>
+        <member name="P:SOR.Domain.Entities.MedicalOrder.CanBeCompleted">
+            <summary>Czy zlecenie pozostaje do realizowania i może zostać oznaczone jako wykonane.</summary>
+        </member>
         <member name="T:SOR.Domain.Entities.Medication">
              <summary>
              Lek z katalogu SOR — pozycja katalogu możliwych do podania preparatów, a nie zlecenie.
@@ -800,6 +803,13 @@
         <member name="M:SOR.Domain.Entities.Zone.EnsureCanAcceptPatient(System.Int32)">
             <summary>Reguła BR-04: strefa nie przyjmuje pacjentów powyżej zdolności przyjęciowej.</summary>
         </member>
+        <member name="M:SOR.Domain.Entities.Zone.CanAcceptPatient(System.Int32)">
+            <summary>
+            Odpowiedź na pytanie, czy strefa przyjmie kolejnego pacjenta, bez rzucania wyjątku.
+            Potrzebna przy przydziale automatycznym, w którym brak miejsca nie może cofnąć zapisu
+            już wykonanej oceny Triage — pacjent zostaje w stanie Triaged do przydziału ręcznego.
+            </summary>
+        </member>
         <member name="M:SOR.Domain.Entities.Zone.CanAcceptRotation">
             <summary>Określa, czy strefa jest strefą docelową dla rotacji (strefa aktywna).</summary>
         </member>
@@ -1127,6 +1137,12 @@
         <member name="F:SOR.Domain.Enums.UserRole.Coordinator">
             <summary>Koordynator / ordynator — nadzór nad grafikiem, rotacją i wszystkimi strefami.</summary>
         </member>
+        <member name="F:SOR.Domain.Enums.UserRole.Paramedic">
+            <summary>
+            Ratownik medyczny — realizuje zlecenia lekarskie na leki i badania obrazowe w strefie,
+            w której dyżuruje. Nie wystawia zleceń i nie stawia rozpoznań (BR-13).
+            </summary>
+        </member>
         <member name="T:SOR.Domain.Enums.ZoneKind">
             <summary>Fizyczna strefa oddziału SOR (moduł wstępny Triage traktowany jest jako strefa organizacyjna).</summary>
         </member>
@@ -1299,6 +1315,28 @@
             </summary>
             <param name="dateOfBirth">Data urodzenia zadeklarowana przez użytkownika.</param>
             <returns><c>true</c>, gdy dzień, miesiąc i dwie cyfry roku się zgadzają.</returns>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.MatchesGender(SOR.Domain.Enums.PatientGender)">
+            <summary>
+            Sprawdza, czy zadeklarowana płeć odpowiada płci zakodowanej w numerze (BR-18).
+            Numer rozróżnia wyłącznie płeć żeńską i męską, więc <see cref="F:SOR.Domain.Enums.PatientGender.Other"/>
+            nie pasuje do żadnego numeru.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.ToPatientGender">
+            <summary>Płeć zakodowana w numerze, wyrażona enumem domenowym.</summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.TryDecode(System.String,System.DateOnly@,SOR.Domain.Enums.PatientGender@)">
+            <summary>
+            Wyprowadza datę urodzenia i płeć wprost z numeru PESEL. Używane przez formularz
+            rejestracji, który po wpisaniu numeru uzupełnia te dwa pola bez udziału użytkownika.
+            Stulecie daty jest przybliżone tak samo jak w <see cref="P:SOR.Domain.ValueObjects.PeselNumber.DateOfBirth"/> — numer
+            koduje tylko dwie cyfry roku.
+            </summary>
+            <param name="raw">Wprowadzony numer — spacje i myślniki są ignorowane.</param>
+            <param name="dateOfBirth">Data odczytana z numeru.</param>
+            <param name="gender">Płeć odczytana z dziesiątej cyfry.</param>
+            <returns><c>true</c>, gdy numer jest poprawny i obie wartości zostały odczytane.</returns>
         </member>
         <member name="M:SOR.Domain.ValueObjects.PeselNumber.TryParse(System.String,SOR.Domain.ValueObjects.PeselNumber@)">
             <summary>

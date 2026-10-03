@@ -42,8 +42,27 @@ przez `DatabaseSeeder` i operacja jest idempotentna.
 | `lekarz.emg` | `SOR2026!emg` | Lekarz | EMG |
 | `lekarz.trm` | `SOR2026!trm` | Lekarz | TRM |
 | `lekarz.int` | `SOR2026!int` | Lekarz | INT |
+| `ratownik.emg` | `SOR2026!remg` | Ratownik medyczny | EMG |
+| `ratownik.trm` | `SOR2026!rtrm` | Ratownik medyczny | TRM |
+| `ratownik.int` | `SOR2026!rint` | Ratownik medyczny | INT |
 | `piel.triage` | `SOR2026!tri` | Pielęgniarka | TRI |
 | `piel.trm` | `SOR2026!pt` | Pielęgniarka | TRI |
+
+Ratownik medyczny dyżuruje wyłącznie w strefach klinicznych (EMG, TRM, INT) — moduł wstępny
+TRI obsługują pielęgniarki. Konta ratowników są tworzone razem z danymi startowymi, a przy
+kolejnych uruchomieniach `DatabaseSeeder.EnsureParamedicAccountsAsync` uzupełnia nimi bazę,
+która powstała jeszcze przed dodaniem tej roli.
+
+Uprawnienia ratownika medycznego (BR-13):
+
+| Czynność | Ratownik medyczny |
+|---|---|
+| Oznaczenie zlecenia podania leku jako zrealizowanego | Tak |
+| Oznaczenie zlecenia badania obrazowego jako zrealizowanego | Tak |
+| Oznaczenie zlecenia laboratoryjnego, zabiegu, konsultacji lub obserwacji | Nie — zostaje w gestii lekarza |
+| Wystawienie zlecenia lekarskiego | Nie — lekarz lub koordynator |
+| Postawienie rozpoznania ICD-10, zastosowanie pakietu medycznego | Nie — lekarz lub koordynator |
+| Zamknięcie karty pacjenta | Nie — lekarz lub koordynator |
 
 ### Strefy i pojemności
 
@@ -73,7 +92,7 @@ Bindingi do właściwości tylko do odczytu (`ProgressBar.Value`, kolumny `DataG
 
 ## 4. Testy
 
-Łącznie **15 testów** (xUnit), wszystkie przechodzą. Dzielą się na dwie grupy.
+Łącznie **92 testy** (xUnit), wszystkie przechodzą. Dzielą się na cztery grupy.
 
 ### `PersistenceTests` — trwałość (5)
 
@@ -104,6 +123,22 @@ Uruchomienie samych scenariuszy:
 dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualifiedName~ScenarioTests"
 ```
 
+### `ParamedicPermissionsTests` — uprawnienia ratownika medycznego (17)
+
+| Test | Reguła / cel |
+|---|---|
+| `SeedTworzyJednoKontoRatownikaWKazdejStrefieKlinicznej` | Komplet kont EMG/INT/TRM |
+| `RatownikNieMaKontaWStrefieTriage` | Brak ratownika w module wstępnym |
+| `RatownikLogujeSieDoWlasnejStrefy` (3 przypadki) | BR-02/BR-16 dla nowej roli |
+| `RatownikRealizujeZlecenieLekuIBadaniaObrazowego` (2 przypadki) | BR-13 — realizacja zleceń |
+| `RatownikNieRealizujeZlecenInnychTypow` (4 przypadki) | BR-13 — lab, zabieg, konsultacja, obserwacja |
+| `RatownikNieWystawiaZlecenLekarskich` | BR-13 |
+| `RatownikNieUstawiaRozpoznania` | BR-13 |
+| `RatownikNieStosujePakietuMedycznego` | BR-13 |
+| `RatownikNieZamykaKartyBezPotwierdzonegoTransportu` | BR-09/BR-13 |
+| `LekarzNadalRealizujeKazdeZlecenie` | Brak regresji dla lekarza |
+| `SeedUzupelniaKontaRatownikowWJuzyIstniejacejBazie` | Uzupełnianie bazy sprzed dodania roli |
+
 ## 5. Kluczowe decyzje implementacyjne
 
 1. **Jawne dodawanie bytów potomnych** (`TriageAssessment`, `ZoneTransfer`) przez repozytoria —
@@ -126,6 +161,9 @@ dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualif
 4. Otwórz kartę pacjenta: dodaj zlecenie, ustaw rozpoznanie ICD-10 (`I21.4`).
 5. Spróbuj zamknąć kartę — system zgłosi blokady (otwarte zlecenia / brak transportu).
 6. Zaloguj się jako `ordynator`, aby zobaczyć wszystkie strefy i zlecić rotację innemu pracownikowi.
+7. Zaloguj się jako `ratownik.trm` / `SOR2026!rtrm` — otwórz kartę pacjenta i oznacz zlecenie
+   podania leku lub badania obrazowego przyciskiem **Wykonane**; zlecenie laboratoryjne,
+   zabiegu i konsultacji pozostaje niedostępne, a formularz dodawania zlecenia jest zablokowany.
 
 ## 7. Znane ograniczenia
 

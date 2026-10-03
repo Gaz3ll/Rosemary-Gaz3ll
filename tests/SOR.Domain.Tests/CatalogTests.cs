@@ -100,6 +100,64 @@ public sealed class PeselNumberTests
         Assert.Equal(PeselNumber.GenderEncoded.Female, pesel.Gender);
     }
 
+    [Theory]
+    [InlineData("85441410008", 1985, 4, 14, PatientGender.Male)]
+    [InlineData("90311210011", 1990, 11, 12, PatientGender.Female)]
+    [InlineData("25262112349", 2025, 6, 21, PatientGender.Male)]
+    public void TryDecode_WyliczaDateUrDZINaIPlecZNumeru(
+        string raw,
+        int year,
+        int month,
+        int day,
+        PatientGender gender)
+    {
+        Assert.True(PeselNumber.TryDecode(raw, out var dateOfBirth, out var decodedGender));
+
+        Assert.Equal(new DateOnly(year, month, day), dateOfBirth);
+        Assert.Equal(gender, decodedGender);
+    }
+
+    [Theory]
+    [InlineData("8544141000")]     // za krótki
+    [InlineData("854414100080")]   // za długi
+    [InlineData("85441410002")]    // zła suma kontrolna
+    [InlineData("85023012347")]    // 30 lutego nie istnieje
+    [InlineData("")]
+    [InlineData(null)]
+    public void TryDecode_OdrzucaNumerNiepoprawny(string? raw)
+    {
+        Assert.False(PeselNumber.TryDecode(raw, out _, out _));
+    }
+
+    [Fact]
+    public void MatchesGender_RozpoznajeZgodnaZNiezgodnaPlec()
+    {
+        var pesel = PeselNumber.Create("85441410008");
+
+        Assert.True(pesel.MatchesGender(PatientGender.Male));
+        Assert.False(pesel.MatchesGender(PatientGender.Female));
+
+        // Numer rozróżnia tylko płeć żeńską i męską, więc "Other" nie pasuje do żadnego PESEL.
+        Assert.False(pesel.MatchesGender(PatientGender.Other));
+    }
+
+    [Fact]
+    public void RejestracjaPacjenta_OdrzucaPlecInnaNiżZakodowanaWNumerze()
+    {
+        // PESEL 90311210011 koduje płeć żeńską, a w formularzu wybrano "Inna".
+        var exception = Assert.Throws<ValidationException>(() => Patient.Register(
+            Guid.NewGuid(),
+            "90311210011",
+            "Anna",
+            "Nowak",
+            new DateOnly(1990, 11, 12),
+            PatientGender.Other,
+            null,
+            DateTimeOffset.UtcNow));
+
+        Assert.Contains("BR-18", exception.Message, StringComparison.Ordinal);
+    }
+
     [Fact]
     public void RejestracjaPacjenta_OdrzucaPeselNiezgodnyZDatąUrDZIN()
     {

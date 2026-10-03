@@ -121,6 +121,7 @@ public sealed class PolishEnumConverter : IValueConverter
             UserRole.Physician => "Lekarz",
             UserRole.Nurse => "Pielęgniarka",
             UserRole.Coordinator => "Koordynator",
+            UserRole.Paramedic => "Ratownik medyczny",
             _ => Fallback(value),
         },
         ReassignmentKind kind => kind switch

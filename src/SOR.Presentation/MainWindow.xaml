@@ -113,6 +113,9 @@
                                 <TextBlock Text="Rejestracja pacjenta (BR-03)" Style="{StaticResource SectionHeader}" />
                                 <TextBlock Text="PESEL (11 cyfr)" Style="{StaticResource FieldLabel}" />
                                 <TextBox Text="{Binding Board.Pesel, UpdateSourceTrigger=PropertyChanged}" />
+                                <TextBlock Text="{Binding Board.PeselDerivedHint, UpdateSourceTrigger=PropertyChanged}"
+                                           Style="{StaticResource FieldHint}"
+                                           Visibility="{Binding Board.PeselDerivedHint, Converter={StaticResource StringToVisibility}}" />
                                 <TextBlock Text="Imię" Style="{StaticResource FieldLabel}" />
                                 <TextBox Text="{Binding Board.FirstName, UpdateSourceTrigger=PropertyChanged}" />
                                 <TextBlock Text="Nazwisko" Style="{StaticResource FieldLabel}" />
@@ -168,6 +171,24 @@
                                 <TextBox Text="{Binding Board.VitalSigns, UpdateSourceTrigger=PropertyChanged}"
                                          AcceptsReturn="True" Height="44" TextWrapping="Wrap" />
                                 <Button Content="Wykonaj Triage" Command="{Binding Board.PerformTriageCommand}"
+                                        Margin="0,8,0,0" />
+
+                                <TextBlock Text="Przydział ręczny do strefy" Style="{StaticResource FieldLabel}" />
+                                <TextBlock Style="{StaticResource FieldHint}"
+                                           Text="Triage w strefie klinicznej przydziela pacjenta automatycznie. Wybór strefy jest potrzebny w module wstępnym lub przy braku wolnych miejsc." />
+                                <TextBlock Text="{Binding Board.ZoneAssignmentTargetName, Mode=OneWay}"
+                                           Style="{StaticResource FieldHint}" />
+                                <ComboBox ItemsSource="{Binding Session.Zones}"
+                                          SelectedItem="{Binding Board.SelectedZoneForAssignment}">
+                                    <ComboBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock>
+                                                <Run Text="{Binding ZoneName, Mode=OneWay}" /><Run Text=" (" /><Run Text="{Binding FreeBeds, Mode=OneWay}" /><Run Text=" wolnych miejsc)" />
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ComboBox.ItemTemplate>
+                                </ComboBox>
+                                <Button Content="Przydziel do strefy" Command="{Binding Board.AssignToZoneCommand}"
                                         Margin="0,8,0,0" />
 
                                 <Expander Header="Wniosek o zmianę strefy (BR-05)" Margin="0,16,0,0" IsExpanded="True">
@@ -272,24 +293,39 @@
                                         </ItemsControl>
 
                                         <TextBlock Text="Zlecenia lekarskie" Style="{StaticResource SectionHeader}" />
-                                        <DataGrid ItemsSource="{Binding Orders}" Height="120">
+                                        <DataGrid ItemsSource="{Binding Orders}" Height="140">
                                             <DataGrid.Columns>
-                                                <DataGridTextColumn Header="Typ" Width="120">
+                                                <DataGridTextColumn Header="Typ" Width="110">
                                                     <DataGridTextColumn.Binding>
                                                         <Binding Path="Type" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
                                                     </DataGridTextColumn.Binding>
                                                 </DataGridTextColumn>
                                                 <DataGridTextColumn Header="Opis" Binding="{Binding Description, Mode=OneWay}" Width="*" />
-                                                <DataGridTextColumn Header="Stan" Width="100">
+                                                <DataGridTextColumn Header="Stan" Width="95">
                                                     <DataGridTextColumn.Binding>
                                                         <Binding Path="State" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
                                                     </DataGridTextColumn.Binding>
                                                 </DataGridTextColumn>
+                                                <!-- Realizacja zlecenia: lekarz, koordynator oraz ratownik medyczny
+                                                     (dla zleceń leku i badania obrazowego) — BR-13. -->
+                                                <DataGridTemplateColumn Header="Realizacja" Width="110">
+                                                    <DataGridTemplateColumn.CellTemplate>
+                                                        <DataTemplate>
+                                                            <Button Content="Wykonane"
+                                                                    MinWidth="0"
+                                                                    Padding="8,3"
+                                                                    Margin="0"
+                                                                    Command="{Binding DataContext.Board.CompleteOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                                    CommandParameter="{Binding}" />
+                                                        </DataTemplate>
+                                                    </DataGridTemplateColumn.CellTemplate>
+                                                </DataGridTemplateColumn>
                                             </DataGrid.Columns>
                                         </DataGrid>
 
                                         <TextBlock Text="Dodaj zlecenie" Style="{StaticResource SectionHeader}" />
                                         <ComboBox ItemsSource="{Binding DataContext.Board.OrderTypes, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  IsEnabled="{Binding DataContext.Board.CanIssueOrders, RelativeSource={RelativeSource AncestorType=Window}}"
                                                   SelectedItem="{Binding DataContext.Board.OrderType, RelativeSource={RelativeSource AncestorType=Window}}">
                                             <ComboBox.ItemTemplate>
                                                 <DataTemplate>
@@ -301,6 +337,7 @@
                                         <CheckBox Content="Pilne" Margin="0,4"
                                                   IsChecked="{Binding DataContext.Board.OrderUrgent, RelativeSource={RelativeSource AncestorType=Window}}" />
                                         <Button Content="Dodaj zlecenie"
+                                                IsEnabled="{Binding DataContext.Board.CanIssueOrders, RelativeSource={RelativeSource AncestorType=Window}}"
                                                 Command="{Binding DataContext.Board.AddOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
 
                                         <TextBlock Text="Rozpoznanie ICD-10 (BR-13)" Style="{StaticResource SectionHeader}" />

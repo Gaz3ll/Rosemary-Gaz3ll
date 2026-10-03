@@ -10,5 +10,11 @@ public enum UserRole
     Nurse = 2,
 
     /// <summary>Koordynator / ordynator — nadzór nad grafikiem, rotacją i wszystkimi strefami.</summary>
-    Coordinator = 3
+    Coordinator = 3,
+
+    /// <summary>
+    /// Ratownik medyczny — realizuje zlecenia lekarskie na leki i badania obrazowe w strefie,
+    /// w której dyżuruje. Nie wystawia zleceń i nie stawia rozpoznań (BR-13).
+    /// </summary>
+    Paramedic = 4
 }

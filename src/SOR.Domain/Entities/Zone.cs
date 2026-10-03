@@ -73,18 +73,23 @@ public sealed class Zone : Entity<Guid>
     /// <summary>Reguła BR-04: strefa nie przyjmuje pacjentów powyżej zdolności przyjęciowej.</summary>
     public void EnsureCanAcceptPatient(int currentActivePatientCount)
     {
-        if (!IsActive)
+        if (!CanAcceptPatient(currentActivePatientCount))
         {
-            throw new ValidationException($"Strefa '{Name}' jest nieaktywna i nie przyjmuje pacjentów (BR-04).", nameof(currentActivePatientCount));
-        }
-
-        if (currentActivePatientCount >= Capacity)
-        {
-            throw new ValidationException(
-                $"Strefa '{Name}' osiągnęła zdolność przyjęciową ({Capacity}) — brak wolnych miejsc (BR-04).",
-                nameof(currentActivePatientCount));
+            throw new ValidationException(DescribeRefusal(), nameof(currentActivePatientCount));
         }
     }
+
+    /// <summary>
+    /// Odpowiedź na pytanie, czy strefa przyjmie kolejnego pacjenta, bez rzucania wyjątku.
+    /// Potrzebna przy przydziale automatycznym, w którym brak miejsca nie może cofnąć zapisu
+    /// już wykonanej oceny Triage — pacjent zostaje w stanie Triaged do przydziału ręcznego.
+    /// </summary>
+    public bool CanAcceptPatient(int currentActivePatientCount) =>
+        IsActive && currentActivePatientCount < Capacity;
+
+    private string DescribeRefusal() => IsActive
+        ? $"Strefa '{Name}' osiągnęła zdolność przyjęciową ({Capacity}) — brak wolnych miejsc (BR-04)."
+        : $"Strefa '{Name}' jest nieaktywna i nie przyjmuje pacjentów (BR-04).";
 
     /// <summary>Określa, czy strefa jest strefą docelową dla rotacji (strefa aktywna).</summary>
     public bool CanAcceptRotation() => IsActive;

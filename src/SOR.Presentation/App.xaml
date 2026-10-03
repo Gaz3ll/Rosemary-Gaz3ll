@@ -81,6 +81,32 @@
             <Setter Property="Margin" Value="0,2" />
         </Style>
 
+        <!-- Listy rozwijane: domyślny szablon WPF rysuje rozwijaną listę, jej obramowanie
+             oraz wyróżnienie pozycji kolorami systemowymi, przez co w motywie ciemnym
+             pojawia się jasne tło pod jasnym tekstem. Dlatego szablon i pozycje są
+             zbudowane na pędzlach motywu — bez zmian przy przełączeniu motywu w locie. -->
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="MinHeight" Value="22" />
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource SurfaceAltBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+                    <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}" />
+                    <Setter Property="FontWeight" Value="SemiBold" />
+                </Trigger>
+                <Trigger Property="IsEnabled" Value="False">
+                    <Setter Property="Opacity" Value="0.5" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <Style TargetType="ComboBox">
             <Setter Property="Margin" Value="0,2" />
             <Setter Property="Padding" Value="4" />
@@ -88,6 +114,92 @@
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="MinHeight" Value="26" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Chrome"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4" />
+
+                            <ToggleButton x:Name="ToggleButton"
+                                          Focusable="False"
+                                          ClickMode="Press"
+                                          Background="Transparent"
+                                          BorderThickness="0"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="Transparent" />
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+
+                            <ContentPresenter x:Name="ContentSite"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center"
+                                              IsHitTestVisible="False"
+                                              Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}" />
+
+                            <Path x:Name="Arrow"
+                                  Width="8"
+                                  Height="5"
+                                  Margin="0,0,10,0"
+                                  HorizontalAlignment="Right"
+                                  VerticalAlignment="Center"
+                                  Data="M 0,0 L 4,5 L 8,0 Z"
+                                  Fill="{DynamicResource TextSecondaryBrush}"
+                                  IsHitTestVisible="False" />
+
+                            <Popup x:Name="PART_Popup"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   Placement="Bottom"
+                                   PopupAnimation="Fade"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}">
+                                <Border Margin="0,3,0,0"
+                                        Padding="2"
+                                        MinWidth="{TemplateBinding ActualWidth}"
+                                        MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                        Background="{DynamicResource SurfaceBrush}"
+                                        BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <ScrollViewer VerticalScrollBarVisibility="Auto"
+                                                  HorizontalScrollBarVisibility="Disabled">
+                                        <StackPanel IsItemsHost="True"
+                                                    KeyboardNavigation.DirectionalNavigation="Contained" />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AccentHoverBrush}" />
+                                <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource AccentHoverBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                                <Setter TargetName="Arrow" Property="Fill" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                                <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource AccentBrush}" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Chrome" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style TargetType="ProgressBar">
@@ -144,6 +256,14 @@
         <Style x:Key="FieldLabel" TargetType="TextBlock">
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
             <Setter Property="Margin" Value="0,6,0,0" />
+        </Style>
+
+        <!-- Podpowiedz pod polem: informacja o danych wyprowadzonych z innego pola. -->
+        <Style x:Key="FieldHint" TargetType="TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            <Setter Property="FontSize" Value="11" />
+            <Setter Property="TextWrapping" Value="Wrap" />
+            <Setter Property="Margin" Value="0,2,0,0" />
         </Style>
 
         <!-- Karta/kafelek: powierzchnia z obramowaniem, wspólna dla paneli pulpitu. -->

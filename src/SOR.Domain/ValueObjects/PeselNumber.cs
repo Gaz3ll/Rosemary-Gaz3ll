@@ -1,5 +1,6 @@
 using System.Globalization;
 using SOR.Domain.Common;
+using SOR.Domain.Enums;
 
 namespace SOR.Domain.ValueObjects;
 
@@ -75,6 +76,47 @@ public sealed class PeselNumber : ValueObject
         return dateOfBirth.Month == month
             && dateOfBirth.Day == day
             && dateOfBirth.Year % 100 == twoDigitYear;
+    }
+
+    /// <summary>
+    /// Sprawdza, czy zadeklarowana płeć odpowiada płci zakodowanej w numerze (BR-18).
+    /// Numer rozróżnia wyłącznie płeć żeńską i męską, więc <see cref="PatientGender.Other"/>
+    /// nie pasuje do żadnego numeru.
+    /// </summary>
+    public bool MatchesGender(PatientGender gender) => gender == ToPatientGender();
+
+    /// <summary>Płeć zakodowana w numerze, wyrażona enumem domenowym.</summary>
+    public PatientGender ToPatientGender() => Gender switch
+    {
+        GenderEncoded.Female => PatientGender.Female,
+        GenderEncoded.Male => PatientGender.Male,
+        _ => PatientGender.Other
+    };
+
+    /// <summary>
+    /// Wyprowadza datę urodzenia i płeć wprost z numeru PESEL. Używane przez formularz
+    /// rejestracji, który po wpisaniu numeru uzupełnia te dwa pola bez udziału użytkownika.
+    /// Stulecie daty jest przybliżone tak samo jak w <see cref="DateOfBirth"/> — numer
+    /// koduje tylko dwie cyfry roku.
+    /// </summary>
+    /// <param name="raw">Wprowadzony numer — spacje i myślniki są ignorowane.</param>
+    /// <param name="dateOfBirth">Data odczytana z numeru.</param>
+    /// <param name="gender">Płeć odczytana z dziesiątej cyfry.</param>
+    /// <returns><c>true</c>, gdy numer jest poprawny i obie wartości zostały odczytane.</returns>
+    public static bool TryDecode(string? raw, out DateOnly dateOfBirth, out PatientGender gender)
+    {
+        if (TryParse(raw, out var pesel) && pesel is not null)
+        {
+            dateOfBirth = pesel.DateOfBirth;
+            gender = pesel.ToPatientGender();
+
+            return true;
+        }
+
+        dateOfBirth = default;
+        gender = default;
+
+        return false;
     }
 
     /// <summary>

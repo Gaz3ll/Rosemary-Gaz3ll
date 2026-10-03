@@ -133,11 +133,7 @@ public sealed class Patient : Entity<Guid>
                 nameof(dateOfBirth));
         }
 
-        var expectedGender = peselNumber.Gender == PeselNumber.GenderEncoded.Female
-            ? PatientGender.Female
-            : PatientGender.Male;
-
-        if (gender != expectedGender)
+        if (!peselNumber.MatchesGender(gender))
         {
             throw new ValidationException(
                 "Płeć nie zgadza się z płcią zakodowaną w numerze PESEL (BR-18).",

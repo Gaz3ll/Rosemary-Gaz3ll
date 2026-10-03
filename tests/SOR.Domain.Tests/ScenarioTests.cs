@@ -373,6 +373,178 @@ public sealed class ScenarioTests : IAsyncLifetime
         Assert.DoesNotContain(publisher.PublishedEvents, e => e is ZoneOverloadedEvent);
     }
 
+
+    /// <summary>
+    /// WF-04: ocena Triage wykonana w strefie klinicznej kończy się przydziałem pacjenta do tej
+    /// strefy — personel pracuje w strefie wynikającej z grafiku dyżurów (BR-02), więc strefa
+    /// triage'u jest jednocześnie strefą przyjęcia.
+    /// </summary>
+    [Fact]
+    public async Task TriageWStrefieKlinicznej_PrzydzielaAutomatycznieDoTejStrefy()
+    {
+        await using var provider = await BuildProviderAsync();
+        await using var scope = provider.CreateAsyncScope();
+
+        var auth = scope.ServiceProvider.GetRequiredService<IAuthenticationService>();
+        var patients = scope.ServiceProvider.GetRequiredService<IPatientService>();
+
+        await auth.LoginAsync("lekarz.emg", "SOR2026!emg");
+
+        var zoneId = auth.CurrentUser!.CurrentZoneId;
+
+        var registered = await patients.RegisterPatientAsync(
+            GeneratePesel(1971, 5, 12, isFemale: false),
+            "Anna",
+            "Testowa",
+            new DateOnly(1971, 5, 12),
+            PatientGender.Male,
+            "Ból w klatce piersiowej");
+
+        // Sama rejestracja nie przydziela strefy — pacjent czeka w kolejce triage.
+        Assert.Null(registered.ZoneId);
+
+        var triaged = await patients.PerformTriageAsync(
+            registered.Id,
+            TriageCategory.Red,
+            "Ból w klatce piersiowej, RR 180/110",
+            "RR 180/110, HR 120");
+
+        Assert.Equal(zoneId, triaged.ZoneId);
+        Assert.Equal(PatientState.InTreatment, triaged.State);
+        Assert.Contains(triaged.Transfers, t => t.ToZoneName == triaged.ZoneName && t.IsInitialAssignment);
+
+        var awaiting = await patients.GetAwaitingTriageAsync();
+        var zonePatients = await patients.GetZonePatientsAsync(zoneId);
+
+        Assert.DoesNotContain(awaiting, p => p.Id == registered.Id);
+        Assert.Contains(zonePatients, p => p.Id == registered.Id);
+
+        _output.WriteLine($"Triage w strefie klinicznej: {registered.FullName} -> {triaged.ZoneName} ({triaged.State}).");
+    }
+
+    /// <summary>
+    /// Pracownik modułu wstępnego (TRI) wykonuje ocenę, ale nie przyjmuje pacjenta sam — brak
+    /// strefy klinicznej oznacza ocenę zapisaną w stanie Triaged i przydział ręczny przez
+    /// personel strefy docelowej lub koordynatora (BR-01a, BR-12).
+    /// </summary>
+    [Fact]
+    public async Task TriageWModuleWstepnym_PozostajeBezStrefy_DoPrzydzialuRecznego()
+    {
+        await using var provider = await BuildProviderAsync();
+        await using var scope = provider.CreateAsyncScope();
+
+        var auth = scope.ServiceProvider.GetRequiredService<IAuthenticationService>();
+        var patients = scope.ServiceProvider.GetRequiredService<IPatientService>();
+        var query = scope.ServiceProvider.GetRequiredService<IZoneLoadQueryService>();
+
+        await auth.LoginAsync("piel.triage", "SOR2026!tri");
+
+        Assert.Equal(ZoneKind.Triage, auth.CurrentUser!.CurrentZoneKind);
+
+        var registered = await patients.RegisterPatientAsync(
+            GeneratePesel(1988, 3, 7, isFemale: true),
+            "Ewa",
+            "Testowa",
+            new DateOnly(1988, 3, 7),
+            PatientGender.Female,
+            "Ból brzucha");
+
+        var triaged = await patients.PerformTriageAsync(
+            registered.Id,
+            TriageCategory.Yellow,
+            "Ból brzucha, gorączka",
+            "T 37,8, HR 96");
+
+        Assert.Null(triaged.ZoneId);
+        Assert.Null(triaged.ZoneName);
+        Assert.Equal(PatientState.Triaged, triaged.State);
+        Assert.Equal(TriageCategory.Yellow, triaged.Triage);
+
+        // Ocena nie może zostać cofnięta, a pacjent znika z kolejki oczekujących na triage.
+        var awaiting = await patients.GetAwaitingTriageAsync();
+
+        Assert.DoesNotContain(awaiting, p => p.Id == registered.Id);
+
+        // Przydział ręczny: kolejny krok wykonuje personel strefy docelowej.
+        await auth.LoginAsync("lekarz.int", "SOR2026!int");
+
+        var internalZoneId = auth.CurrentUser!.CurrentZoneId;
+
+        var assigned = await patients.AssignToZoneAsync(registered.Id, internalZoneId);
+
+        Assert.Equal(internalZoneId, assigned.ZoneId);
+        Assert.Equal(PatientState.InTreatment, assigned.State);
+
+        _output.WriteLine($"Moduł wstępny: {registered.FullName} oceniony, przydział ręczny -> {assigned.ZoneName}.");
+    }
+
+    /// <summary>
+    /// BR-04: brak wolnego miejsca w strefie nie może cofnąć wykonanej oceny Triage. Pacjent
+    /// zostaje w stanie Triaged, a odmowa przydziału trafia do dziennika audytowego — decyzję
+    /// o dalszym postępowaniu podejmuje personel.
+    /// </summary>
+    [Fact]
+    public async Task TriageWPelnejStrefie_NieCofaOceny_PacjentCzekaNaPrzydzial()
+    {
+        await using var provider = await BuildProviderAsync();
+        await using var scope = provider.CreateAsyncScope();
+
+        var auth = scope.ServiceProvider.GetRequiredService<IAuthenticationService>();
+        var patients = scope.ServiceProvider.GetRequiredService<IPatientService>();
+        var query = scope.ServiceProvider.GetRequiredService<IZoneLoadQueryService>();
+        var audit = scope.ServiceProvider.GetRequiredService<IAuditLogService>();
+
+        await auth.LoginAsync("lekarz.emg", "SOR2026!emg");
+
+        var zoneId = auth.CurrentUser!.CurrentZoneId;
+        var zone = (await query.GetSnapshotAsync()).Zones.First(z => z.ZoneId == zoneId);
+        var missing = Math.Max(0, zone.Capacity - zone.ActivePatientCount);
+
+        // Wypełnienie strefy pacjentami triażowanymi w tej samej strefie.
+        for (var i = 0; i < missing; i++)
+        {
+            var patient = await patients.RegisterPatientAsync(
+                GeneratePesel(1960 + i, 1 + (i % 12), 1 + (i % 28), isFemale: false),
+                "Jan",
+                $"Zapelnienie{i}",
+                new DateOnly(1960 + i, 1 + (i % 12), 1 + (i % 28)),
+                PatientGender.Male,
+                "Test zapełniania strefy");
+
+            await patients.PerformTriageAsync(patient.Id, TriageCategory.Green, "Test zapełniania", "Parametry w normie");
+        }
+
+        var full = await patients.GetZonePatientsAsync(zoneId);
+
+        Assert.Equal(zone.Capacity, full.Count);
+
+        var overflow = await patients.RegisterPatientAsync(
+            GeneratePesel(1995, 9, 9, isFemale: false),
+            "Piotr",
+            "Nadmiarowy",
+            new DateOnly(1995, 9, 9),
+            PatientGender.Male,
+            "Test pełnej strefy");
+
+        var triaged = await patients.PerformTriageAsync(
+            overflow.Id,
+            TriageCategory.Orange,
+            "Pilny przypadek przy pełnej strefie",
+            "RR 160/100");
+
+        Assert.Null(triaged.ZoneId);
+        Assert.Equal(PatientState.Triaged, triaged.State);
+        Assert.Equal(TriageCategory.Orange, triaged.Triage);
+
+        var entries = await audit.GetRecentAsync(20);
+
+        Assert.Contains(entries, e => e.Details.Contains("brak wolnych miejsc", StringComparison.OrdinalIgnoreCase));
+
+        _output.WriteLine($"Pełna strefa {zone.ZoneName} ({zone.Capacity}): ocena zachowana, pacjent czeka na przydział.");
+
+        _ = patients;
+    }
+
     private async Task<ServiceProvider> BuildProviderAsync()
     {
         var services = new ServiceCollection();

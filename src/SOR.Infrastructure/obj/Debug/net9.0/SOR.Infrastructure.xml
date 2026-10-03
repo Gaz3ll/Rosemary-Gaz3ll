@@ -102,8 +102,28 @@
             Dane startowe ułatwiają prezentację systemu podczas obrony projektu.
             </summary>
         </member>
+        <member name="F:SOR.Infrastructure.Persistence.DatabaseSeeder.ParamedicAccounts">
+            <summary>
+            Konta ratowników medycznych — po jednym dla każdej strefy klinicznej (moduł wstępny TRI
+            nie ma ratownika). Tablica jest wspólna dla pełnego seedowania i dla uzupełniania
+            istniejącej bazy, więc login, hasło i strefa nie rozjeżdżają się między ścieżkami.
+            </summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedAccount">
+            <summary>Konto demonstracyjne personelu wraz z kodem strefy, w której dyżuruje.</summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedAccount.#ctor(System.String,System.String,System.String,System.String)">
+            <summary>Konto demonstracyjne personelu wraz z kodem strefy, w której dyżuruje.</summary>
+        </member>
         <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedAsync(System.Threading.CancellationToken)">
             <summary>Wypełnia bazę danymi startowymi, jeśli nie zawiera jeszcze żadnych stref.</summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.EnsureParamedicAccountsAsync(System.Threading.CancellationToken)">
+            <summary>
+            Uzupełnia istniejącą bazę o konta ratowników medycznych, których jeszcze nie ma.
+            Seedowanie startowe jest pomijane, gdy strefy już istnieją, więc bez tej metody dodanie
+            nowego konta wymagałoby usunięcia pliku bazy i utraty danych.
+            </summary>
         </member>
         <member name="M:SOR.Infrastructure.Persistence.DatabaseSeeder.SeedCatalogAsync(System.Threading.CancellationToken)">
             <summary>

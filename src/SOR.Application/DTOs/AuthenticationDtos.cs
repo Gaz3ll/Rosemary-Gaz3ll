@@ -20,6 +20,15 @@ public sealed record AuthenticatedUserDto(
     /// <summary>BR-13: rozpoznanie ICD-10 może wystawić wyłącznie lekarz lub koordynator.</summary>
     public bool CanEnterDiagnosis => Role is UserRole.Physician or UserRole.Coordinator;
 
+    /// <summary>BR-13: zlecenie lekarskie może wystawić wyłącznie lekarz lub koordynator.</summary>
+    public bool CanIssueOrders => Role is UserRole.Physician or UserRole.Coordinator;
+
+    /// <summary>BR-13: transport potwierdza lekarz, pielęgniarka lub koordynator — nie ratownik.</summary>
+    public bool CanConfirmTransport => Role is UserRole.Physician or UserRole.Coordinator or UserRole.Nurse;
+
+    /// <summary>BR-13: zlecenia realizują lekarz, koordynator oraz ratownik medyczny.</summary>
+    public bool CanExecuteOrders => Role is UserRole.Physician or UserRole.Coordinator or UserRole.Paramedic;
+
     /// <summary>Czy użytkownik jest zalogowany w podanej strefie (lub jest koordynatorem).</summary>
     public bool HasAccessTo(Guid zoneId) => CanManageAllZones || CurrentZoneId == zoneId;
 }
