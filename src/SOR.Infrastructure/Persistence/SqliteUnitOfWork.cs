@@ -29,6 +29,8 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
     private readonly IMedicalBundleRepository _medicalBundles;
     private readonly IIcd10CatalogRepository _icd10Catalog;
     private readonly IMedicationAdministrationRepository _medicationAdministrations;
+    private readonly IDepartmentRepository _departments;
+    private readonly IPatientDischargeRepository _patientDischarges;
 
     private IDbContextTransaction? _currentTransaction;
     private bool _disposed;
@@ -52,6 +54,8 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
         _medicalBundles = new MedicalBundleRepository(_context);
         _icd10Catalog = new Icd10CatalogRepository(_context);
         _medicationAdministrations = new MedicationAdministrationRepository(_context);
+        _departments = new DepartmentRepository(_context);
+        _patientDischarges = new PatientDischargeRepository(_context);
     }
 
     public IPatientRepository Patients => _patients;
@@ -79,6 +83,10 @@ public sealed class SqliteUnitOfWork : IUnitOfWork
     public IIcd10CatalogRepository Icd10Catalog => _icd10Catalog;
 
     public IMedicationAdministrationRepository MedicationAdministrations => _medicationAdministrations;
+
+    public IDepartmentRepository Departments => _departments;
+
+    public IPatientDischargeRepository PatientDischarges => _patientDischarges;
 
     public bool HasPendingChanges => _context.ChangeTracker.HasChanges();
 

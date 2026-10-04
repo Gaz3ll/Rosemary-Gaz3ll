@@ -539,7 +539,7 @@ public sealed class CatalogDomainTests
     }
 
     [Fact]
-    public void PodanieLeku_NiedozwoloneWZamkniętejKarcie()
+    public void PodanieLeku_NiedozwolonePoWypisiePacjenta()
     {
         var patient = Patient.Register(
             Guid.NewGuid(),
@@ -552,8 +552,23 @@ public sealed class CatalogDomainTests
             DateTimeOffset.UtcNow);
 
         patient.SetDiagnosis(Icd10Code.Create("I21.4"));
-        patient.MarkAwaitingTransport();
-        patient.Close(DateTimeOffset.UtcNow, transportCompleted: true);
+        patient.AssignTriage(TriageAssessment.Create(
+            Guid.NewGuid(),
+            patient.Id,
+            Guid.NewGuid(),
+            TriageCategory.Red,
+            "Bólu klatki piersiowej",
+            "RR 150/90, HR 110",
+            DateTimeOffset.UtcNow));
+        patient.AssignToZone(Guid.NewGuid(), DateTimeOffset.UtcNow);
+        patient.Discharge(
+            Guid.NewGuid(),
+            DischargeType.TreatmentCompleted,
+            DateTimeOffset.UtcNow,
+            Guid.NewGuid(),
+            "lekarz",
+            department: null,
+            reason: null);
         Assert.Equal(PatientState.Closed, patient.State);
 
         Assert.Throws<ValidationException>(() => patient.RecordAdministration(

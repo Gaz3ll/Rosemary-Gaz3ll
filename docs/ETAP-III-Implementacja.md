@@ -92,7 +92,7 @@ Bindingi do właściwości tylko do odczytu (`ProgressBar.Value`, kolumny `DataG
 
 ## 4. Testy
 
-Łącznie **92 testy** (xUnit), wszystkie przechodzą. Dzielą się na cztery grupy.
+Łącznie **106 testów** (xUnit), wszystkie przechodzą. Dzielą się na pięć grup.
 
 ### `PersistenceTests` — trwałość (5)
 
@@ -135,15 +135,40 @@ dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualif
 | `RatownikNieWystawiaZlecenLekarskich` | BR-13 |
 | `RatownikNieUstawiaRozpoznania` | BR-13 |
 | `RatownikNieStosujePakietuMedycznego` | BR-13 |
-| `RatownikNieZamykaKartyBezPotwierdzonegoTransportu` | BR-09/BR-13 |
+| `RatownikNieWypisujePacjentaZSor` (3 przypadki) | BR-11/BR-13 - brak uprawnienia do wypisu |
 | `LekarzNadalRealizujeKazdeZlecenie` | Brak regresji dla lekarza |
 | `SeedUzupelniaKontaRatownikowWJuzyIstniejacejBazie` | Uzupełnianie bazy sprzed dodania roli |
 
+### `DischargeTests` - wypis pacjenta z SOR (14)
+
+| Test | Regula / cel |
+|---|---|
+| `ZakonczenieLeczenia_BezRozpoznania_JestZablokowane` | BR-09 - wymagane rozpoznanie ICD-10 |
+| `ZakonczenieLeczenia_BlokujeOtwarteZlecenia` | BR-10 |
+| `ZakonczenieLeczenia_PrzySpelnionychWarunkach_UstawiaStanZamkniety` | BR-11 - stan `Closed` i zapis historii |
+| `WypisNaWlasneZadanie_BezPowodu_JestZablokowany` | BR-11 - wymagane uzasadnienie |
+| `WypisNaWlasneZadanie_AnulujeOtwarteZleceniaIZapisujePowod` | BR-10/BR-11 |
+| `PrzekazanieNaOddzial_BezOddzialu_JestZablokowane` | BR-11 - wymagany oddział przyjmujący |
+| `PrzekazanieNaOddzial_BezPowodu_JestZablokowane` | BR-11 |
+| `PrzekazanieNaOddzial_UstawiaStanPrzekazanyIZapisujeOddzial` | BR-11 - stan `TransferredOut` |
+| `PonownyWypis_JestZablokowany` | Terminalność pobytu |
+| `LekarzWypisujePacjentaPoZakonczeniuLeczenia` | BR-13 - audyt `PatientDischarged` |
+| `WypisZOtwartymZleceniem_JestOdrzuconyIAudytowany` | BR-25 - audyt `PatientDischargeBlocked` |
+| `WypisNaWlasneZadanie_WymagaPowodu` | BR-11 |
+| `PrzekazanieNaOddzial_WymagaIstniejacegoOddzialu` | BR-11 - walidacja oddziału |
+| `KatalogOddzialowZawieraOddzialySzpitala` | Katalog danych referencyjnych |
+
+Uruchomienie samych testów wypisu:
+
+```powershell
+dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualifiedName~DischargeTests"
+```
+
 ## 5. Kluczowe decyzje implementacyjne
 
-1. **Jawne dodawanie bytów potomnych** (`TriageAssessment`, `ZoneTransfer`) przez repozytoria —
-   EF Core błędnie klasyfikował encje odkryte w nawigacji jako istniejące i próbował wykonać
-   `UPDATE` nieistniejącego wiersza.
+1. **Jawne dodawanie bytów potomnych** (`TriageAssessment`, `ZoneTransfer`, `MedicalOrder`,
+   `PatientDischarge`) przez repozytoria — EF Core błędnie klasyfikował encje odkryte w nawigacji
+   jako istniejące i próbował wykonać `UPDATE` nieistniejącego wiersza.
 2. **Konwerter `DateTimeOffset`** — SQLite nie porównuje natywnie tego typu; zapis jako `long`
    pozwala na sortowanie i filtrowanie po stronie serwera.
 3. **Token współbieżności `RowVersion`** nadawany w aplikacji (`IsConcurrencyToken` +
@@ -159,11 +184,28 @@ dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualif
 2. Wprowadź wniosek o zmianę strefy na EMG z przyczyną „Napływ pacjentów urazowych”.
 3. Zarejestruj pacjenta (PESEL 11 cyfr), wykonaj Triage np. `Red` — pacjent trafia do Części ratunkowej.
 4. Otwórz kartę pacjenta: dodaj zlecenie, ustaw rozpoznanie ICD-10 (`I21.4`).
-5. Spróbuj zamknąć kartę — system zgłosi blokady (otwarte zlecenia / brak transportu).
-6. Zaloguj się jako `ordynator`, aby zobaczyć wszystkie strefy i zlecić rotację innemu pracownikowi.
-7. Zaloguj się jako `ratownik.trm` / `SOR2026!rtrm` — otwórz kartę pacjenta i oznacz zlecenie
+5. Spróbuj wypisać pacjenta — przy **zakończeniu leczenia** system zgłosi blokadę (brak otwartych
+   zleceń), a przy **przekazaniu na inny oddział** dodatkowo wymusi wybór oddziału i uzasadnienia.
+6. Wybierz scenariusz wypisu i zatwierdź przyciskiem **Wypisz pacjenta z SOR** — karta zmienia stan
+   na „Wypisany z SOR” (przekazanie: „Przekazany na inny oddział”), a wpis trafia do historii wypisów.
+7. Zaloguj się jako `ordynator`, aby zobaczyć wszystkie strefy i zlecić rotację innemu pracownikowi.
+8. Zaloguj się jako `ratownik.trm` / `SOR2026!rtrm` — otwórz kartę pacjenta i oznacz zlecenie
    podania leku lub badania obrazowego przyciskiem **Wykonane**; zlecenie laboratoryjne,
-   zabiegu i konsultacji pozostaje niedostępne, a formularz dodawania zlecenia jest zablokowany.
+   zabiegu i konsultacji pozostaje niedostępne, formularz dodawania zlecenia oraz przycisk
+   wypisu są zablokowane.
+
+### Wypis pacjenta z SOR (BR-11)
+
+| Scenariusz | Warunki | Efekt |
+|---|---|---|
+| Zakończenie leczenia | rozpoznanie ICD-10, brak otwartych zleceń | `PatientState.Closed` |
+| Wypis na własne żądanie | uzasadnienie; otwarte zlecenia zostają anulowane | `PatientState.Closed` |
+| Przekazanie na inny oddział | rozpoznanie ICD-10, brak otwartych zleceń, oddział przyjmujący, uzasadnienie | `PatientState.TransferredOut` |
+
+Katalog oddziałów (26 pozycji) odwzorowuje kliniki i oddziały Szpitala Uniwersyteckiego nr 1
+im. dr. Antoniego Jurasza w Bydgoszczy (`jurasza.umk.pl/kliniki`) i służy wyłącznie do oznaczenia
+oddziału przyjmującego — nie jest wykazem dostępności łóżek. Wypis rejestruje lekarz lub
+koordynator; każda próba (udana lub odrzucona) trafia do dziennika audytu.
 
 ## 7. Znane ograniczenia
 

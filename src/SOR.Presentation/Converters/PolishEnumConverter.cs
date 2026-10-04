@@ -39,8 +39,16 @@ public sealed class PolishEnumConverter : IValueConverter
             PatientState.Triaged => "Zatriageowany",
             PatientState.InTreatment => "W leczeniu",
             PatientState.AwaitingTransport => "Oczekuje na transport",
-            PatientState.TransferredOut => "Wypisany",
-            PatientState.Closed => "Zamknięta",
+            PatientState.TransferredOut => "Przekazany na inny oddział",
+            PatientState.Closed => "Wypisany z SOR",
+            _ => Fallback(value),
+        },
+
+        DischargeType discharge => discharge switch
+        {
+            DischargeType.TreatmentCompleted => "Zakończenie leczenia (wypis do domu)",
+            DischargeType.AtPatientRequest => "Wypis na własne żądanie",
+            DischargeType.TransferToDepartment => "Przekazanie na inny oddział",
             _ => Fallback(value),
         },
         PatientGender gender => gender switch

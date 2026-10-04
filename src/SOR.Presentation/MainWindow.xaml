@@ -282,8 +282,8 @@
                                             <Run Text="Rozpoznanie: " /><Run Text="{Binding Diagnosis, Mode=OneWay}" />
                                         </TextBlock>
 
-                                        <TextBlock Text="Blokady zamknięcia karty" Style="{StaticResource SectionHeader}" />
-                                        <ItemsControl ItemsSource="{Binding ClosureBlockers}">
+                                        <TextBlock Text="Warunki blokujące wypis (BR-11)" Style="{StaticResource SectionHeader}" />
+                                        <ItemsControl ItemsSource="{Binding DischargeBlockers}">
                                             <ItemsControl.ItemTemplate>
                                                 <DataTemplate>
                                                     <TextBlock Text="{Binding}" TextWrapping="Wrap"
@@ -360,14 +360,52 @@
                                             </DataGrid.Columns>
                                         </DataGrid>
 
+                                        <!-- Wypis pacjenta z SOR (BR-11): zakończenie leczenia, wypis na własne żądanie
+                                             albo przekazanie na inny oddział szpitala. Pole oddziału
+                                             pojawia się wyłącznie dla przekazania. -->
+                                        <TextBlock Text="Wypis pacjenta z SOR (BR-11)" Style="{StaticResource SectionHeader}" />
+                                        <ComboBox ItemsSource="{Binding DataContext.Board.DischargeTypes, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  IsEnabled="{Binding DataContext.Board.CanDischargePatient, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                  SelectedItem="{Binding DataContext.Board.DischargeType, RelativeSource={RelativeSource AncestorType=Window}}">
+                                            <ComboBox.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
+                                                </DataTemplate>
+                                            </ComboBox.ItemTemplate>
+                                        </ComboBox>
+                                        <Grid Visibility="{Binding DataContext.Board.IsDepartmentRequired, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
+                                            <ComboBox ItemsSource="{Binding DataContext.Board.Departments, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                      DisplayMemberPath="Name"
+                                                      SelectedItem="{Binding DataContext.Board.SelectedDepartment, RelativeSource={RelativeSource AncestorType=Window}}" />
+                                        </Grid>
+                                        <TextBox Text="{Binding DataContext.Board.DischargeReason, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}"
+                                                 Visibility="{Binding DataContext.Board.IsReasonRequired, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
+                                        <Button Content="Wypisz pacjenta z SOR"
+                                                IsEnabled="{Binding DataContext.Board.CanDischargePatient, RelativeSource={RelativeSource AncestorType=Window}}"
+                                                Command="{Binding DataContext.Board.DischargeCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
+
+                                        <TextBlock Text="Historia wypisów" Style="{StaticResource SectionHeader}" />
+                                        <ItemsControl ItemsSource="{Binding Discharges}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock TextWrapping="Wrap">
+                                                        <Run Text="{Binding Type, Mode=OneWay, Converter={StaticResource PolishEnum}}" />
+                                                        <Run Text=" — " />
+                                                        <Run Text="{Binding DischargedAtUtc, StringFormat='dd.MM.yyyy HH:mm', Mode=OneWay}" />
+                                                        <Run Text=" (" />
+                                                        <Run Text="{Binding RecordedByLogin, Mode=OneWay}" />
+                                                        <Run Text=")" />
+                                                    </TextBlock>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+
                                         <TextBlock Text="Operacje na karcie" Style="{StaticResource SectionHeader}" />
                                         <UniformGrid Columns="1">
                                             <Button Content="Przejmij blokadę"
                                                     Command="{Binding DataContext.Board.LockCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
                                             <Button Content="Zwolnij blokadę"
                                                     Command="{Binding DataContext.Board.UnlockCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                            <Button Content="Zamknij kartę"
-                                                    Command="{Binding DataContext.Board.CloseCardCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
                                         </UniformGrid>
                                     </StackPanel>
                                 </ScrollViewer>

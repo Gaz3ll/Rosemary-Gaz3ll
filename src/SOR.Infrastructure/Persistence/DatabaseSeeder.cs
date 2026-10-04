@@ -227,10 +227,26 @@ public sealed class DatabaseSeeder
         var medications = MedicationCatalogSeed.Build(_idGenerator);
         var icd10Entries = Icd10CatalogSeed.Build(_idGenerator);
         var bundles = MedicalBundleSeed.Build(_idGenerator, medications);
+        var departments = DepartmentCatalogSeed.Build(_idGenerator);
 
         if (await _context.Medications.AnyAsync(cancellationToken).ConfigureAwait(false) is false)
         {
             _context.Medications.AddRange(medications);
+        }
+
+        // Katalog oddziałów jest uzupełniany po pozycjach: struktura szpitala może się zmienić,
+        // a usunięcie wpisu nie powinno kasować oddziału, do którego pacjenci już zostali przekazani.
+        var existingDepartmentCodes = await _context.Departments
+            .Select(department => department.Code)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        var knownDepartmentCodes = new HashSet<string>(existingDepartmentCodes, StringComparer.OrdinalIgnoreCase);
+        var missingDepartments = departments.Where(department => !knownDepartmentCodes.Contains(department.Code)).ToArray();
+
+        if (missingDepartments.Length > 0)
+        {
+            _context.Departments.AddRange(missingDepartments);
         }
 
         if (await _context.Icd10CatalogEntries.AnyAsync(cancellationToken).ConfigureAwait(false) is false)
@@ -246,10 +262,11 @@ public sealed class DatabaseSeeder
         await _context.SaveChangesAsync(cancellationToken).ConfigureAwait(false);
 
         _logger.LogInformation(
-            "Katalogi referencyjne gotowe: {Medications} leków, {Icd10} kodów ICD-10, {Bundles} pakietów medycznych.",
+            "Katalogi referencyjne gotowe: {Medications} leków, {Icd10} kodów ICD-10, {Bundles} pakietów medycznych, {Departments} oddziałów.",
             medications.Count,
             icd10Entries.Count,
-            bundles.Count);
+            bundles.Count,
+            missingDepartments.Length);
     }
 
     private void SeedPatients(

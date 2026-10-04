@@ -36,7 +36,8 @@ public sealed record PatientDetailsDto(
     IReadOnlyList<MedicalOrderDto> Orders,
     IReadOnlyList<ZoneTransferDto> Transfers,
     IReadOnlyList<MedicationAdministrationDto> Administrations,
-    IReadOnlyList<string> ClosureBlockers);
+    IReadOnlyList<PatientDischargeDto> Discharges,
+    IReadOnlyList<string> DischargeBlockers);
 
 /// <summary>Wynik operacji zapisu zlecenia lekarskiego.</summary>
 public sealed record MedicalOrderDto(
@@ -57,3 +58,15 @@ public sealed record ZoneTransferDto(
     string Reason,
     DateTimeOffset TransferredAtUtc,
     bool IsInitialAssignment);
+
+/// <summary>Wpis wypisu pacjenta z SOR w karcie pacjenta (BR-11).</summary>
+public sealed record PatientDischargeDto(
+    Guid Id,
+    DischargeType Type,
+    string? DepartmentName,
+    string? Reason,
+    DateTimeOffset DischargedAtUtc,
+    string RecordedByLogin);
+
+/// <summary>Pozycja katalogu oddziałów — cel przekazania pacjenta z SOR.</summary>
+public sealed record DepartmentDto(Guid Id, string Code, string Name);

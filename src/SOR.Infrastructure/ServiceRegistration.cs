@@ -78,6 +78,7 @@ public static class ServiceRegistration
         services.AddScoped<IMedicationCatalogService, MedicationCatalogService>();
         services.AddScoped<IMedicalBundleService, MedicalBundleService>();
         services.AddScoped<IIcd10CatalogService, Icd10CatalogService>();
+    services.AddScoped<IDepartmentCatalogService, DepartmentCatalogService>();
 
         return services;
     }

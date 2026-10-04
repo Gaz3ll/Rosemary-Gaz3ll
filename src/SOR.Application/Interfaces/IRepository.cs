@@ -177,6 +177,23 @@ public interface IIcd10CatalogRepository : IRepository<Icd10CatalogEntry>
     Task<Icd10CatalogEntry?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Repozytorium katalogu oddziałów szpitalnych (przekazanie pacjenta — BR-11).</summary>
+public interface IDepartmentRepository : IRepository<Department>
+{
+    /// <summary>Wszystkie oddziały uporządkowane alfabetycznie.</summary>
+    Task<IReadOnlyList<Department>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>Oddział o podanym kodzie.</summary>
+    Task<Department?> GetByCodeAsync(string code, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Repozytorium wpisów wypisów pacjentów z SOR.</summary>
+public interface IPatientDischargeRepository : IRepository<PatientDischarge>
+{
+    /// <summary>Wpisy wypisów pacjenta, od najnowszego.</summary>
+    Task<IReadOnlyList<PatientDischarge>> GetByPatientAsync(Guid patientId, CancellationToken cancellationToken = default);
+}
+
 /// <summary>
 /// Jednostka pracy (Unit of Work) — granica transakcji. Zatwierdzenie jest atomowe:
 /// rotacja personelu i przeniesienie pacjenta zapisywane są w całości albo wcale.
@@ -230,4 +247,10 @@ public interface IUnitOfWork : IAsyncDisposable
 
     /// <summary>Repozytorium rejestru podanych leków.</summary>
     IMedicationAdministrationRepository MedicationAdministrations { get; }
+
+    /// <summary>Repozytorium katalogu oddziałów szpitalnych.</summary>
+    IDepartmentRepository Departments { get; }
+
+    /// <summary>Repozytorium wpisów wypisów pacjentów.</summary>
+    IPatientDischargeRepository PatientDischarges { get; }
 }

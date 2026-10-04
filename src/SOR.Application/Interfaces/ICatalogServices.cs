@@ -67,3 +67,13 @@ public interface IIcd10CatalogService
 
 /// <summary>Grupa terapeutyczna wraz z liczbą preparatów — źródło danych dla filtrów katalogu.</summary>
 public sealed record MedicationCategoryOptionDto(MedicationCategory Category, int Count);
+
+/// <summary>
+/// Serwis katalogu oddziałów szpitalnych. Katalog jest danymi referencyjnimi i służy
+/// wyborowi oddziału przyjmującego podczas przekazania pacjenta z SOR (BR-11).
+/// </summary>
+public interface IDepartmentCatalogService
+{
+    /// <summary>Wszystkie oddziały uporządkowane alfabetycznie.</summary>
+    Task<IReadOnlyList<DepartmentDto>> GetAllAsync(CancellationToken cancellationToken = default);
+}

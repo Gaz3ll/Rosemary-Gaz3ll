@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SOR.Domain.Entities;
@@ -47,6 +47,12 @@ public sealed class SorDbContext : DbContext
     public DbSet<MedicalBundle> MedicalBundles => Set<MedicalBundle>();
 
     public DbSet<MedicalBundleItem> MedicalBundleItems => Set<MedicalBundleItem>();
+
+    /// <summary>Katalog oddzialow szpitalnych do przekazywania pacjentow.</summary>
+    public DbSet<Department> Departments => Set<Department>();
+
+    /// <summary>Wpisy wypisow pacjentow z SOR.</summary>
+    public DbSet<PatientDischarge> PatientDischarges => Set<PatientDischarge>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

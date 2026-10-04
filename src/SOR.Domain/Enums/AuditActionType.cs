@@ -52,5 +52,11 @@ public enum AuditActionType
     MedicalBundleApplied = 16,
 
     /// <summary>Ustawiono lub cofnięto rozpoznanie ICD-10.</summary>
-    DiagnosisChanged = 17
+    DiagnosisChanged = 17,
+
+    /// <summary>Wypisano pacjenta z SOR — zakończenie leczenia, własne żądanie lub przekazanie.</summary>
+    PatientDischarged = 18,
+
+    /// <summary>Odrzucono próbę wypisu pacjenta (nie spełnione BR-09/BR-10/BR-11).</summary>
+    PatientDischargeBlocked = 19
 }

@@ -19,6 +19,7 @@ public sealed class PatientBoardViewModel : ObservableObject
     private readonly IPatientService _patientService;
     private readonly IZoneLoadMonitoringService _monitoringService;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly IDepartmentCatalogService _departmentCatalog;
     private readonly SessionViewModel _session;
     private readonly UiThreadDispatcher _dispatcher;
 
@@ -48,16 +49,23 @@ public sealed class PatientBoardViewModel : ObservableObject
     private bool _orderUrgent;
     private string _icd10Code = string.Empty;
 
+    // Dane formularza wypisu
+    private DischargeType _dischargeType = DischargeType.TreatmentCompleted;
+    private DepartmentDto? _selectedDepartment;
+    private string _dischargeReason = string.Empty;
+
     public PatientBoardViewModel(
         IPatientService patientService,
         IZoneLoadMonitoringService monitoringService,
         IUnitOfWork unitOfWork,
+        IDepartmentCatalogService departmentCatalog,
         SessionViewModel session,
         UiThreadDispatcher dispatcher)
     {
         _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
         _monitoringService = monitoringService ?? throw new ArgumentNullException(nameof(monitoringService));
         _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        _departmentCatalog = departmentCatalog ?? throw new ArgumentNullException(nameof(departmentCatalog));
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
 
@@ -73,11 +81,12 @@ public sealed class PatientBoardViewModel : ObservableObject
         SetDiagnosisCommand = new AsyncRelayCommand(SetDiagnosisAsync, () => !_isBusy);
         LockCardCommand = new AsyncRelayCommand(LockCardAsync, () => !_isBusy);
         UnlockCardCommand = new AsyncRelayCommand(UnlockCardAsync, () => !_isBusy);
-        CloseCardCommand = new AsyncRelayCommand(CloseCardAsync, () => !_isBusy);
+        DischargeCommand = new AsyncRelayCommand(DischargeAsync, () => !_isBusy && CanDischargePatient);
 
         TriageCategories = Enum.GetValues<TriageCategory>().ToArray();
         Genders = Enum.GetValues<PatientGender>().ToArray();
         OrderTypes = Enum.GetValues<MedicalOrderType>().ToArray();
+        DischargeTypes = Enum.GetValues<DischargeType>().ToArray();
     }
 
     /// <summary>Pacjenci oczekujący na ocenę Triage.</summary>
@@ -91,6 +100,12 @@ public sealed class PatientBoardViewModel : ObservableObject
     public IReadOnlyList<PatientGender> Genders { get; }
 
     public IReadOnlyList<MedicalOrderType> OrderTypes { get; }
+
+    /// <summary>Sposoby zakończenia pobytu dostępne w formularzu wypisu (BR-11).</summary>
+    public IReadOnlyList<DischargeType> DischargeTypes { get; }
+
+    /// <summary>Oddziały szpitalne dostępne jako cel przekazania pacjenta.</summary>
+    public ObservableCollection<DepartmentDto> Departments { get; } = new();
 
     public string Pesel
     {
@@ -221,6 +236,9 @@ public sealed class PatientBoardViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(HasSelectedDetails));
                 OnPropertyChanged(nameof(CanEnterDiagnosis));
+                OnPropertyChanged(nameof(DischargeBlockers));
+                OnPropertyChanged(nameof(DischargeHistory));
+                OnPropertyChanged(nameof(CanDischargePatient));
                 CompleteOrderCommand.RaiseCanExecuteChanged();
             }
         }
@@ -239,6 +257,50 @@ public sealed class PatientBoardViewModel : ObservableObject
 
     /// <summary>BR-13: zlecenie lekarskie wystawia wyłącznie lekarz lub koordynator.</summary>
     public bool CanIssueOrders => _session.CurrentUser?.CanIssueOrders == true;
+    /// <summary>BR-11/BR-13: wypis pacjenta rejestruje wylacznie lekarz lub koordynator.</summary>
+    public bool CanDischargePatient =>
+        _session.CurrentUser?.CanDischargePatient == true && _selectedPatientDetails is not null;
+
+    /// <summary>Sposob zakonczenia pobytu wybrany w formularzu wypisu (BR-11).</summary>
+    public DischargeType DischargeType
+    {
+        get => _dischargeType;
+        set
+        {
+            if (SetProperty(ref _dischargeType, value))
+            {
+                OnPropertyChanged(nameof(IsDepartmentRequired));
+                OnPropertyChanged(nameof(IsReasonRequired));
+                DischargeCommand.RaiseCanExecuteChanged();
+            }
+        }
+    }
+
+    /// <summary>Oddzial przyjmujacy - pole obowiazkowe wylacznie przy przekazaniu pacjenta.</summary>
+    public DepartmentDto? SelectedDepartment
+    {
+        get => _selectedDepartment;
+        set => SetProperty(ref _selectedDepartment, value);
+    }
+
+    /// <summary>Uzasadnienie wypisu - wymagane przy wypisie na wlasne zadanie i przy przekazaniu.</summary>
+    public string DischargeReason
+    {
+        get => _dischargeReason;
+        set => SetProperty(ref _dischargeReason, value);
+    }
+
+    /// <summary>Czy dla wybranego scenariusza trzeba wskazac oddzial przyjmujacy.</summary>
+    public bool IsDepartmentRequired => _dischargeType == DischargeType.TransferToDepartment;
+
+    /// <summary>Czy dla wybranego scenariusza trzeba podac uzasadnienie.</summary>
+    public bool IsReasonRequired => _dischargeType != DischargeType.TreatmentCompleted;
+
+    /// <summary>Warunki blokujace wypis biezacej karty.</summary>
+    public IReadOnlyList<string> DischargeBlockers => _selectedPatientDetails?.DischargeBlockers ?? [];
+
+    /// <summary>Historia wypisow pacjenta z SOR.</summary>
+    public IReadOnlyList<PatientDischargeDto> DischargeHistory => _selectedPatientDetails?.Discharges ?? [];
 
     /// <summary>Bieżące obciążenie strefy kontekstowej (pasek postępu pulpitu).</summary>
     public ZoneLoadDto? ZoneLoad
@@ -278,7 +340,7 @@ public sealed class PatientBoardViewModel : ObservableObject
             SetDiagnosisCommand.RaiseCanExecuteChanged();
             LockCardCommand.RaiseCanExecuteChanged();
             UnlockCardCommand.RaiseCanExecuteChanged();
-            CloseCardCommand.RaiseCanExecuteChanged();
+            DischargeCommand.RaiseCanExecuteChanged();
         }
     }
 
@@ -313,7 +375,8 @@ public sealed class PatientBoardViewModel : ObservableObject
 
     public AsyncRelayCommand UnlockCardCommand { get; }
 
-    public AsyncRelayCommand CloseCardCommand { get; }
+    /// <summary>Rejestruje wypis pacjenta z SOR: zakończenie leczenia, własne żądanie lub przekazanie (BR-11).</summary>
+    public AsyncRelayCommand DischargeCommand { get; }
 
     public MedicalOrderType OrderType
     {
@@ -358,6 +421,8 @@ public sealed class PatientBoardViewModel : ObservableObject
             var awaiting = await _patientService.GetAwaitingTriageAsync().ConfigureAwait(true);
             var inZone = await _patientService.GetZonePatientsAsync(zoneId.Value).ConfigureAwait(true);
             var load = await _monitoringService.GetZoneLoadAsync(zoneId.Value).ConfigureAwait(true);
+
+            await LoadDepartmentsAsync().ConfigureAwait(true);
 
             await _dispatcher.InvokeAsync(() =>
             {
@@ -781,12 +846,58 @@ public sealed class PatientBoardViewModel : ObservableObject
             "Zwolniono blokadę karty.").ConfigureAwait(true);
     }
 
-    /// <summary>Próba zamknięcia karty pacjenta (BR-09/BR-10/BR-11).</summary>
-    public async Task CloseCardAsync()
+
+    /// <summary>
+    /// Rejestruje wypis pacjenta z SOR (BR-11): zakonczenie leczenia, wypis na wlasne zadanie
+    /// albo przekazanie na inny oddzial. Nieudana proba jest zglaszana przez serwis i nie zmienia stanu karty.
+    /// </summary>
+    public async Task DischargeAsync()
     {
+        if (_selectedPatient is null || _isBusy)
+        {
+            return;
+        }
+
+        var patientId = _selectedPatient.Id;
+        var type = _dischargeType;
+        var departmentId = IsDepartmentRequired ? _selectedDepartment?.Id : null;
+        var reason = string.IsNullOrWhiteSpace(_dischargeReason) ? null : _dischargeReason.Trim();
+
         await RunPatientOperationAsync(
-            id => _patientService.CloseCardAsync(id, transportCompleted: true, CancellationToken.None),
-            "Zamknięto kartę pacjenta.").ConfigureAwait(true);
+            id => _patientService.DischargePatientAsync(id, type, departmentId, reason, CancellationToken.None),
+            $"Wypisano pacjenta z SOR ({DescribeDischargeType(type)}).").ConfigureAwait(true);
+
+        _dischargeReason = string.Empty;
+        OnPropertyChanged(nameof(DischargeReason));
+    }
+
+    private static string DescribeDischargeType(DischargeType type) => type switch
+    {
+        DischargeType.AtPatientRequest => "wypis na wlasne zadanie",
+        DischargeType.TransferToDepartment => "przekazanie na inny oddzial",
+        _ => "zakonczenie leczenia"
+    };
+
+    private async Task LoadDepartmentsAsync()
+    {
+        try
+        {
+            var departments = await _departmentCatalog.GetAllAsync().ConfigureAwait(true);
+
+            await _dispatcher.InvokeAsync(() =>
+            {
+                Departments.Clear();
+
+                foreach (var department in departments)
+                {
+                    Departments.Add(department);
+                }
+            }).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
     }
 
     /// <summary>

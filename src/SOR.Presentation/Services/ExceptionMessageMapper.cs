@@ -21,9 +21,9 @@ public static class ExceptionMessageMapper
                 $"{concurrency.Message} Aby uniknąć konfliktu, zadzwoń do tej osoby lub poczekaj na automatyczne zwolnienie blokady.",
                 "warning"),
 
-            PatientCardClosureBlockedException closure => new UserFacingError(
-                "Nie można zamknąć karty pacjenta",
-                string.Join(Environment.NewLine, closure.Reasons.Select(r => $"\u2022 {r}")),
+            PatientDischargeBlockedException discharge => new UserFacingError(
+                "Nie można wypisać pacjenta z SOR",
+                string.Join(Environment.NewLine, discharge.Reasons.Select(r => $"\u2022 {r}")),
                 "warning"),
 
             InvalidZoneReassignmentException reassignment => new UserFacingError(

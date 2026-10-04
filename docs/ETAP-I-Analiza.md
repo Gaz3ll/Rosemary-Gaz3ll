@@ -24,7 +24,7 @@ odwzorowane przez dane startowe i model domeny.
 | `Physician` | Lekarz SOR | Rozpoznanie ICD-10, zlecenia, operacje na pacjentach własnej strefy |
 | `Nurse` | Pielęgniarka / ratownik triage | Rejestracja, Triage, wykonanie zleceń; brak rozpoznania |
 | `Coordinator` | Koordynator / ordynator | Dostęp do wszystkich stref, rotacja innych pracowników, nadzór |
-| `Paramedic` | Ratownik medyczny strefy klinicznej | Realizacja zleceń podania leku i badania obrazowego; brak wystawiania zleceń, rozpoznania i zamknięcia karty |
+| `Paramedic` | Ratownik medyczny strefy klinicznej | Realizacja zleceń podania leku i badania obrazowego; brak wystawiania zleceń, rozpoznania i wypisu pacjenta |
 
 Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (INT), `Trauma` (TRM).
 
@@ -38,7 +38,7 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 - **WF-06** Wniosek o zmianę strefy z obowiązkowym uzasadnieniem.
 - **WF-07** Rekomendacja rotacji generowana przez silnik i przyjmowana przez kandydata/koordynatora.
 - **WF-08** Zlecenia lekarskie i rozpoznanie ICD-10.
-- **WF-09** Blokada karty i kontrolowane zamknięcie (bez otwartych zleceń, z rozpoznaniem, po transporcie).
+- **WF-09** Blokada karty i kontrolowany wypis z SOR: zakończenie leczenia (rozpoznanie ICD-10, brak otwartych zleceń), wypis na własne żądanie (uzasadnienie, anulacja zleceń) albo przekazanie na oddział szpitala.
 - **WF-10** Dziennik audytu wszystkich istotnych operacji.
 
 ## 4. Reguły biznesowe (BR)
@@ -53,11 +53,11 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 | BR-06 / BR-06b | Klasyfikacja obciążenia; pacjent czerwony bez personelu = przeciążenie | `ZoneLoadCalculator`, `ZoneLoadThresholds` |
 | BR-07 | Rekomendacja rotacji przyjmowana przez kandydata lub koordynatora | `RotationRecommendationEngine`, `AcceptRecommendationAsync` |
 | BR-08 | Rotacja innych pracowników zarezerwowana dla koordynatora | `StaffRotationService.CoordinatorAssignAsync` |
-| BR-09 | Zamknięcie karty wymaga rozpoznania ICD-10 | `Icd10Code`, `PatientCardClosurePolicy` |
-| BR-10 | Zamknięcie karty wymaga braku otwartych zleceń | `PatientCardClosurePolicy`, `Patient.CloseCard` |
-| BR-11 | Wydanie wymaga zrealizowanego transportu | `Patient.ReleaseToTransport`, `Patient.CloseCard` |
+| BR-09 | Wypis po zakończeniu leczenia wymaga rozpoznania ICD-10 | `Icd10Code`, `PatientDischargePolicy` |
+| BR-10 | Wypis wymaga braku otwartych zleceń (anulowanych przy wypisie na własne żądanie) | `PatientDischargePolicy`, `Patient.Discharge` |
+| BR-11 | Wypis z SOR: zakończenie leczenia, własne żądanie lub przekazanie na oddział | `DischargeType`, `PatientDischarge`, `Department`, `Patient.Discharge` |
 | BR-12 | Pracownik operuje na własnej strefie; koordynator na wszystkich | `PatientService.EnsureStaffOfZoneOrCoordinator` |
-| BR-13 | Rozpoznanie i potwierdzenie transportu tylko lekarz/koordynator | `PatientService.SetDiagnosisAsync` |
+| BR-13 | Rozpoznanie, zlecenie i wypis pacjenta tylko przez lekarza/koordynatora | `PatientService.SetDiagnosisAsync`, `AuthenticatedUserDto.CanDischargePatient` |
 | BR-15 | Aktywność dyżuru w czasie | `DutyShift.IsActive` |
 | BR-16 | Kontekst strefy z grafiku; odświeżany po rotacji | `AuthenticationService.RefreshCurrentUserContextAsync` |
 | BR-17 | Brak nakładających się dyżurów w tej samej strefie | `DutyRoster.AddShift` |
@@ -102,7 +102,7 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 
 - **`ZoneLoadCalculator`** — wylicza obciążenie strefy (BR-06/BR-06b).
 - **`RotationRecommendationEngine`** — dobiera kandydata do rotacji (BR-07).
-- **`PatientCardClosurePolicy`** — weryfikuje warunki zamknięcia karty (BR-09/BR-10/BR-11).
+- **`PatientDischargePolicy`** — weryfikuje warunki wypisu (BR-09/BR-10/BR-11): stan pobytu, rozpoznanie ICD-10, brak otwartych zleceń, oddział przyjmujący oraz uzasadnienie.
 
 ### Zdarzenia dziedzinowe
 
@@ -116,7 +116,7 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 4. **Zmiana strefy** → walidacja uprawnień i pojemności → zamknięcie starego przypisania →
    nowe przypisanie → wpis audytowy → odświeżenie sesji.
 5. **Monitoring** → wyliczenie obciążenia → zdarzenie przeciążenia → rekomendacja rotacji.
-6. **Karta pacjenta** → zlecenia, rozpoznanie, blokada → zamknięcie karty.
+6. **Karta pacjenta** → zlecenia, rozpoznanie, blokada → wypis z SOR (trzy scenariusze) → zapis `PatientDischarge` i wpis audytowy.
 
 ## 7. Wymagania niefunkcjonalne
 

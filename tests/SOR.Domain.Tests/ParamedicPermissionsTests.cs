@@ -204,14 +204,20 @@ public sealed class ParamedicPermissionsTests : IAsyncLifetime
     }
 
     [Fact]
-    public async Task RatownikNieZamykaKartyBezPotwierdzonegoTransportu()
+    public async Task RatownikNieWypisujePacjentaZSor()
     {
         var patientId = await CreateTreatedPatientAsync("ratownik.emg", "SOR2026!remg");
 
         await _auth.LoginAsync("ratownik.emg", "SOR2026!remg");
 
         await Assert.ThrowsAsync<AuthorizationException>(() =>
-            _patients.CloseCardAsync(patientId, transportCompleted: false));
+            _patients.DischargePatientAsync(patientId, DischargeType.TreatmentCompleted));
+
+        await Assert.ThrowsAsync<AuthorizationException>(() =>
+            _patients.DischargePatientAsync(patientId, DischargeType.AtPatientRequest, reason: "zły stan"));
+
+        await Assert.ThrowsAsync<AuthorizationException>(() =>
+            _patients.DischargePatientAsync(patientId, DischargeType.TransferToDepartment, Guid.NewGuid(), "przekazanie"));
     }
 
     [Fact]

@@ -18,11 +18,11 @@ public sealed class ConcurrentPatientModificationException : DomainException
     public string HeldBy { get; }
 }
 
-/// <summary>Błąd naruszenia wymogu kompletności danych przed zamknięciem karty pacjenta.</summary>
-public sealed class PatientCardClosureBlockedException : DomainException
+/// <summary>Błąd naruszenia wymogu kompletności danych przed wypisem pacjenta z SOR (BR-11).</summary>
+public sealed class PatientDischargeBlockedException : DomainException
 {
-    public PatientCardClosureBlockedException(params string[] reasons)
-        : base("SOR-DOM-022", "Nie można zamknąć karty pacjenta: " + string.Join("; ", reasons))
+    public PatientDischargeBlockedException(params string[] reasons)
+        : base("SOR-DOM-023", "Nie można wypisać pacjenta z SOR: " + string.Join("; ", reasons))
     {
         Reasons = reasons;
     }

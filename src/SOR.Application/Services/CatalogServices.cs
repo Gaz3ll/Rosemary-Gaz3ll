@@ -402,3 +402,23 @@ public sealed class Icd10CatalogService : IIcd10CatalogService
         return patient.ToDetailsDto(zoneName, _clock.UtcNow);
     }
 }
+
+/// <summary>Serwis katalogu oddziałów szpitalnych — wybór oddziału przy przekazaniu pacjenta (BR-11).</summary>
+public sealed class DepartmentCatalogService : IDepartmentCatalogService
+{
+    private readonly IUnitOfWork _unitOfWork;
+
+    public DepartmentCatalogService(IUnitOfWork unitOfWork)
+    {
+        _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+    }
+
+    public async Task<IReadOnlyList<DepartmentDto>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        var departments = await _unitOfWork.Departments
+            .GetAllAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return departments.Select(department => department.ToDto()).ToList();
+    }
+}

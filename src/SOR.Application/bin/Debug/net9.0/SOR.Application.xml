@@ -25,6 +25,9 @@
         <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanExecuteOrders">
             <summary>BR-13: zlecenia realizują lekarz, koordynator oraz ratownik medyczny.</summary>
         </member>
+        <member name="P:SOR.Application.DTOs.AuthenticatedUserDto.CanDischargePatient">
+            <summary>BR-11/BR-13: wypis pacjenta z SOR rejestruje wyłącznie lekarz lub koordynator.</summary>
+        </member>
         <member name="M:SOR.Application.DTOs.AuthenticatedUserDto.HasAccessTo(System.Guid)">
             <summary>Czy użytkownik jest zalogowany w podanej strefie (lub jest koordynatorem).</summary>
         </member>
@@ -91,7 +94,7 @@
         <member name="T:SOR.Application.DTOs.PatientDetailsDto">
             <summary>Pełny widok karty pacjenta (okno szczegółów).</summary>
         </member>
-        <member name="M:SOR.Application.DTOs.PatientDetailsDto.#ctor(System.Guid,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,SOR.Domain.Enums.TriageCategory,System.String,SOR.Domain.Enums.PatientState,System.Nullable{System.Guid},System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicalOrderDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.ZoneTransferDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicationAdministrationDto},System.Collections.Generic.IReadOnlyList{System.String})">
+        <member name="M:SOR.Application.DTOs.PatientDetailsDto.#ctor(System.Guid,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,SOR.Domain.Enums.TriageCategory,System.String,SOR.Domain.Enums.PatientState,System.Nullable{System.Guid},System.String,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicalOrderDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.ZoneTransferDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.MedicationAdministrationDto},System.Collections.Generic.IReadOnlyList{SOR.Application.DTOs.PatientDischargeDto},System.Collections.Generic.IReadOnlyList{System.String})">
             <summary>Pełny widok karty pacjenta (okno szczegółów).</summary>
         </member>
         <member name="T:SOR.Application.DTOs.MedicalOrderDto">
@@ -105,6 +108,18 @@
         </member>
         <member name="M:SOR.Application.DTOs.ZoneTransferDto.#ctor(System.Guid,System.String,System.String,System.String,System.DateTimeOffset,System.Boolean)">
             <summary>Wpis historii przeniesień pacjenta między strefami.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.PatientDischargeDto">
+            <summary>Wpis wypisu pacjenta z SOR w karcie pacjenta (BR-11).</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.PatientDischargeDto.#ctor(System.Guid,SOR.Domain.Enums.DischargeType,System.String,System.String,System.DateTimeOffset,System.String)">
+            <summary>Wpis wypisu pacjenta z SOR w karcie pacjenta (BR-11).</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.DepartmentDto">
+            <summary>Pozycja katalogu oddziałów — cel przekazania pacjenta z SOR.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.DepartmentDto.#ctor(System.Guid,System.String,System.String)">
+            <summary>Pozycja katalogu oddziałów — cel przekazania pacjenta z SOR.</summary>
         </member>
         <member name="T:SOR.Application.DTOs.ReassignZoneCommand">
             <summary>Dane wejściowe komendy manualnej zmiany strefy przez użytkownika.</summary>
@@ -252,6 +267,15 @@
         <member name="M:SOR.Application.Interfaces.MedicationCategoryOptionDto.#ctor(SOR.Domain.Enums.MedicationCategory,System.Int32)">
             <summary>Grupa terapeutyczna wraz z liczbą preparatów — źródło danych dla filtrów katalogu.</summary>
         </member>
+        <member name="T:SOR.Application.Interfaces.IDepartmentCatalogService">
+            <summary>
+            Serwis katalogu oddziałów szpitalnych. Katalog jest danymi referencyjnimi i służy
+            wyborowi oddziału przyjmującego podczas przekazania pacjenta z SOR (BR-11).
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDepartmentCatalogService.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>Wszystkie oddziały uporządkowane alfabetycznie.</summary>
+        </member>
         <member name="T:SOR.Application.Interfaces.IDomainEventPublisher">
              <summary>
              Punkt publikacji zdarzeń domenowych dla warstwy aplikacji.
@@ -303,8 +327,16 @@
         <member name="M:SOR.Application.Interfaces.IPatientService.SetDiagnosisAsync(System.Guid,System.String,System.Threading.CancellationToken)">
             <summary>Ustawienie rozpoznania ICD-10.</summary>
         </member>
-        <member name="M:SOR.Application.Interfaces.IPatientService.CloseCardAsync(System.Guid,System.Boolean,System.Threading.CancellationToken)">
-            <summary>Próba zamknięcia karty pacjenta (BR-09/BR-10/BR-11).</summary>
+        <member name="M:SOR.Application.Interfaces.IPatientService.DischargePatientAsync(System.Guid,SOR.Domain.Enums.DischargeType,System.Nullable{System.Guid},System.String,System.Threading.CancellationToken)">
+            <summary>
+            Wypis pacjenta z SOR (BR-11): zakończenie leczenia, wypis na własne żądanie
+            albo przekazanie na inny oddział.
+            </summary>
+            <param name="patientId">Identyfikator pacjenta.</param>
+            <param name="type">Sposób zakończenia pobytu.</param>
+            <param name="departmentId">Oddział przyjmujący — wymagany przy przekazaniu.</param>
+            <param name="reason">Uzasadnienie — wymagane przy wypisie na własne żądanie i przy przekazaniu.</param>
+            <param name="cancellationToken">Token anulowania.</param>
         </member>
         <member name="M:SOR.Application.Interfaces.IPatientService.LockCardAsync(System.Guid,System.Threading.CancellationToken)">
             <summary>Przejęcie blokady karty (BR-20).</summary>
@@ -493,6 +525,21 @@
         <member name="M:SOR.Application.Interfaces.IIcd10CatalogRepository.GetByCodeAsync(System.String,System.Threading.CancellationToken)">
             <summary>Rozpoznanie dokładnie o danym kodzie.</summary>
         </member>
+        <member name="T:SOR.Application.Interfaces.IDepartmentRepository">
+            <summary>Repozytorium katalogu oddziałów szpitalnych (przekazanie pacjenta — BR-11).</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDepartmentRepository.GetAllAsync(System.Threading.CancellationToken)">
+            <summary>Wszystkie oddziały uporządkowane alfabetycznie.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IDepartmentRepository.GetByCodeAsync(System.String,System.Threading.CancellationToken)">
+            <summary>Oddział o podanym kodzie.</summary>
+        </member>
+        <member name="T:SOR.Application.Interfaces.IPatientDischargeRepository">
+            <summary>Repozytorium wpisów wypisów pacjentów z SOR.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientDischargeRepository.GetByPatientAsync(System.Guid,System.Threading.CancellationToken)">
+            <summary>Wpisy wypisów pacjenta, od najnowszego.</summary>
+        </member>
         <member name="T:SOR.Application.Interfaces.IUnitOfWork">
             <summary>
             Jednostka pracy (Unit of Work) — granica transakcji. Zatwierdzenie jest atomowe:
@@ -546,6 +593,12 @@
         </member>
         <member name="P:SOR.Application.Interfaces.IUnitOfWork.MedicationAdministrations">
             <summary>Repozytorium rejestru podanych leków.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.Departments">
+            <summary>Repozytorium katalogu oddziałów szpitalnych.</summary>
+        </member>
+        <member name="P:SOR.Application.Interfaces.IUnitOfWork.PatientDischarges">
+            <summary>Repozytorium wpisów wypisów pacjentów.</summary>
         </member>
         <member name="T:SOR.Application.Interfaces.IAuthenticationService">
             <summary>Serwis uwierzytelniania (BR-15/BR-16).</summary>
@@ -651,6 +704,15 @@
         <member name="M:SOR.Application.Mapping.EntityMapper.ToDetailsDto(SOR.Domain.Entities.Patient,System.String,System.DateTimeOffset,System.Collections.Generic.IReadOnlyDictionary{System.Guid,System.String})">
             <summary>Buduje pełny DTO karty pacjenta.</summary>
         </member>
+        <member name="M:SOR.Application.Mapping.EntityMapper.IsActiveStay(SOR.Domain.Enums.PatientState)">
+            <summary>Czy pacjent nadal przebywa w SOR (nie został wypisany ani przekazany).</summary>
+        </member>
+        <member name="M:SOR.Application.Mapping.EntityMapper.ToDto(SOR.Domain.Entities.PatientDischarge)">
+            <summary>Buduje DTO wpisu wypisu pacjenta z SOR.</summary>
+        </member>
+        <member name="M:SOR.Application.Mapping.EntityMapper.ToDto(SOR.Domain.Entities.Department)">
+            <summary>Buduje DTO pozycji katalogu oddziałów.</summary>
+        </member>
         <member name="T:SOR.Application.Services.AuditLogService">
             <summary>
             Serwis dziennika audytu. Wpisy są tworzone w kontekście bieżącego Unit of Work,
@@ -707,6 +769,9 @@
         <member name="T:SOR.Application.Services.Icd10CatalogService">
             <summary>Serwis katalogu rozpoznań ICD-10.</summary>
         </member>
+        <member name="T:SOR.Application.Services.DepartmentCatalogService">
+            <summary>Serwis katalogu oddziałów szpitalnych — wybór oddziału przy przekazaniu pacjenta (BR-11).</summary>
+        </member>
         <member name="T:SOR.Application.Services.DomainEventPublisher">
              <summary>
              Domyślna implementacja publikatora zdarzeń domenowych — buforuje zdarzenia w obrębie
@@ -755,6 +820,13 @@
             <summary>
             Luźne dopasowanie dawki do katalogu: porównujemy znormalizowany zapis, aby dopuścić
             równoważne zapisy (np. „1 g" wobec „1000 mg"), ale odrzucamy dawki spoza katalogu.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientService.DischargePatientAsync(System.Guid,SOR.Domain.Enums.DischargeType,System.Nullable{System.Guid},System.String,System.Threading.CancellationToken)">
+            <summary>
+            Wypis pacjenta z SOR (BR-11). Obsługuje trzy scenariusze: zakończenie leczenia,
+            wypis na własne żądanie oraz przekazanie na inny oddział. Decyzję podejmuje lekarz
+            lub koordynator (BR-13), a każda próba — udana lub odrzucona — trafia do dziennika audytu.
             </summary>
         </member>
         <member name="M:SOR.Application.Services.PatientService.LoadMedicationNamesAsync(SOR.Domain.Entities.Patient,System.Threading.CancellationToken)">

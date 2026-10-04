@@ -41,6 +41,39 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
     }
 }
 
+/// <summary>Mapowanie encji <see cref="PatientDischarge"/> - tabela wypisów pacjentów z SOR.</summary>
+public sealed class PatientDischargeConfiguration : IEntityTypeConfiguration<PatientDischarge>
+{
+    public void Configure(EntityTypeBuilder<PatientDischarge> builder)
+    {
+        builder.ToTable("PatientDischarges");
+        builder.HasKey(d => d.Id);
+
+        builder.Property(d => d.Type).HasConversion<int>();
+        builder.Property(d => d.DepartmentName).HasMaxLength(200);
+        builder.Property(d => d.Reason).HasMaxLength(500);
+        builder.Property(d => d.RecordedByLogin).IsRequired().HasMaxLength(64);
+
+        builder.HasIndex(d => d.PatientId);
+        builder.HasIndex(d => new { d.Type, d.DischargedAtUtc });
+
+        builder.HasOne<Patient>()
+            .WithMany(p => p.Discharges)
+            .HasForeignKey(d => d.PatientId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasOne<Department>()
+            .WithMany()
+            .HasForeignKey(d => d.DepartmentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne<User>()
+            .WithMany()
+            .HasForeignKey(d => d.RecordedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 /// <summary>Mapowanie encji <see cref="TriageAssessment"/> — tabela ocen segregacji medycznej.</summary>
 public sealed class TriageAssessmentConfiguration : IEntityTypeConfiguration<TriageAssessment>
 {

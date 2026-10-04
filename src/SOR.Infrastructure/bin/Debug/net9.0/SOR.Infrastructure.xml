@@ -19,8 +19,14 @@
         <member name="T:SOR.Infrastructure.Persistence.Configurations.MedicalBundleItemConfiguration">
             <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.MedicalBundleItem"/> — pozycje pakietów medycznych.</summary>
         </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.DepartmentConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Department"/> - katalog oddzia³w do przekaza† pacjenta.</summary>
+        </member>
         <member name="T:SOR.Infrastructure.Persistence.Configurations.PatientConfiguration">
             <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.Patient"/> — tabela kart pacjentów.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Configurations.PatientDischargeConfiguration">
+            <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.PatientDischarge"/> - tabela wypisów pacjentów z SOR.</summary>
         </member>
         <member name="T:SOR.Infrastructure.Persistence.Configurations.TriageAssessmentConfiguration">
             <summary>Mapowanie encji <see cref="T:SOR.Domain.Entities.TriageAssessment"/> — tabela ocen segregacji medycznej.</summary>
@@ -132,6 +138,21 @@
             gdy strefy zostały wygenerowane wcześniej.
             </summary>
         </member>
+        <member name="T:SOR.Infrastructure.Persistence.DepartmentCatalogSeed">
+             <summary>
+             Dane referencyjne: katalog oddziałów szpitalnych, do których SOR przekazuje pacjentów.
+            
+             <para>
+             Lista odwzorowuje strukturę Szpitala Uniwersyteckiego nr 1 im. dr. Antoniego Jurasza
+             w Bydgoszczy — kliniki i oddziały objęte zakresem świadczeń (strona szpitala:
+             jurasza.umk.pl/kliniki). Lista służy wyłącznie do oznaczenia oddziału przyjmującego
+             w formularzu przekazania pacjenta; nie jest wykazem uprawnień ani dostępności łóżek.
+             </para>
+             </summary>
+        </member>
+        <member name="M:SOR.Infrastructure.Persistence.DepartmentCatalogSeed.Build(SOR.Domain.Common.IIdGenerator)">
+            <summary>Buduje pełny katalog oddziałów.</summary>
+        </member>
         <member name="T:SOR.Infrastructure.Persistence.Icd10CatalogSeed">
              <summary>
              Dane referencyjne: katalog kodów ICD-10 w zakresie praktyki SOR.
@@ -194,6 +215,12 @@
         <member name="T:SOR.Infrastructure.Persistence.Repositories.Icd10CatalogRepository">
             <summary>Repozytorium katalogu rozpoznań ICD-10.</summary>
         </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.DepartmentRepository">
+            <summary>Repozytorium katalogu oddziałów szpitalnych — listowanie i odczyt po kodzie.</summary>
+        </member>
+        <member name="T:SOR.Infrastructure.Persistence.Repositories.PatientDischargeRepository">
+            <summary>Repozytorium wpisów wypisów — historia zakończenia pobytu pacjenta w SOR.</summary>
+        </member>
         <member name="T:SOR.Infrastructure.Persistence.Repositories.EntityFrameworkRepository`1">
             <summary>
             Generyczna implementacja wzorca Repository z użyciem EF Core.
@@ -234,6 +261,12 @@
             Konfiguracja jest rozdzielona na klasy <c>IEntityTypeConfiguration&lt;T&gt;</c> (konfiguracja per encja),
             co utrzymuje klasę kontekstu zwartej i łatwej w utrzymaniu.
             </summary>
+        </member>
+        <member name="P:SOR.Infrastructure.Persistence.SorDbContext.Departments">
+            <summary>Katalog oddzialow szpitalnych do przekazywania pacjentow.</summary>
+        </member>
+        <member name="P:SOR.Infrastructure.Persistence.SorDbContext.PatientDischarges">
+            <summary>Wpisy wypisow pacjentow z SOR.</summary>
         </member>
         <member name="M:SOR.Infrastructure.Persistence.SorDbContext.SaveChanges(System.Boolean)">
             <summary>

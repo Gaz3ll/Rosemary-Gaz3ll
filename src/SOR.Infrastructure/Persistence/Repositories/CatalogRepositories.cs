@@ -157,3 +157,43 @@ public sealed class Icd10CatalogRepository : EntityFrameworkRepository<Icd10Cata
             .FirstOrDefaultAsync(e => e.Code == code.Trim().ToUpperInvariant(), cancellationToken)
             .ConfigureAwait(false);
 }
+
+/// <summary>Repozytorium katalogu oddziałów szpitalnych — listowanie i odczyt po kodzie.</summary>
+public sealed class DepartmentRepository : EntityFrameworkRepository<Department>, IDepartmentRepository
+{
+    public DepartmentRepository(SorDbContext context) : base(context)
+    {
+    }
+
+    public async Task<IReadOnlyList<Department>> GetAllAsync(CancellationToken cancellationToken = default) =>
+        await Context.Departments
+            .AsNoTracking()
+            .OrderBy(d => d.Name)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    public async Task<Department?> GetByCodeAsync(string code, CancellationToken cancellationToken = default) =>
+        await Context.Departments
+            .AsNoTracking()
+            .FirstOrDefaultAsync(d => d.Code == code.Trim().ToUpperInvariant(), cancellationToken)
+            .ConfigureAwait(false);
+}
+
+/// <summary>Repozytorium wpisów wypisów — historia zakończenia pobytu pacjenta w SOR.</summary>
+public sealed class PatientDischargeRepository
+    : EntityFrameworkRepository<PatientDischarge>, IPatientDischargeRepository
+{
+    public PatientDischargeRepository(SorDbContext context) : base(context)
+    {
+    }
+
+    public async Task<IReadOnlyList<PatientDischarge>> GetByPatientAsync(
+        Guid patientId,
+        CancellationToken cancellationToken = default) =>
+        await Context.PatientDischarges
+            .AsNoTracking()
+            .Where(d => d.PatientId == patientId)
+            .OrderByDescending(d => d.DischargedAtUtc)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+}

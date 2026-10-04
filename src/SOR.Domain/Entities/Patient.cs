@@ -15,6 +15,7 @@ public sealed class Patient : Entity<Guid>
     private readonly List<MedicalOrder> _orders = new();
     private readonly List<ZoneTransfer> _transfers = new();
     private readonly List<MedicationAdministration> _administrations = new();
+    private readonly List<PatientDischarge> _discharges = new();
 
     /// <summary>Konstruktor wywoływany wyłącznie przez warstwę trwałości (EF Core) przy materializacji.</summary>
     private Patient() { }
@@ -86,6 +87,9 @@ public sealed class Patient : Entity<Guid>
 
     /// <summary>Rejestr leków faktycznie podanych pacjentowi w trakcie pobytu w SOR.</summary>
     public IReadOnlyCollection<MedicationAdministration> Administrations => _administrations.AsReadOnly();
+
+    /// <summary>Wpisy wypisów pacjenta z SOR — z reguły jeden, kończący pobyt.</summary>
+    public IReadOnlyCollection<PatientDischarge> Discharges => _discharges.AsReadOnly();
 
     public string FullName => $"{LastName} {FirstName}";
 
@@ -205,17 +209,6 @@ public sealed class Patient : Entity<Guid>
         State = PatientState.InTreatment;
     }
 
-    /// <summary>Wydanie pacjenta do transportu — stan poprzedzający zamknięcie karty (BR-11).</summary>
-    public void MarkAwaitingTransport()
-    {
-        if (State is PatientState.Closed or PatientState.TransferredOut)
-        {
-            throw new ValidationException("Pacjent został już wydany z SOR.", nameof(State));
-        }
-
-        State = PatientState.AwaitingTransport;
-    }
-
     // ---------- Zlecenia ----------
 
     public MedicalOrder AddOrder(MedicalOrder order)
@@ -256,57 +249,116 @@ public sealed class Patient : Entity<Guid>
         return administration;
     }
 
-    // ---------- Rozpoznanie i zamknięcie ----------
+    // ---------- Rozpoznanie i wypis ----------
 
-    /// <summary>Ustawienie rozpoznania ICD-10 (wymagane przed zamknięciem karty).</summary>
+    /// <summary>Ustawienie rozpoznania ICD-10 (wymagane przed wypisem — BR-09).</summary>
     public void SetDiagnosis(Icd10Code diagnosis)
     {
         ArgumentNullException.ThrowIfNull(diagnosis);
         Diagnosis = diagnosis;
     }
 
-    /// <summary>Cofnięcie rozpoznania — dopuszczalne tylko do czasu zamknięcia karty.</summary>
+    /// <summary>Cofnięcie rozpoznania — dopuszczalne tylko do czasu wypisu pacjenta.</summary>
     public void ClearDiagnosis()
     {
         if (State is PatientState.Closed or PatientState.TransferredOut)
         {
-            throw new ValidationException("Nie można zmienić rozpoznania w zamkniętej karcie pacjenta.", nameof(State));
+            throw new ValidationException("Nie można zmienić rozpoznania u wypisanego pacjenta.", nameof(State));
         }
 
         Diagnosis = null;
     }
 
     /// <summary>
-    /// Próba zamknięcia karty pacjenta. Waliduje reguły BR-09/BR-10/BR-11 i w razie naruszenia
-    /// rzuca <see cref="PatientCardClosureBlockedException"/> z listą powodów.
+    /// Wypis pacjenta z SOR (BR-11). Obsługuje trzy scenariusze: zakończenie leczenia,
+    /// wypis na własne żądanie oraz przekazanie na inny oddział. Przy wypisie przed
+    /// zakończeniem terapii nierozliczone zlecenia zostają automatycznie anulowane,
+    /// aby nie pozostały bez pokrycia po wyjściu pacjenta z oddziału.
     /// </summary>
-    public void Close(DateTimeOffset closedAtUtc, bool transportCompleted)
+    public PatientDischarge Discharge(
+        Guid dischargeId,
+        DischargeType type,
+        DateTimeOffset dischargedAtUtc,
+        Guid recordedByUserId,
+        string recordedByLogin,
+        Department? department = null,
+        string? reason = null)
     {
-        var context = new PatientClosureContext(
+        if (State is not (PatientState.InTreatment or PatientState.AwaitingTransport or PatientState.Triaged))
+        {
+            throw new ValidationException(
+                "Wypis jest możliwy wyłącznie dla pacjenta przyjętego do strefy — brak aktywnego pobytu w SOR (BR-11).",
+                nameof(State));
+        }
+
+        var context = new PatientDischargeContext(
             Id,
+            type,
             Diagnosis is not null,
             OpenOrders.Count(),
             State,
-            !transportCompleted);
+            department is not null,
+            !string.IsNullOrWhiteSpace(reason));
 
-        PatientCardClosurePolicy.EnsureCanClose(context);
+        PatientDischargePolicy.EnsureCanDischarge(context);
 
-        State = PatientState.Closed;
-        ClosedAtUtc = closedAtUtc;
+        if (type != DischargeType.TreatmentCompleted)
+        {
+            foreach (var order in OpenOrders.ToArray())
+            {
+                order.ChangeState(
+                    MedicalOrderState.Cancelled,
+                    dischargedAtUtc,
+                    $"Anulowano w trakcie wypisu ({DescribeDischargeType(type)}).");
+            }
+        }
+
+        var discharge = PatientDischarge.Create(
+            dischargeId,
+            Id,
+            type,
+            department?.Id,
+            department?.Name,
+            reason,
+            dischargedAtUtc,
+            recordedByUserId,
+            recordedByLogin);
+
+        _discharges.Add(discharge);
+
+        State = type == DischargeType.TransferToDepartment
+            ? PatientState.TransferredOut
+            : PatientState.Closed;
+
+        ClosedAtUtc = dischargedAtUtc;
+
+        return discharge;
     }
 
-    /// <summary>Bezpieczna wersja zamknięcia zwracająca listę powodów blokady zamiast wyjątku (dla UI).</summary>
-    public IReadOnlyList<string> CheckClosureBlockers(bool transportCompleted)
+    /// <summary>Powody blokujące wypis — bezpieczna wersja zwracająca listę zamiast wyjątku (dla UI).</summary>
+    public IReadOnlyList<string> GetDischargeBlockers(
+        DischargeType type,
+        bool hasTargetDepartment = false,
+        bool hasReason = false)
     {
-        var context = new PatientClosureContext(
+        var context = new PatientDischargeContext(
             Id,
+            type,
             Diagnosis is not null,
             OpenOrders.Count(),
             State,
-            !transportCompleted);
+            hasTargetDepartment,
+            hasReason);
 
-        return PatientCardClosurePolicy.GetBlockingReasons(context);
+        return PatientDischargePolicy.GetBlockingReasons(context);
     }
+
+    private static string DescribeDischargeType(DischargeType type) => type switch
+    {
+        DischargeType.AtPatientRequest => "wypis na własne żądanie",
+        DischargeType.TransferToDepartment => "przekazanie na inny oddział",
+        _ => "zakończenie leczenia"
+    };
 
     // ---------- Blokada współbieżnej modyfikacji (BR-20) ----------
 

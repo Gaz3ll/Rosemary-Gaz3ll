@@ -567,47 +567,95 @@ public sealed class PatientService : IPatientService
             .Select(c => char.IsLetter(c) ? char.ToLowerInvariant(c) : c == ',' ? '.' : c)
             .ToArray());
 
-    public async Task<PatientDetailsDto> CloseCardAsync(Guid patientId, bool transportCompleted, CancellationToken cancellationToken = default)
+
+    /// <summary>
+    /// Wypis pacjenta z SOR (BR-11). Obsługuje trzy scenariusze: zakończenie leczenia,
+    /// wypis na własne żądanie oraz przekazanie na inny oddział. Decyzję podejmuje lekarz
+    /// lub koordynator (BR-13), a każda próba — udana lub odrzucona — trafia do dziennika audytu.
+    /// </summary>
+    public async Task<PatientDetailsDto> DischargePatientAsync(
+        Guid patientId,
+        DischargeType type,
+        Guid? departmentId = null,
+        string? reason = null,
+        CancellationToken cancellationToken = default)
     {
         var actor = RequireAuthenticatedUser();
         var now = _clock.UtcNow;
 
-        var patient = await GetPatientEntityAsync(patientId, cancellationToken).ConfigureAwait(false);
-
-        if (!actor.CanConfirmTransport && !transportCompleted)
+        if (!actor.CanDischargePatient)
         {
             throw new AuthorizationException(
-                "Potwierdzenie transportu pacjenta wymaga uprawnień lekarza lub koordynatora (BR-13).");
+                "Wypis pacjenta z SOR może zarejestrować wyłącznie lekarz lub koordynator (BR-13).");
         }
 
-        var blockers = patient.CheckClosureBlockers(transportCompleted);
+        var patient = await GetPatientEntityAsync(patientId, cancellationToken).ConfigureAwait(false);
+
+        if (patient.ZoneId is not null)
+        {
+            EnsureStaffOfZoneOrCoordinator(actor, patient.ZoneId.Value);
+        }
+
+        Department? department = null;
+
+        if (type == DischargeType.TransferToDepartment)
+        {
+            if (departmentId is null)
+            {
+                throw new ValidationException(
+                    "Przekazanie na inny oddział wymaga wskazania oddziału przyjmującego (BR-11).",
+                    nameof(departmentId));
+            }
+
+            department = await _unitOfWork.Departments
+                .GetByIdAsync(departmentId.Value, cancellationToken)
+                .ConfigureAwait(false)
+                ?? throw new EntityNotFoundException(nameof(Department), departmentId.Value);
+        }
+
+        var hasReason = !string.IsNullOrWhiteSpace(reason);
+        var blockers = patient.GetDischargeBlockers(type, department is not null, hasReason);
 
         if (blockers.Count > 0)
         {
             await _auditLog.RecordAsync(
-                AuditActionType.PatientCardClosureAttempt,
+                AuditActionType.PatientDischargeBlocked,
                 actor.Id,
                 actor.Login,
                 patient.Id,
                 nameof(Patient),
-                $"Odrzucono zamknięcie karty pacjenta {patient.FullName}: {string.Join("; ", blockers)}.",
+                $"Odrzucono wypis pacjenta {patient.FullName} ({DescribeDischargeType(type)}): {string.Join("; ", blockers)}.",
                 false,
                 cancellationToken).ConfigureAwait(false);
 
             await _unitOfWork.CommitAsync(cancellationToken).ConfigureAwait(false);
 
-            throw new PatientCardClosureBlockedException(blockers.ToArray());
+            throw new PatientDischargeBlockedException(blockers.ToArray());
         }
 
-        patient.Close(now, transportCompleted);
+        var discharge = patient.Discharge(
+            _idGenerator.NewId(),
+            type,
+            now,
+            actor.Id,
+            actor.Login,
+            department,
+            reason);
+
+        // Jawne dodanie do kontekstu — wpis wypisu ma nadany klucz główny w domenie,
+        // więc bez tego EF Core potraktowałby go jako istniejący i wykonał UPDATE
+        // nieistniejącego wiersza zamiast INSERT (analogicznie do zleceń i ocen Triage).
+        await _unitOfWork.PatientDischarges
+            .AddAsync(discharge, cancellationToken)
+            .ConfigureAwait(false);
 
         await _auditLog.RecordAsync(
-            AuditActionType.PatientCardClosureAttempt,
+            AuditActionType.PatientDischarged,
             actor.Id,
             actor.Login,
             patient.Id,
             nameof(Patient),
-            $"Zamknięto kartę pacjenta {patient.FullName}; rozpoznanie: {patient.Diagnosis?.Value}.",
+            BuildDischargeAuditDetails(patient, discharge),
             true,
             cancellationToken).ConfigureAwait(false);
 
@@ -615,6 +663,24 @@ public sealed class PatientService : IPatientService
 
         return await GetPatientAsync(patientId, cancellationToken).ConfigureAwait(false);
     }
+
+    private static string BuildDischargeAuditDetails(Patient patient, PatientDischarge discharge) =>
+        discharge.Type switch
+        {
+            DischargeType.AtPatientRequest =>
+                $"Wypis na własne żądanie pacjenta {patient.FullName}; rozpoznanie: {patient.Diagnosis?.Value ?? "brak"}; powód: {discharge.Reason}.",
+            DischargeType.TransferToDepartment =>
+                $"Przekazanie pacjenta {patient.FullName} na oddział: {discharge.DepartmentName}; rozpoznanie: {patient.Diagnosis?.Value ?? "brak"}.",
+            _ =>
+                $"Zakończono leczenie pacjenta {patient.FullName}; rozpoznanie: {patient.Diagnosis?.Value ?? "brak"}."
+        };
+
+    private static string DescribeDischargeType(DischargeType type) => type switch
+    {
+        DischargeType.AtPatientRequest => "wypis na własne żądanie",
+        DischargeType.TransferToDepartment => "przekazanie na inny oddział",
+        _ => "zakończenie leczenia"
+    };
 
     public async Task<PatientDetailsDto> LockCardAsync(Guid patientId, CancellationToken cancellationToken = default)
     {

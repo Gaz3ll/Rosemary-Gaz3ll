@@ -29,6 +29,9 @@ public sealed record AuthenticatedUserDto(
     /// <summary>BR-13: zlecenia realizują lekarz, koordynator oraz ratownik medyczny.</summary>
     public bool CanExecuteOrders => Role is UserRole.Physician or UserRole.Coordinator or UserRole.Paramedic;
 
+    /// <summary>BR-11/BR-13: wypis pacjenta z SOR rejestruje wyłącznie lekarz lub koordynator.</summary>
+    public bool CanDischargePatient => Role is UserRole.Physician or UserRole.Coordinator;
+
     /// <summary>Czy użytkownik jest zalogowany w podanej strefie (lub jest koordynatorem).</summary>
     public bool HasAccessTo(Guid zoneId) => CanManageAllZones || CurrentZoneId == zoneId;
 }

@@ -65,8 +65,21 @@ public interface IPatientService
     /// <summary>Ustawienie rozpoznania ICD-10.</summary>
     Task<PatientDetailsDto> SetDiagnosisAsync(Guid patientId, string icd10Code, CancellationToken cancellationToken = default);
 
-    /// <summary>Próba zamknięcia karty pacjenta (BR-09/BR-10/BR-11).</summary>
-    Task<PatientDetailsDto> CloseCardAsync(Guid patientId, bool transportCompleted, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// Wypis pacjenta z SOR (BR-11): zakończenie leczenia, wypis na własne żądanie
+    /// albo przekazanie na inny oddział.
+    /// </summary>
+    /// <param name="patientId">Identyfikator pacjenta.</param>
+    /// <param name="type">Sposób zakończenia pobytu.</param>
+    /// <param name="departmentId">Oddział przyjmujący — wymagany przy przekazaniu.</param>
+    /// <param name="reason">Uzasadnienie — wymagane przy wypisie na własne żądanie i przy przekazaniu.</param>
+    /// <param name="cancellationToken">Token anulowania.</param>
+    Task<PatientDetailsDto> DischargePatientAsync(
+        Guid patientId,
+        DischargeType type,
+        Guid? departmentId = null,
+        string? reason = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Przejęcie blokady karty (BR-20).</summary>
     Task<PatientDetailsDto> LockCardAsync(Guid patientId, CancellationToken cancellationToken = default);

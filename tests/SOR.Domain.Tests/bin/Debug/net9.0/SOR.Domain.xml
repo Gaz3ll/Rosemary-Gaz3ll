@@ -10,8 +10,8 @@
             ( optimistic concurrency / blokada logiczna karty pacjenta).
             </summary>
         </member>
-        <member name="T:SOR.Domain.Common.PatientCardClosureBlockedException">
-            <summary>Błąd naruszenia wymogu kompletności danych przed zamknięciem karty pacjenta.</summary>
+        <member name="T:SOR.Domain.Common.PatientDischargeBlockedException">
+            <summary>Błąd naruszenia wymogu kompletności danych przed wypisem pacjenta z SOR (BR-11).</summary>
         </member>
         <member name="T:SOR.Domain.Common.DomainEvent">
             <summary>
@@ -180,23 +180,67 @@
         <member name="T:SOR.Domain.DomainServices.IRotationRecommendationEngine">
             <summary>Kontrakt silnika rekomendacji rotacji (Strategy).</summary>
         </member>
-        <member name="T:SOR.Domain.DomainServices.PatientClosureContext">
-            <summary>Zestaw reguł dla walidacji karty pacjenta przed jej zamknięciem.</summary>
+        <member name="T:SOR.Domain.DomainServices.PatientDischargeContext">
+            <summary>
+            Dane wejściowe walidacji wypisu pacjenta z SOR.
+            </summary>
+            <param name="PatientId">Identyfikator pacjenta.</param>
+            <param name="Type">Wybrany sposób zakończenia pobytu.</param>
+            <param name="HasIcd10Diagnosis">Czy w karcie widnieje rozpoznanie ICD-10.</param>
+            <param name="OpenOrderCount">Liczba zleceń lekarskich w stanie otwartym lub w trakcie.</param>
+            <param name="State">Aktualny stan pacjenta w przepływie klinicznym.</param>
+            <param name="HasTargetDepartment">Czy wskazano oddział przyjmujący (przekazanie).</param>
+            <param name="HasReason">Czy podano uzasadnienie wypisu.</param>
         </member>
-        <member name="M:SOR.Domain.DomainServices.PatientClosureContext.#ctor(System.Guid,System.Boolean,System.Int32,SOR.Domain.Enums.PatientState,System.Boolean)">
-            <summary>Zestaw reguł dla walidacji karty pacjenta przed jej zamknięciem.</summary>
+        <member name="M:SOR.Domain.DomainServices.PatientDischargeContext.#ctor(System.Guid,SOR.Domain.Enums.DischargeType,System.Boolean,System.Int32,SOR.Domain.Enums.PatientState,System.Boolean,System.Boolean)">
+            <summary>
+            Dane wejściowe walidacji wypisu pacjenta z SOR.
+            </summary>
+            <param name="PatientId">Identyfikator pacjenta.</param>
+            <param name="Type">Wybrany sposób zakończenia pobytu.</param>
+            <param name="HasIcd10Diagnosis">Czy w karcie widnieje rozpoznanie ICD-10.</param>
+            <param name="OpenOrderCount">Liczba zleceń lekarskich w stanie otwartym lub w trakcie.</param>
+            <param name="State">Aktualny stan pacjenta w przepływie klinicznym.</param>
+            <param name="HasTargetDepartment">Czy wskazano oddział przyjmujący (przekazanie).</param>
+            <param name="HasReason">Czy podano uzasadnienie wypisu.</param>
         </member>
-        <member name="T:SOR.Domain.DomainServices.PatientCardClosurePolicy">
-            <summary>Reguła BR-09 / BR-10 — warunki poprawności zamykania karty pacjenta.</summary>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.PatientId">
+            <summary>Identyfikator pacjenta.</summary>
         </member>
-        <member name="M:SOR.Domain.DomainServices.PatientCardClosurePolicy.GetBlockingReasons(SOR.Domain.DomainServices.PatientClosureContext)">
-            <summary>Zwraca listę powodów blokujących zamknięcie karty (pusta = można zamknąć).</summary>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.Type">
+            <summary>Wybrany sposób zakończenia pobytu.</summary>
         </member>
-        <member name="M:SOR.Domain.DomainServices.PatientCardClosurePolicy.CanClose(SOR.Domain.DomainServices.PatientClosureContext)">
-            <summary>Czy kartę można zamknąć.</summary>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.HasIcd10Diagnosis">
+            <summary>Czy w karcie widnieje rozpoznanie ICD-10.</summary>
         </member>
-        <member name="M:SOR.Domain.DomainServices.PatientCardClosurePolicy.EnsureCanClose(SOR.Domain.DomainServices.PatientClosureContext)">
-            <summary>Waliduje i rzuca wyjątkiem domenowym <see cref="T:SOR.Domain.Common.PatientCardClosureBlockedException"/>.</summary>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.OpenOrderCount">
+            <summary>Liczba zleceń lekarskich w stanie otwartym lub w trakcie.</summary>
+        </member>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.State">
+            <summary>Aktualny stan pacjenta w przepływie klinicznym.</summary>
+        </member>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.HasTargetDepartment">
+            <summary>Czy wskazano oddział przyjmujący (przekazanie).</summary>
+        </member>
+        <member name="P:SOR.Domain.DomainServices.PatientDischargeContext.HasReason">
+            <summary>Czy podano uzasadnienie wypisu.</summary>
+        </member>
+        <member name="T:SOR.Domain.DomainServices.PatientDischargePolicy">
+            <summary>
+            Reguły wypisu pacjenta z SOR (BR-09, BR-10, BR-11). Zestaw jest wspólny dla trzech
+            sposobów zakończenia pobytu, ale wymagania różnią się zgodnie z realią kliniczną:
+            zakończenie leczenia wymaga zamkniętej dokumentacji, natomiast wypis na własne żądanie
+            musi być możliwy także wtedy, gdy leczenie nie zostało dokończone.
+            </summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientDischargePolicy.GetBlockingReasons(SOR.Domain.DomainServices.PatientDischargeContext)">
+            <summary>Lista powodów blokujących wypis (pusta lista = wypis jest dozwolony).</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientDischargePolicy.CanDischarge(SOR.Domain.DomainServices.PatientDischargeContext)">
+            <summary>Czy wypis pacjenta jest dozwolony.</summary>
+        </member>
+        <member name="M:SOR.Domain.DomainServices.PatientDischargePolicy.EnsureCanDischarge(SOR.Domain.DomainServices.PatientDischargeContext)">
+            <summary>Waliduje wypis i rzuca wyjątkiem domenowym <see cref="T:SOR.Domain.Common.PatientDischargeBlockedException"/>.</summary>
         </member>
         <member name="T:SOR.Domain.DomainServices.RotationRecommendationEngine">
             <summary>
@@ -279,6 +323,19 @@
         </member>
         <member name="P:SOR.Domain.Entities.AuditLogEntry.IsFailure">
             <summary>Czy wpis dotyczy operacji nieudanej (do wyróżnienia w interfejsie).</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.Department">
+            <summary>
+            Pozycja katalogu oddziałów szpitalnych, do których SOR przekazuje pacjentów
+            (BR-11). Katalog jest danymi referencyjnymi — listę oddziałów ustala szpital,
+            a nie personel SOR.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Department.Code">
+            <summary>Krótki kod oddziału, np. <c>KCHIR</c> — używany w raportach i w logach.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.Department.Name">
+            <summary>Pełna nazwa kliniki lub oddziału.</summary>
         </member>
         <member name="T:SOR.Domain.Entities.DutyShift">
             <summary>
@@ -567,6 +624,9 @@
         <member name="P:SOR.Domain.Entities.Patient.Administrations">
             <summary>Rejestr leków faktycznie podanych pacjentowi w trakcie pobytu w SOR.</summary>
         </member>
+        <member name="P:SOR.Domain.Entities.Patient.Discharges">
+            <summary>Wpisy wypisów pacjenta z SOR — z reguły jeden, kończący pobyt.</summary>
+        </member>
         <member name="M:SOR.Domain.Entities.Patient.Register(System.Guid,System.String,System.String,System.String,System.DateOnly,SOR.Domain.Enums.PatientGender,System.String,System.DateTimeOffset)">
             <summary>Rejestracja pacjenta w module wstępnym SOR (BR-18).</summary>
         </member>
@@ -582,9 +642,6 @@
         <member name="M:SOR.Domain.Entities.Patient.AssignToZone(System.Guid,System.DateTimeOffset)">
             <summary>Przypisanie pacjenta do strefy (wymaga wcześniejszego Triage — BR-01a).</summary>
         </member>
-        <member name="M:SOR.Domain.Entities.Patient.MarkAwaitingTransport">
-            <summary>Wydanie pacjenta do transportu — stan poprzedzający zamknięcie karty (BR-11).</summary>
-        </member>
         <member name="P:SOR.Domain.Entities.Patient.HasOpenOrders">
             <summary>Reguła BR-10: pacjent bez otwartych zleceń nie może zostać wydany z SOR.</summary>
         </member>
@@ -595,19 +652,21 @@
             </summary>
         </member>
         <member name="M:SOR.Domain.Entities.Patient.SetDiagnosis(SOR.Domain.ValueObjects.Icd10Code)">
-            <summary>Ustawienie rozpoznania ICD-10 (wymagane przed zamknięciem karty).</summary>
+            <summary>Ustawienie rozpoznania ICD-10 (wymagane przed wypisem — BR-09).</summary>
         </member>
         <member name="M:SOR.Domain.Entities.Patient.ClearDiagnosis">
-            <summary>Cofnięcie rozpoznania — dopuszczalne tylko do czasu zamknięcia karty.</summary>
+            <summary>Cofnięcie rozpoznania — dopuszczalne tylko do czasu wypisu pacjenta.</summary>
         </member>
-        <member name="M:SOR.Domain.Entities.Patient.Close(System.DateTimeOffset,System.Boolean)">
+        <member name="M:SOR.Domain.Entities.Patient.Discharge(System.Guid,SOR.Domain.Enums.DischargeType,System.DateTimeOffset,System.Guid,System.String,SOR.Domain.Entities.Department,System.String)">
             <summary>
-            Próba zamknięcia karty pacjenta. Waliduje reguły BR-09/BR-10/BR-11 i w razie naruszenia
-            rzuca <see cref="T:SOR.Domain.Common.PatientCardClosureBlockedException"/> z listą powodów.
+            Wypis pacjenta z SOR (BR-11). Obsługuje trzy scenariusze: zakończenie leczenia,
+            wypis na własne żądanie oraz przekazanie na inny oddział. Przy wypisie przed
+            zakończeniem terapii nierozliczone zlecenia zostają automatycznie anulowane,
+            aby nie pozostały bez pokrycia po wyjściu pacjenta z oddziału.
             </summary>
         </member>
-        <member name="M:SOR.Domain.Entities.Patient.CheckClosureBlockers(System.Boolean)">
-            <summary>Bezpieczna wersja zamknięcia zwracająca listę powodów blokady zamiast wyjątku (dla UI).</summary>
+        <member name="M:SOR.Domain.Entities.Patient.GetDischargeBlockers(SOR.Domain.Enums.DischargeType,System.Boolean,System.Boolean)">
+            <summary>Powody blokujące wypis — bezpieczna wersja zwracająca listę zamiast wyjątku (dla UI).</summary>
         </member>
         <member name="M:SOR.Domain.Entities.Patient.AcquireLock(System.String,System.DateTimeOffset,System.TimeSpan)">
             <summary>
@@ -619,6 +678,28 @@
         </member>
         <member name="M:SOR.Domain.Entities.Patient.RecordTransfer(SOR.Domain.Entities.ZoneTransfer)">
             <summary>Rejestruje przeniesienie pacjenta w historii podróży po strefach (BR-19).</summary>
+        </member>
+        <member name="T:SOR.Domain.Entities.PatientDischarge">
+            <summary>
+            Wpis wypisu pacjenta z SOR (BR-11). Rejestruje sposób zakończenia pobytu, a w przypadku
+            przekazania na inny oddział — również oddział przyjmujący. Wpis jest niezmienny:
+            powtarzna zmiana sposobu wypisu wymaga nowego wpisu, a nie nadpisania historii.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.PatientDischarge.Type">
+            <summary>Sposób zakończenia pobytu: zakończenie leczenia, wypis na własne żądanie lub przekazanie.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.PatientDischarge.DepartmentId">
+            <summary>Oddział przyjmujący — wypełniony wyłącznie dla przekazania na inny oddział.</summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.PatientDischarge.DepartmentName">
+            <summary>
+            Nazwa oddziału zapisywana wprost we wpisie. Dzięki temu dokument wypisu jest czytelny
+            także wtedy, gdy katalog oddziałów w przyszłości się zmieni.
+            </summary>
+        </member>
+        <member name="P:SOR.Domain.Entities.PatientDischarge.Reason">
+            <summary>Uzasadnienie wypisu — obowiązkowe dla wypisu na własne żądanie i przekazania.</summary>
         </member>
         <member name="T:SOR.Domain.Entities.StaffZoneAssignment">
             <summary>
@@ -893,6 +974,29 @@
         </member>
         <member name="F:SOR.Domain.Enums.AuditActionType.DiagnosisChanged">
             <summary>Ustawiono lub cofnięto rozpoznanie ICD-10.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.PatientDischarged">
+            <summary>Wypisano pacjenta z SOR — zakończenie leczenia, własne żądanie lub przekazanie.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.AuditActionType.PatientDischargeBlocked">
+            <summary>Odrzucono próbę wypisu pacjenta (nie spełnione BR-09/BR-10/BR-11).</summary>
+        </member>
+        <member name="T:SOR.Domain.Enums.DischargeType">
+            <summary>
+            Sposób zakończenia pobytu pacjenta w SOR (BR-11). Każdy wariant kończy obsługę
+            pacjenta w oddziale, ale pozostawia inny ślad w karcie: zakończenie leczenia i wypis
+            na własne żądanie zamykają kartę, przekazanie na inny oddział wyprowadza pacjenta
+            z SOR i wskazuje oddział przyjmujący.
+            </summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.DischargeType.TreatmentCompleted">
+            <summary>Zakończenie leczenia — pacjent wypisywany do domu po zakończonej terapii.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.DischargeType.AtPatientRequest">
+            <summary>Wypis na własne żądanie — pacjent samodzielnie opuszcza SOR w trakcie leczenia.</summary>
+        </member>
+        <member name="F:SOR.Domain.Enums.DischargeType.TransferToDepartment">
+            <summary>Przekazanie na inny oddział szpitalny w celu dalszego leczenia.</summary>
         </member>
         <member name="T:SOR.Domain.Enums.MedicalOrderType">
             <summary>Typ zlecenia lekarskiego — wpływa na uprawnienia do jego zamknięcia.</summary>

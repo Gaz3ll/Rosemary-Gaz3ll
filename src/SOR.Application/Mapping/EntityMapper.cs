@@ -71,10 +71,39 @@ public static class EntityMapper
             zoneName,
             patient.RegisteredAtUtc,
             patient.ZoneAssignedAtUtc,
-            patient.Orders.Select(o => o.ToDto()).ToList(),
-            patient.Transfers.Select(t => t.ToDto(zoneName)).ToList(),
-            administrations,
-            patient.CheckClosureBlockers(transportCompleted: true));
+patient.Orders.Select(o => o.ToDto()).ToList(),
+               patient.Transfers.Select(t => t.ToDto(zoneName)).ToList(),
+               administrations,
+               patient.Discharges.Select(d => d.ToDto()).ToList(),
+               IsActiveStay(patient.State)
+                   ? patient.GetDischargeBlockers(DischargeType.TreatmentCompleted)
+                   : []);
+       }
+
+    /// <summary>Czy pacjent nadal przebywa w SOR (nie został wypisany ani przekazany).</summary>
+    private static bool IsActiveStay(PatientState state) =>
+        state is PatientState.InTreatment or PatientState.Triaged or PatientState.AwaitingTransport;
+
+    /// <summary>Buduje DTO wpisu wypisu pacjenta z SOR.</summary>
+    public static PatientDischargeDto ToDto(this PatientDischarge discharge)
+    {
+        ArgumentNullException.ThrowIfNull(discharge);
+
+        return new PatientDischargeDto(
+            discharge.Id,
+            discharge.Type,
+            discharge.DepartmentName,
+            discharge.Reason,
+            discharge.DischargedAtUtc,
+            discharge.RecordedByLogin);
+    }
+
+    /// <summary>Buduje DTO pozycji katalogu oddziałów.</summary>
+    public static DepartmentDto ToDto(this Department department)
+    {
+        ArgumentNullException.ThrowIfNull(department);
+
+        return new DepartmentDto(department.Id, department.Code, department.Name);
     }
 
     private static string ResolveMedicationName(IReadOnlyDictionary<Guid, string>? medicationNames, Guid medicationId)
