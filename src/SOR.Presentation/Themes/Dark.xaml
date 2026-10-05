@@ -37,5 +37,10 @@
     <SolidColorBrush x:Key="TriageYellowBrush" Color="#D9C24B" />
     <SolidColorBrush x:Key="TriageGreenBrush" Color="#5BC98B" />
     <SolidColorBrush x:Key="TriageBlueBrush" Color="#6BAEDD" />
-
+<!-- Wariant ciemny zachowuje rozowy charakter paneli, przygaszony do tla motywu. -->
+    <SolidColorBrush x:Key="PanelPinkBrush" Color="#3A2A31" />
+    <SolidColorBrush x:Key="PanelPinkAltBrush" Color="#45313A" />
+    <SolidColorBrush x:Key="PanelPinkHeaderBrush" Color="#6B4453" />
+    <SolidColorBrush x:Key="PanelPinkBorderBrush" Color="#8A5768" />
+    <SolidColorBrush x:Key="PanelPinkTextBrush" Color="#F6DCE4" />
 </ResourceDictionary>

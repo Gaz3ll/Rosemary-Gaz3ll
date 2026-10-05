@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SOR.Infrastructure")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+f81ecbc900a413c65db939b96d26db6db12c6bf3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b8f68dd100d6b207c8c4bfe39b61f844d9239b86")]
 [assembly: System.Reflection.AssemblyProductAttribute("SOR.Infrastructure")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SOR.Infrastructure")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

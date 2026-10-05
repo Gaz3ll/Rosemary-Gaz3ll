@@ -127,3 +127,25 @@ public sealed record AuditLogEntryDto(
     string Details,
     DateTimeOffset OccurredAtUtc,
     bool Success);
+
+/// <summary>
+/// Serwis listy pobytów — zasilanie widoku „Lista pobytów” oraz zakładek „Raport z dyżuru”
+/// i „Badania obrazowe”. Operacje tylko do odczytu.
+/// </summary>
+public interface IPatientStayService
+{
+    /// <summary>Pobiera pobyty z zakresu dat, przefiltrowane według statusu.</summary>
+    /// <param name="query">Zakres dat i filtr statusu z panelu filtrów.</param>
+    /// <param name="nowUtc">Bieżący czas — podstawa wyliczenia czasu pobytu w strefie.</param>
+    /// <param name="cancellationToken">Token anulowania.</param>
+    Task<IReadOnlyList<PatientStayDto>> GetStaysAsync(
+        StayQuery query,
+        DateTimeOffset nowUtc,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Zlecenia badań obrazowych i konsultacji pacjentów z listy pobytów.</summary>
+    Task<IReadOnlyList<ImagingStudyDto>> GetImagingStudiesAsync(
+        StayQuery query,
+        DateTimeOffset nowUtc,
+        CancellationToken cancellationToken = default);
+}

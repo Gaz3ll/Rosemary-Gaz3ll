@@ -1,4 +1,4 @@
-﻿<Window x:Class="SOR.Presentation.MainWindow"
+<Window x:Class="SOR.Presentation.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -54,32 +54,167 @@
         <!-- ===================== PULPIT ===================== -->
         <Grid Visibility="{Binding Session.IsAuthenticated, Converter={StaticResource BoolToVisibility}}">
             <Grid.RowDefinitions>
+                <!-- A. Górny pasek menu i narzędzi -->
                 <RowDefinition Height="Auto" />
+                <!-- Baner rekomendacji rotacji (BR-07) -->
                 <RowDefinition Height="Auto" />
+                <!-- B. Panel wyboru jednostki i wyszukiwania -->
+                <RowDefinition Height="Auto" />
+                <!-- C. Panel zakresu dat i filtrów statusowych -->
+                <RowDefinition Height="Auto" />
+                <!-- D. Moduły kliniczne albo tabela danych -->
                 <RowDefinition Height="*" />
+                <!-- E. Dolny pasek zakładek (sub-nawigacja) -->
+                <RowDefinition Height="Auto" />
+                <!-- Pasek statusu -->
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <!-- Nagłówek sesji -->
-            <Border Grid.Row="0" Background="{DynamicResource HeaderBrush}" Padding="16,10">
-                <DockPanel>
-                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
-                        <Button Content="{Binding ThemeToggleLabel}"
-                                Command="{Binding ToggleThemeCommand}" MinWidth="110" />
-                        <Button Content="Wyloguj"
-                                Command="{Binding Session.LogoutCommand}" MinWidth="100" />
-                    </StackPanel>
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="Zalogowany: " Foreground="{DynamicResource TextOnAccentMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Session.DisplayName}" Foreground="{DynamicResource TextOnAccentBrush}"
-                                   FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,20,0" />
-                        <TextBlock Text="Strefa robocza: " Foreground="{DynamicResource TextOnAccentMutedBrush}" VerticalAlignment="Center" />
-                        <TextBlock Text="{Binding Session.CurrentZoneName}" Foreground="{DynamicResource TextOnAccentBrush}"
-                                   FontWeight="SemiBold" VerticalAlignment="Center" />
-                    </StackPanel>
-                </DockPanel>
-            </Border>
+<!-- ============ A. GÓRNY PASEK ZAKŁADEK MODUŁOWYCH I PASEK IKON ============ -->
+            <Border Grid.Row="0" Background="{DynamicResource PanelPinkBrush}"
+                    BorderBrush="{DynamicResource PanelPinkBorderBrush}" BorderThickness="0,0,0,1">
+                <StackPanel>
+                    <!-- Poziom górny: zakładki modułów po lewej, etykieta użytkownika po prawej. -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
 
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="8,6,0,0">
+                            <RadioButton Style="{StaticResource ModuleTab}" GroupName="Moduly" Content="PRZYJĘCIA"
+                                         IsChecked="{Binding IsAdmissionsSelected, Mode=OneWay}"
+                                         Command="{Binding ShowAdmissionsCommand}" />
+                            <RadioButton Style="{StaticResource ModuleTab}" GroupName="Moduly" Content="PORADNIA"
+                                         IsChecked="{Binding IsClinicSelected, Mode=OneWay}"
+                                         Command="{Binding ShowClinicCommand}" />
+                            <RadioButton Style="{StaticResource ModuleTab}" GroupName="Moduly" Content="INNE"
+                                         IsChecked="{Binding IsOtherSelected, Mode=OneWay}"
+                                         Command="{Binding ShowOtherCommand}"
+                                         ToolTip="Moduły kliniczne i profil użytkownika" />
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,6,8,0">
+                            <TextBlock Text="{Binding UserLabel}" FontWeight="SemiBold"
+                                       Foreground="{DynamicResource PanelPinkTextBrush}" VerticalAlignment="Center" />
+                            <TextBlock Text="{Binding WorkZoneLabel}" Margin="12,0,0,0"
+                                       Foreground="{DynamicResource PanelPinkTextBrush}" VerticalAlignment="Center" />
+                            <Button Content="{Binding ThemeToggleLabel}" MinWidth="100" Margin="12,0,0,0"
+                                    Command="{Binding ToggleThemeCommand}" />
+                        </StackPanel>
+                    </Grid>
+
+                    <!--
+                        Poziom dolny: pasek ikon operacyjnych. Ikony są rysowane wektorowo
+                        (Path), aby nie zależeć od bibliotek ikon; podpisy funkcji są wymagane
+                        przez specyfikację interfejsu.
+                    -->
+                    <Border Background="{DynamicResource PanelPinkAltBrush}"
+                            BorderBrush="{DynamicResource PanelPinkBorderBrush}" BorderThickness="0,1,0,1"
+                            Padding="6,3">
+                        <StackPanel Orientation="Horizontal">
+
+                                <!-- Szukaj: lupa. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Szukaj" Command="{Binding SearchCommand}"
+                                        ToolTip="Szukaj pacjenta">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 6.6,1.6 A 5,5 0 1 0 6.6,11.6 A 5,5 0 1 0 6.6,1.6 M 10.5,10.5 L 14.4,14.4" />
+                                        <TextBlock Text="Szukaj" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- Karta pobytu: karta identyfikacyjna. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Karta pobytu" Command="{Binding ShowStayCardCommand}"
+                                        ToolTip="Karta pobytu">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 1.6,3.4 H 14.4 V 12.6 H 1.6 Z M 1.6,6.4 H 14.4 M 4.2,9 H 9.4" />
+                                        <TextBlock Text="Karta pobytu" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- Raport: dokument z podsumowaniem. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Raport z dyżuru" Command="{Binding ShowShiftReportCommand}"
+                                        ToolTip="Raport z dyżuru">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 3,1.6 H 9.6 L 13,5 V 14.4 H 3 Z M 9.6,1.6 V 5 H 13 M 5.4,8 H 10.6 M 5.4,11.2 H 10.6" />
+                                        <TextBlock Text="Raport" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- Konsultacje: dwa dymki rozmowy. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Konsultacje" Command="{Binding ShowConsultationsCommand}"
+                                        ToolTip="Konsultacje">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 1.6,3.4 H 9 V 8.6 H 4.8 L 2.4,11 V 8.6 H 1.6 Z M 8,6 H 14.4 V 11 H 11.6 L 9.2,13.4 V 11 H 8 Z" />
+                                        <TextBlock Text="Konsultacje" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- Wniosek: dokument z ołówkiem. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Wniosek" Command="{Binding ShowReferralRequestCommand}"
+                                        ToolTip="Wniosek">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 2.6,1.6 H 9.2 L 12.6,5 V 10.4 H 2.6 Z M 9.2,1.6 V 5 H 12.6 M 4.6,7 H 8.8 M 8.6,12.4 L 13.4,7.6 L 14.8,9 L 10,13.8 L 7.8,14.4 Z" />
+                                        <TextBlock Text="Wniosek" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- Przedstawiciel / Uprawnienia: tarcza. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Przedstawiciel / Uprawnienia" Command="{Binding ShowRepresentativeCommand}"
+                                        ToolTip="Przedstawiciel / Uprawnienia">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 8,1.4 L 14,3.4 V 8 C 14,11.4 11.5,14 8,14.6 C 4.5,14 2,11.4 2,8 V 3.4 Z" />
+                                        <TextBlock Text="Przedstawiciel / Uprawnienia" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- AMK: zlecenia dla zespołu ratownictwa medycznego. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="AMK" Command="{Binding ShowAmkCommand}"
+                                        ToolTip="AMK">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 1.6,5.4 H 8.6 V 11.4 H 1.6 Z M 8.6,7.4 H 12 L 14.4,10 V 11.4 H 8.6 Z M 4,13.6 m -1.4,0 a 1.4,1.4 0 1 0 2.8,0 a 1.4,1.4 0 1 0 -2.8,0 M 11.4,13.6 m -1.4,0 a 1.4,1.4 0 1 0 2.8,0 a 1.4,1.4 0 1 0 -2.8,0 M 4,7.6 H 6.2 M 5.1,6.5 V 8.7" />
+                                        <TextBlock Text="AMK" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                                <!-- Wyjdź: drzwi ze strzałką. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="Wyjdź" Command="{Binding ExitCommand}"
+                                        ToolTip="Wyjdź">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Path Style="{StaticResource ToolbarIconPath}"
+                                              Data="M 6.4,2.4 H 2.4 V 13.6 H 6.4 M 8.8,8 H 15 M 12.4,5.4 L 15,8 L 12.4,10.6" />
+                                        <TextBlock Text="Wyjdź" Style="{StaticResource ToolbarIconLabel}" />
+                                    </StackPanel>
+                            </Button>
+
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Menu klasycznego systemu windowkowego (dostęp klawiaturowy, F10). -->
+                    <Menu Background="Transparent" Foreground="{DynamicResource PanelPinkTextBrush}" FontSize="12">
+                        <MenuItem Header="Plik">
+                            <MenuItem Header="Odśwież listę pobytów" Command="{Binding SearchCommand}" />
+                            <Separator />
+                            <MenuItem Header="Wyjdź" Command="{Binding ExitCommand}" />
+                        </MenuItem>
+                        <MenuItem Header="Moduły">
+                            <MenuItem Header="PRZYJĘCIA" Command="{Binding ShowAdmissionsCommand}" />
+                            <MenuItem Header="PORADNIA" Command="{Binding ShowClinicCommand}" />
+                            <MenuItem Header="INNE" Command="{Binding ShowOtherCommand}" />
+                        </MenuItem>
+                        <MenuItem Header="Widok">
+                            <MenuItem Header="{Binding ThemeToggleLabel}" Command="{Binding ToggleThemeCommand}" />
+                        </MenuItem>
+                    </Menu>
+                </StackPanel>
+            </Border>
             <!-- Baner rekomendacji rotacji (BR-07) -->
             <Border Grid.Row="1" Background="{DynamicResource WarningBackgroundBrush}"
                     BorderBrush="{DynamicResource WarningBorderBrush}" BorderThickness="0,0,0,1"
@@ -95,8 +230,103 @@
                 </DockPanel>
             </Border>
 
-            <!-- Zakładki: pulpit strefy oraz formularz leków z pakietami -->
-            <TabControl Grid.Row="2" Margin="10"
+            <!-- ============ B. PANEL WYBORU JEDNOSTKI I WYSZUKIWANIA ============ -->
+            <Border Grid.Row="2" Style="{StaticResource PinkFilterPanel}">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="300" />
+                        <ColumnDefinition Width="Auto" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Grid.Column="0" Text="Jednostka organizacyjna [F2]:" Style="{StaticResource PinkFilterLabel}" />
+                    <ComboBox Grid.Column="1" Margin="0,0,16,0"
+                              ItemsSource="{Binding Stays.OrganizationalUnits}"
+                              SelectedItem="{Binding Stays.OrganizationalUnit}" />
+                    <TextBlock Grid.Column="2" Text="Pacjent:" Style="{StaticResource PinkFilterLabel}" />
+                    <Grid Grid.Column="3" Margin="0,0,8,0" MinWidth="200">
+                        <!-- Pole tekstowe z ikoną lupy (specyfikacja B). -->
+                        <TextBox Padding="26,3,6,3" Text="{Binding Stays.PatientSearch, UpdateSourceTrigger=PropertyChanged}" />
+                        <Path Style="{StaticResource ToolbarIconPath}" HorizontalAlignment="Left" Margin="6,0,0,0"
+                              Data="M 6.6,1.6 A 5,5 0 1 0 6.6,11.6 A 5,5 0 1 0 6.6,1.6 M 10.5,10.5 L 14.4,14.4"
+                              IsHitTestVisible="False" />
+                    </Grid>
+                    <!-- Przycisk wyszukiwania z ikoną lupy. -->
+                    <Button Grid.Column="4" MinWidth="110" Command="{Binding Stays.SearchCommand}">
+                        <StackPanel Orientation="Horizontal">
+                            <Path Style="{StaticResource ToolbarIconPath}"
+                                  Data="M 6.6,1.6 A 5,5 0 1 0 6.6,11.6 A 5,5 0 1 0 6.6,1.6 M 10.5,10.5 L 14.4,14.4" />
+                            <TextBlock Text="Szukaj" VerticalAlignment="Center" Margin="5,0,0,0" />
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </Border>
+
+            <!-- ============ C. ZAKRES DAT I FILTRY STATUSOWE ============ -->
+            <Border Grid.Row="3" Style="{StaticResource PinkFilterPanel}">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <!-- Blok 1, wiersz 1: zakres dat od wraz z nawigacją krokową. -->
+                    <StackPanel Grid.Row="0" Orientation="Horizontal">
+                        <TextBlock Text="Data od:" Style="{StaticResource PinkFilterLabel}" />
+                        <DatePicker Width="130" Margin="0,0,14,0" SelectedDate="{Binding Stays.DateFrom, Mode=TwoWay}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ dzień" Command="{Binding Stays.PreviousDayCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="dzień ▶" Command="{Binding Stays.NextDayCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ miesiąc" Margin="10,0,2,0" Command="{Binding Stays.PreviousMonthCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="miesiąc ▶" Command="{Binding Stays.NextMonthCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ rok" Margin="10,0,2,0" Command="{Binding Stays.PreviousYearCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="rok ▶" Command="{Binding Stays.NextYearCommand}" />
+                    </StackPanel>
+                    <!-- Blok 1, wiersz 2: zakres dat do wraz z nawigacją krokową. -->
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0">
+                        <TextBlock Text="Data do:" Style="{StaticResource PinkFilterLabel}" />
+                        <DatePicker Width="130" Margin="0,0,14,0" SelectedDate="{Binding Stays.DateTo, Mode=TwoWay}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ dzień" Command="{Binding Stays.PreviousDayCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="dzień ▶" Command="{Binding Stays.NextDayCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ miesiąc" Margin="10,0,2,0" Command="{Binding Stays.PreviousMonthCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="miesiąc ▶" Command="{Binding Stays.NextMonthCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ rok" Margin="10,0,2,0" Command="{Binding Stays.PreviousYearCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="rok ▶" Command="{Binding Stays.NextYearCommand}" />
+                    </StackPanel>
+                    <!-- Blok 2: filtry statusowe w układzie siatki, domyślnie „Wszyscy”. -->
+                    <WrapPanel Grid.Row="2" Margin="0,8,0,0">
+                        <RadioButton Content="Wszyscy" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=All}" />
+                        <RadioButton Content="Aktualnie w szpitalu" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=CurrentlyInHospital}" />
+                        <RadioButton Content="Przeniesieni na oddział" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=TransferredToDepartment}" />
+                        <RadioButton Content="Anulowani" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=Cancelled}" />
+                        <RadioButton Content="Odmowa" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=Refused}" />
+                        <RadioButton Content="Aktualnie w izbie" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=CurrentlyInBay}" />
+                        <RadioButton Content="COVID-19" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=Covid19}" />
+                        <RadioButton Content="Brak ubezpieczenia" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=NoInsurance}" />
+                        <RadioButton Content="Wypisani bez proc. rol. a w izbie" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=DischargedWithoutFormalities}" />
+                        <RadioButton Content="Kategorie – weryfikacja" GroupName="Status" Margin="0,0,14,0" Foreground="{DynamicResource PanelPinkTextBrush}"
+                                     IsChecked="{Binding Stays.StatusFilter, Mode=TwoWay, Converter={StaticResource EnumEquals}, ConverterParameter=LedgerVerification}" />
+                    </WrapPanel>
+                    <!-- Blok 2, kolejny wiersz: dodatkowy filtr „Brak karty odmowy”. -->
+                    <CheckBox Grid.Row="3" Content="Brak karty odmowy" Margin="0,8,0,0"
+                              Foreground="{DynamicResource PanelPinkTextBrush}"
+                              IsChecked="{Binding Stays.WithoutRefusalCard, Mode=TwoWay}" />
+                </Grid>
+            </Border>
+
+            <!-- ============ MODUŁY KLINICZNE — zakładka INNE ============ -->
+            <TabControl Grid.Row="4" Margin="10"
+                        Visibility="{Binding IsOtherVisible, Converter={StaticResource BoolToVisibility}}"
                         Background="{DynamicResource SurfaceBrush}"
                         BorderBrush="{DynamicResource SurfaceBorderBrush}">
                 <TabItem Header="Pulpit strefy">
@@ -574,14 +804,103 @@
                 </TabItem>
             </TabControl>
 
+
+            <!-- ============ D. GŁÓWNA TABELA DANYCH — zakładka PRZYJĘCIA ============ -->
+            <TabControl Grid.Row="4" Margin="10"
+                        Background="{DynamicResource SurfaceBrush}"
+                        BorderBrush="{DynamicResource SurfaceBorderBrush}"
+                        SelectedIndex="{Binding SelectedStayTabIndex, Mode=OneWay}"
+                        Visibility="{Binding IsAdmissionsVisible, Converter={StaticResource BoolToVisibility}}">
+                <TabItem Header="Karta pobytu">
+                    <DataGrid ItemsSource="{Binding Stays.VisibleStays}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" CanUserDeleteRows="False"
+                              SelectionMode="Single" GridLinesVisibility="Horizontal"
+                              HeadersVisibility="Column" FontSize="12"
+                              HorizontalGridLinesBrush="{DynamicResource SurfaceBorderBrush}">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="COVID-19" Binding="{Binding Covid19}" Width="70" />
+                            <DataGridTextColumn Header="Pacjent" Binding="{Binding PatientDisplay}" Width="190" />
+                            <DataGridTextColumn Header="Triage" Binding="{Binding TriageDisplay}" Width="60" />
+                            <DataGridTextColumn Header="Objawy" Binding="{Binding Symptoms}" Width="200" />
+                            <DataGridTextColumn Header="Czas" Binding="{Binding WaitingTimeDisplay}" Width="80" />
+                            <DataGridTextColumn Header="Data przyjęcia" Binding="{Binding AdmittedAtDisplay}" Width="130" />
+                            <DataGridTextColumn Header="Data wypisu" Binding="{Binding DischargedAtDisplay}" Width="130" />
+                            <DataGridTextColumn Header="Nr" Binding="{Binding VisitNumber}" Width="70" />
+                            <DataGridTextColumn Header="TOPSOR" Binding="{Binding TopSorNumber}" Width="110" />
+                            <DataGridTextColumn Header="Oddział" Binding="{Binding DepartmentName}" Width="140" />
+                            <DataGridTextColumn Header="Księga główna" Binding="{Binding MainLedgerBook}" Width="110" />
+                            <DataGridTextColumn Header="Ubezp." Binding="{Binding HasInsurance}" Width="70" />
+                            <DataGridTextColumn Header="Onkologiczna" Binding="{Binding IsOncological}" Width="100" />
+                            <DataGridTextColumn Header="Zgoda" Binding="{Binding ConsentToMedicalTreatment}" Width="70" />
+                            <DataGridTextColumn Header="Kat." Binding="{Binding TriageDisplay}" Width="60" />
+                            <DataGridTextColumn Header="IDH" Binding="{Binding HospitalizationNumber}" Width="90" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+                <TabItem Header="Raport z dyżuru">
+                    <DataGrid ItemsSource="{Binding Stays.ShiftReport}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" CanUserDeleteRows="False"
+                              HeadersVisibility="Column" FontSize="12" GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Czas" Binding="{Binding CreatedAt}" Width="150" />
+                            <DataGridTextColumn Header="Użytkownik" Binding="{Binding PerformedBy}" Width="140" />
+                            <DataGridTextColumn Header="Akcja" Binding="{Binding Action}" Width="200" />
+                            <DataGridTextColumn Header="Opis" Binding="{Binding Details}" Width="*" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+                <TabItem Header="Badania obrazowe">
+                    <DataGrid ItemsSource="{Binding Stays.ImagingStudies}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              CanUserAddRows="False" CanUserDeleteRows="False"
+                              HeadersVisibility="Column" FontSize="12" GridLinesVisibility="Horizontal">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Czas zlecenia" Binding="{Binding OrderedAtDisplay}" Width="140" />
+                            <DataGridTextColumn Header="Pacjent" Binding="{Binding PatientDisplay}" Width="190" />
+                            <DataGridTextColumn Header="Badanie" Binding="{Binding Description}" Width="260" />
+                            <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="150" />
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </TabItem>
+            </TabControl>
+
+            <!-- ============ ZAKŁADKA PORADNIA — brak danych w modelu domenowym ============ -->
+            <Border Grid.Row="4" Margin="10" Style="{StaticResource SurfaceCard}"
+                    Background="{DynamicResource SurfaceBrush}"
+                    Visibility="{Binding IsClinicVisible, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Path Style="{StaticResource ToolbarIconPath}" Width="48" Height="48"
+                          Stroke="{DynamicResource PanelPinkTextBrush}" StrokeThickness="1"
+                          HorizontalAlignment="Center"
+                          Data="M 2.4,13.4 H 9.6 V 6.4 H 2.4 Z M 9.6,9.4 H 13.6 L 15.6,12 V 13.4 H 9.6 Z M 12.6,3.4 V 8.4 M 10.1,5.9 H 15.1 M 4,9.6 H 8" />
+                    <TextBlock Text="PORADNIA" Style="{StaticResource SectionHeader}" Margin="0,10,0,0"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Text="Moduł poradni nie jest zaimplementowany w tym etapie systemu."
+                               Foreground="{DynamicResource TextPrimaryBrush}" Opacity="0.8"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
             <!-- Pasek statusu -->
-            <Border Grid.Row="3" Background="{DynamicResource StatusBarBrush}" Padding="16,6"
+            <Border Grid.Row="6" Background="{DynamicResource StatusBarBrush}" Padding="16,6"
                     BorderBrush="{DynamicResource SurfaceBorderBrush}" BorderThickness="0,1,0,0">
                 <DockPanel>
                     <Button DockPanel.Dock="Right" Content="Odśwież pulpit"
                             Command="{Binding Board.RefreshCommand}" MinWidth="120" />
-                    <TextBlock Text="{Binding Board.StatusMessage}" VerticalAlignment="Center"
-                               TextWrapping="Wrap" Margin="0,0,16,0" />
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Stays.StatusMessage}" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" Margin="0,0,16,0" />
+                        <TextBlock Text="{Binding Stays.Summary}" VerticalAlignment="Center"
+                                   Margin="0,0,16,0" Opacity="0.8" />
+                        <TextBlock Text="{Binding ToolbarMessage}" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource WarningBorderBrush}"
+                                   Visibility="{Binding HasToolbarMessage, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBlock Text="{Binding Board.StatusMessage}" VerticalAlignment="Center"
+                                   TextWrapping="Wrap" />
+                    </StackPanel>
                 </DockPanel>
             </Border>
         </Grid>

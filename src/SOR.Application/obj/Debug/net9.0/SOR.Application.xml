@@ -151,6 +151,222 @@
         <member name="M:SOR.Application.DTOs.OperationResultDto.#ctor(System.Boolean,System.String,System.Nullable{System.Guid})">
             <summary>Podsumowanie wykonanej operacji z informacją o wpisie audytowym.</summary>
         </member>
+        <member name="T:SOR.Application.DTOs.PatientStayDto">
+            <summary>
+            Wiersz listy pobytów (widok „Karta pobytu"). Zestaw kolumn odpowiada specyfikacji
+            interfejsu: COVID-19, Pacjent, Triage, Objawy, Czas, Data przyjęcia, Data wypisu, Nr, TOPSOR,
+            Oddział, Księga główna, Ubezp., Onkologiczna, Zgoda, Kat., IDH.
+            </summary>
+            <param name="Covid19">Przyjęcie z powodu COVID-19 — brak takiego atrybutu w modelu domenowym.</param>
+            <param name="PatientId">Identyfikator pacjenta (GUID) — segment „ID pacjenta” kolumny Pacjent.</param>
+            <param name="PatientNumber">Krótki numer pacjenta wyświetlany w kolumnie Pacjent.</param>
+            <param name="FirstName">Imię pacjenta.</param>
+            <param name="LastName">Nazwisko pacjenta.</param>
+            <param name="Pesel">Numer PESEL.</param>
+            <param name="Age">Wiek pacjenta w latach.</param>
+            <param name="Triage">Ostatnia ocena Triage.</param>
+            <param name="Complaint">Objawy zgłoszone przy rejestracji.</param>
+            <param name="TimeInZone">Czas pobytu w strefie.</param>
+            <param name="AdmittedAtUtc">Data przyjęcia do SOR.</param>
+            <param name="DischargedAtUtc">Data wypisu (null, jeśli pacjent pozostaje w SOR).</param>
+            <param name="VisitNumber">Numer kolejnego pobytu pacjenta w SOR.</param>
+            <param name="MedicalRecordNumber">Numer dokumentacji medycznej (TOPSOR).</param>
+            <param name="Department">Strefa pobytu albo oddział przekazania.</param>
+            <param name="State">Stan karty pacjenta.</param>
+            <param name="DischargeType">Sposób zakończenia pobytu.</param>
+            <param name="MainLedgerBook">Księga główna — brak danych w modelu.</param>
+            <param name="HasInsurance">Ubezpieczenie — brak danych w modelu.</param>
+            <param name="IsOncological">Przyjęcie onkologiczne — brak danych w modelu.</param>
+            <param name="ConsentGiven">Zgoda — brak danych w modelu.</param>
+            <param name="PriorityCategory">Kategoria pilności wyprowadzona z Triage.</param>
+            <param name="IdhNumber">Numer IDH — brak danych w modelu.</param>
+        </member>
+        <member name="M:SOR.Application.DTOs.PatientStayDto.#ctor(System.Boolean,System.Guid,System.String,System.String,System.String,System.String,System.Int32,SOR.Domain.Enums.TriageCategory,System.String,System.TimeSpan,System.DateTimeOffset,System.Nullable{System.DateTimeOffset},System.Int32,System.String,System.String,SOR.Domain.Enums.PatientState,System.Nullable{SOR.Domain.Enums.DischargeType},System.String,System.Nullable{System.Boolean},System.Boolean,System.Nullable{System.Boolean},System.String,System.String)">
+            <summary>
+            Wiersz listy pobytów (widok „Karta pobytu"). Zestaw kolumn odpowiada specyfikacji
+            interfejsu: COVID-19, Pacjent, Triage, Objawy, Czas, Data przyjęcia, Data wypisu, Nr, TOPSOR,
+            Oddział, Księga główna, Ubezp., Onkologiczna, Zgoda, Kat., IDH.
+            </summary>
+            <param name="Covid19">Przyjęcie z powodu COVID-19 — brak takiego atrybutu w modelu domenowym.</param>
+            <param name="PatientId">Identyfikator pacjenta (GUID) — segment „ID pacjenta” kolumny Pacjent.</param>
+            <param name="PatientNumber">Krótki numer pacjenta wyświetlany w kolumnie Pacjent.</param>
+            <param name="FirstName">Imię pacjenta.</param>
+            <param name="LastName">Nazwisko pacjenta.</param>
+            <param name="Pesel">Numer PESEL.</param>
+            <param name="Age">Wiek pacjenta w latach.</param>
+            <param name="Triage">Ostatnia ocena Triage.</param>
+            <param name="Complaint">Objawy zgłoszone przy rejestracji.</param>
+            <param name="TimeInZone">Czas pobytu w strefie.</param>
+            <param name="AdmittedAtUtc">Data przyjęcia do SOR.</param>
+            <param name="DischargedAtUtc">Data wypisu (null, jeśli pacjent pozostaje w SOR).</param>
+            <param name="VisitNumber">Numer kolejnego pobytu pacjenta w SOR.</param>
+            <param name="MedicalRecordNumber">Numer dokumentacji medycznej (TOPSOR).</param>
+            <param name="Department">Strefa pobytu albo oddział przekazania.</param>
+            <param name="State">Stan karty pacjenta.</param>
+            <param name="DischargeType">Sposób zakończenia pobytu.</param>
+            <param name="MainLedgerBook">Księga główna — brak danych w modelu.</param>
+            <param name="HasInsurance">Ubezpieczenie — brak danych w modelu.</param>
+            <param name="IsOncological">Przyjęcie onkologiczne — brak danych w modelu.</param>
+            <param name="ConsentGiven">Zgoda — brak danych w modelu.</param>
+            <param name="PriorityCategory">Kategoria pilności wyprowadzona z Triage.</param>
+            <param name="IdhNumber">Numer IDH — brak danych w modelu.</param>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.Covid19">
+            <summary>Przyjęcie z powodu COVID-19 — brak takiego atrybutu w modelu domenowym.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.PatientId">
+            <summary>Identyfikator pacjenta (GUID) — segment „ID pacjenta” kolumny Pacjent.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.PatientNumber">
+            <summary>Krótki numer pacjenta wyświetlany w kolumnie Pacjent.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.FirstName">
+            <summary>Imię pacjenta.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.LastName">
+            <summary>Nazwisko pacjenta.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.Pesel">
+            <summary>Numer PESEL.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.Age">
+            <summary>Wiek pacjenta w latach.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.Triage">
+            <summary>Ostatnia ocena Triage.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.Complaint">
+            <summary>Objawy zgłoszone przy rejestracji.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.TimeInZone">
+            <summary>Czas pobytu w strefie.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.AdmittedAtUtc">
+            <summary>Data przyjęcia do SOR.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.DischargedAtUtc">
+            <summary>Data wypisu (null, jeśli pacjent pozostaje w SOR).</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.VisitNumber">
+            <summary>Numer kolejnego pobytu pacjenta w SOR.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.MedicalRecordNumber">
+            <summary>Numer dokumentacji medycznej (TOPSOR).</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.Department">
+            <summary>Strefa pobytu albo oddział przekazania.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.State">
+            <summary>Stan karty pacjenta.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.DischargeType">
+            <summary>Sposób zakończenia pobytu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.MainLedgerBook">
+            <summary>Księga główna — brak danych w modelu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.HasInsurance">
+            <summary>Ubezpieczenie — brak danych w modelu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.IsOncological">
+            <summary>Przyjęcie onkologiczne — brak danych w modelu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.ConsentGiven">
+            <summary>Zgoda — brak danych w modelu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.PriorityCategory">
+            <summary>Kategoria pilności wyprowadzona z Triage.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.IdhNumber">
+            <summary>Numer IDH — brak danych w modelu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.PatientName">
+            <summary>Nazwisko i imię pacjenta.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.PatientDisplay">
+            <summary>
+            Kolumna złożona Pacjent: PESEL, ID pacjenta, imię, nazwisko oraz wiek w latach,
+            np. „00210512345, PAC-0001, Jan, Kowalski, 26 lat".
+            </summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.DischargedAtDisplay">
+            <summary>Data wypisu w formacie skróconym; „—” dla pacjenta przebywającego w SOR.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.AdmittedAtDisplay">
+            <summary>Data przyjęcia w formacie skróconym.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.PatientStayDto.TimeInZoneDisplay">
+            <summary>Czas pobytu w strefie w formacie godzinowym.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.StayFilter">
+            <summary>
+            Filtry listy pobytów. Filtry odpowiadają radio buttonom z panelu zakresu dat i statusów;
+            wartości bez odpowiednika w modelu domenowym zwracają pusty zbiór, aby nie udawać
+            danych, których system nie przechowuje.
+            </summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.All">
+            <summary>Wszyscy pacjenci z zakresu dat.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.CurrentlyInHospital">
+            <summary>Aktualnie w szpitalu — pacjenci w trakcie pobytu w SOR.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.TransferredToDepartment">
+            <summary>Przeniesieni na oddział — wypis typu przekazanie.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.Cancelled">
+            <summary>Anulowani — wypis na własne żądanie (zlecenia otwarte anulowane).</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.Refused">
+            <summary>Odmowa — brak odpowiednika w modelu domenowym.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.CurrentlyInBay">
+            <summary>Aktualnie w izbie — pacjenci oczekujący w strefie segregacji (TRI).</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.Covid19">
+            <summary>COVID-19 — brak odpowiednika w modelu domenowym.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.NoInsurance">
+            <summary>Brak ubezpieczenia — brak odpowiednika w modelu domenowym.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.DischargedWithoutFormalities">
+            <summary>Wypisani bez procedury roli admitowanej w izbie — brak odpowiednika w modelu.</summary>
+        </member>
+        <member name="F:SOR.Application.DTOs.StayFilter.LedgerVerification">
+            <summary>Księgowa – weryfikacja — brak odpowiednika w modelu domenowym.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.StayQuery">
+            <summary>Zakres dat i dodatkowe warunki filtrowania listy pobytów.</summary>
+            <param name="FromUtc">Data od (włącznie).</param>
+            <param name="ToUtc">Data do (włącznie).</param>
+            <param name="Filter">Wybrany filtr statusu.</param>
+            <param name="WithoutRefusalCard">Brak karty odmowy — brak odpowiednika w modelu domenowym.</param>
+        </member>
+        <member name="M:SOR.Application.DTOs.StayQuery.#ctor(System.DateTimeOffset,System.DateTimeOffset,SOR.Application.DTOs.StayFilter,System.Boolean)">
+            <summary>Zakres dat i dodatkowe warunki filtrowania listy pobytów.</summary>
+            <param name="FromUtc">Data od (włącznie).</param>
+            <param name="ToUtc">Data do (włącznie).</param>
+            <param name="Filter">Wybrany filtr statusu.</param>
+            <param name="WithoutRefusalCard">Brak karty odmowy — brak odpowiednika w modelu domenowym.</param>
+        </member>
+        <member name="P:SOR.Application.DTOs.StayQuery.FromUtc">
+            <summary>Data od (włącznie).</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.StayQuery.ToUtc">
+            <summary>Data do (włącznie).</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.StayQuery.Filter">
+            <summary>Wybrany filtr statusu.</summary>
+        </member>
+        <member name="P:SOR.Application.DTOs.StayQuery.WithoutRefusalCard">
+            <summary>Brak karty odmowy — brak odpowiednika w modelu domenowym.</summary>
+        </member>
+        <member name="T:SOR.Application.DTOs.ImagingStudyDto">
+            <summary>Zlecenie badania obrazowego wyświetlane w zakładce „Badania obrazowe”.</summary>
+        </member>
+        <member name="M:SOR.Application.DTOs.ImagingStudyDto.#ctor(System.Guid,System.String,System.String,SOR.Domain.Enums.MedicalOrderType,System.String,SOR.Domain.Enums.MedicalOrderState,System.Boolean,System.DateTimeOffset,System.Nullable{System.DateTimeOffset})">
+            <summary>Zlecenie badania obrazowego wyświetlane w zakładce „Badania obrazowe”.</summary>
+        </member>
         <member name="T:SOR.Application.DTOs.ZoneLoadDto">
             <summary>Wynik monitoringu obciążenia pojedynczej strefy — podstawa komponentu pulpitu.</summary>
         </member>
@@ -371,6 +587,21 @@
         <member name="M:SOR.Application.Interfaces.AuditLogEntryDto.#ctor(System.Guid,SOR.Domain.Enums.AuditActionType,System.String,System.String,System.String,System.DateTimeOffset,System.Boolean)">
             <summary>Wpis dziennika audytu prezentowany w interfejsie.</summary>
         </member>
+        <member name="T:SOR.Application.Interfaces.IPatientStayService">
+            <summary>
+            Serwis listy pobytów — zasilanie widoku „Lista pobytów” oraz zakładek „Raport z dyżuru”
+            i „Badania obrazowe”. Operacje tylko do odczytu.
+            </summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientStayService.GetStaysAsync(SOR.Application.DTOs.StayQuery,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>Pobiera pobyty z zakresu dat, przefiltrowane według statusu.</summary>
+            <param name="query">Zakres dat i filtr statusu z panelu filtrów.</param>
+            <param name="nowUtc">Bieżący czas — podstawa wyliczenia czasu pobytu w strefie.</param>
+            <param name="cancellationToken">Token anulowania.</param>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientStayService.GetImagingStudiesAsync(SOR.Application.DTOs.StayQuery,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>Zlecenia badań obrazowych i konsultacji pacjentów z listy pobytów.</summary>
+        </member>
         <member name="T:SOR.Application.Interfaces.IRepository`1">
             <summary>
             Kontrakt dostępu do danych (wzorzec Repository). Definicja leży w warstwie aplikacji,
@@ -407,6 +638,12 @@
         </member>
         <member name="M:SOR.Application.Interfaces.IPatientRepository.GetByPeselAsync(System.String,System.Threading.CancellationToken)">
             <summary>Wyszukuje pacjenta po PESEL.</summary>
+        </member>
+        <member name="M:SOR.Application.Interfaces.IPatientRepository.GetStaysAsync(System.DateTimeOffset,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Pobiera pełną listę pobytów (z oceną Triage i wpisami wypisu) w zadanym zakresie dat.
+            Służy widokowi „Lista pobytów”, który musi pokazywać również pacjentów wypisanych.
+            </summary>
         </member>
         <member name="T:SOR.Application.Interfaces.IZoneRepository">
             <summary>Repozytorium stref.</summary>
@@ -834,6 +1071,37 @@
         </member>
         <member name="M:SOR.Application.Services.PatientService.EnsureStaffOfZoneOrCoordinator(SOR.Application.DTOs.AuthenticatedUserDto,System.Guid)">
             <summary>BR-12: pracownik operuje na pacjentach własnej strefy; koordynator — wszystkich.</summary>
+        </member>
+        <member name="T:SOR.Application.Services.PatientStayService">
+            <summary>
+            Serwis listy pobytów — źródło danych dla widoku „Lista pobytów” (specyfikacja interfejsu, sekcja D).
+            Zajmuje się wyłącznie odczytem i projekcją: filtrowanie według zakresu dat i statusu oraz
+            wyprowadzenie kolumn widokowych (czas pobytu, numer dokumentacji, kategoria pilności).
+            </summary>
+        </member>
+        <member name="F:SOR.Application.Services.PatientStayService.ActiveStates">
+            <summary>Statusy pacjenta trwającego pobyt w SOR.</summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.GetStaysAsync(SOR.Application.DTOs.StayQuery,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.GetImagingStudiesAsync(SOR.Application.DTOs.StayQuery,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <inheritdoc />
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.BuildVisitNumbers(System.Collections.Generic.IReadOnlyList{SOR.Domain.Entities.Patient})">
+            <summary>Numeruje pobyty w obrębie jednego pacjenta (kolejne wizyty w SOR).</summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.BuildMedicalRecordNumber(SOR.Domain.Entities.Patient)">
+            <summary>Numer dokumentacji medycznej w formacie MRN-XXXXXXXX (odpowiednik kolumny TOPSOR).</summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.BuildPatientNumber(SOR.Domain.Entities.Patient)">
+            <summary>Krótki numer pacjenta (segment „ID pacjenta” kolumny złożonej Pacjent).</summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.CalculateAge(System.DateOnly,System.DateTimeOffset)">
+            <summary>Wiek pacjenta w latach liczony na dzień odwołania.</summary>
+        </member>
+        <member name="M:SOR.Application.Services.PatientStayService.BuildPriorityCategory(SOR.Domain.Enums.TriageCategory)">
+            <summary>Kategoria pilności wyprowadzona z oceny Triage (kolumna „Kat.”).</summary>
         </member>
         <member name="T:SOR.Application.Services.StaffRotationService">
             <summary>

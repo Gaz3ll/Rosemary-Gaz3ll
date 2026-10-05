@@ -28,6 +28,19 @@ public sealed class InverseBooleanToVisibilityConverter : IValueConverter
 }
 
 /// <summary>
+/// Odwraca wartość logiczną — używane do wzajemnie wykluczają się przycisków
+/// modułowych w pasku narzędzi (dokładnie jeden z nich jest zaznaczony).
+/// </summary>
+public sealed class InverseBooleanConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is not true;
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) =>
+        value is not true;
+}
+
+/// <summary>
 /// Zamienia niepusty tekst na widoczność — używane do pasków statusu i komunikatów błędu,
 /// które nie powinny zajmować miejsca, gdy są puste.
 /// </summary>

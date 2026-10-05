@@ -40,6 +40,15 @@ public interface IPatientRepository : IRepository<Patient>
 
     /// <summary>Wyszukuje pacjenta po PESEL.</summary>
     Task<Patient?> GetByPeselAsync(string pesel, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pobiera pełną listę pobytów (z oceną Triage i wpisami wypisu) w zadanym zakresie dat.
+    /// Służy widokowi „Lista pobytów”, który musi pokazywać również pacjentów wypisanych.
+    /// </summary>
+    Task<IReadOnlyList<Patient>> GetStaysAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken = default);
 }
 
 /// <summary>Repozytorium stref.</summary>

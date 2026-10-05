@@ -38,5 +38,11 @@
     <SolidColorBrush x:Key="TriageYellowBrush" Color="#B7950B" />
     <SolidColorBrush x:Key="TriageGreenBrush" Color="#1E8449" />
     <SolidColorBrush x:Key="TriageBlueBrush" Color="#2471A3" />
-
+<!-- Pastelowo-rozowe tla paneli (specyfikacja interfejsu): jednostka organizacyjna,
+         zakres dat i filtry statusowe oraz dolny pasek zakladek. -->
+    <SolidColorBrush x:Key="PanelPinkBrush" Color="#FCE4EC" />
+    <SolidColorBrush x:Key="PanelPinkAltBrush" Color="#F8D7E3" />
+    <SolidColorBrush x:Key="PanelPinkHeaderBrush" Color="#F3B6C9" />
+    <SolidColorBrush x:Key="PanelPinkBorderBrush" Color="#E39CB4" />
+    <SolidColorBrush x:Key="PanelPinkTextBrush" Color="#5B2333" />
 </ResourceDictionary>

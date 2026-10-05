@@ -85,6 +85,23 @@ public sealed class PatientRepository : EntityFrameworkRepository<Patient>, IPat
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Pesel == pesel, cancellationToken).ConfigureAwait(false);
 
+    /// <summary>
+    /// Lista pobytów: pacjenci przyjęci w zakresie dat, razem z oceną Triage i wpisami wypisu.
+    /// Zakres liczony jest po dacie przyjęcia do SOR, aby „Data od / Data do” obejmowała cały pobyt.
+    /// </summary>
+    public async Task<IReadOnlyList<Patient>> GetStaysAsync(
+        DateTimeOffset fromUtc,
+        DateTimeOffset toUtc,
+        CancellationToken cancellationToken = default) =>
+        await Context.Patients
+            .AsNoTracking()
+            .Include(p => p.CurrentTriage)
+            .Include(p => p.Discharges)
+            .Include(p => p.Orders)
+            .Where(p => p.RegisteredAtUtc >= fromUtc && p.RegisteredAtUtc <= toUtc)
+            .OrderByDescending(p => p.RegisteredAtUtc)
+            .ToListAsync(cancellationToken).ConfigureAwait(false);
+
     public override async Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await Context.Patients
             .Include(p => p.CurrentTriage)

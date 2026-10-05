@@ -1,5 +1,5 @@
 ﻿SOR.Presentation
-
+1.0.0.0
 
 winexe
 C#
@@ -12,9 +12,9 @@ TRACE;DEBUG;NET;NET9_0;NETCOREAPP;WINDOWS;WINDOWS7_0;NET5_0_OR_GREATER;NET6_0_OR
 C:\Rosemary-Gaz3ll\src\SOR.Presentation\App.xaml
 3-1580949403
 
-161082179776
+20615075173
 221-517923939
 MainWindow.xaml;Themes\Dark.xaml;Themes\Light.xaml;
 
-False
+True
 

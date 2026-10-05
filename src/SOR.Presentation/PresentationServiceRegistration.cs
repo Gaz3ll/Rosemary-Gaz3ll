@@ -28,6 +28,7 @@ public static class PresentationServiceRegistration
         services.AddScoped<SessionViewModel>();
         services.AddScoped<PatientBoardViewModel>();
         services.AddScoped<MedicationCatalogViewModel>();
+        services.AddScoped<PatientStayListViewModel>();
         services.AddScoped<MainViewModel>();
 
         return services;

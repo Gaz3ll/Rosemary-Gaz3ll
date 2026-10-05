@@ -231,6 +231,12 @@
         <member name="T:SOR.Infrastructure.Persistence.Repositories.PatientRepository">
             <summary>Repozytorium pacjentów z zapytaniami dziedzinowymi.</summary>
         </member>
+        <member name="M:SOR.Infrastructure.Persistence.Repositories.PatientRepository.GetStaysAsync(System.DateTimeOffset,System.DateTimeOffset,System.Threading.CancellationToken)">
+            <summary>
+            Lista pobytów: pacjenci przyjęci w zakresie dat, razem z oceną Triage i wpisami wypisu.
+            Zakres liczony jest po dacie przyjęcia do SOR, aby „Data od / Data do” obejmowała cały pobyt.
+            </summary>
+        </member>
         <member name="T:SOR.Infrastructure.Persistence.Repositories.ZoneRepository">
             <summary>Repozytorium stref.</summary>
         </member>
