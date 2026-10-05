@@ -45,4 +45,7 @@
     <SolidColorBrush x:Key="PanelPinkHeaderBrush" Color="#F3B6C9" />
     <SolidColorBrush x:Key="PanelPinkBorderBrush" Color="#E39CB4" />
     <SolidColorBrush x:Key="PanelPinkTextBrush" Color="#5B2333" />
+
+    <!-- Pokrywa przy otwartych listach rozwijanych (ComboBox, DatePicker, Menu) -->
+    <SolidColorBrush x:Key="PopupOverlayBrush" Color="#33808080" />
 </ResourceDictionary>

@@ -1,4 +1,6 @@
-﻿using System.IO;
+﻿using System;
+using System.Globalization;
+using System.IO;
 using System.Windows;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
@@ -26,6 +28,11 @@ public partial class App : System.Windows.Application
     protected override async void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+
+        // Kultura i wzorzec daty sa polskie niezaleznie od ustawien regionalnych maszyny
+        // instalacyjnej - inaczej kalendarz pokazywalby date w zapisie np. 2026-10-05,
+        // niespojnie z raportami i filtrami zakresu dat.
+        ApplyPolishCulture();
 
         DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += (_, args) =>
@@ -99,6 +106,23 @@ public partial class App : System.Windows.Application
             "Błąd krytyczny",
             MessageBoxButton.OK,
             MessageBoxImage.Error);
+    }
+
+    /// <summary>
+    /// Wymusza kulturę polską dla wątku głównego i dla wątków tworzonych później, aby
+    /// daty, godziny i separatory były zawsze wyświetlane po polsku.
+    /// </summary>
+    private static void ApplyPolishCulture()
+    {
+        var culture = new CultureInfo("pl-PL");
+
+        // Dzień z zerami wiodącymi (05.10.2026), zgodnie z formatem używanym w raportach.
+        culture.DateTimeFormat.ShortDatePattern = "dd.MM.yyyy";
+
+        CultureInfo.DefaultThreadCurrentCulture = culture;
+        CultureInfo.DefaultThreadCurrentUICulture = culture;
+        CultureInfo.CurrentCulture = culture;
+        CultureInfo.CurrentUICulture = culture;
     }
 
     /// <summary>

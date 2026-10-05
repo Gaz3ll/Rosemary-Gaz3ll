@@ -70,16 +70,25 @@ Composition Root rejestruje wszystkie warstwy:
 
 ```
 IClock, IIdGenerator, ZoneLoadThresholds, IZoneLoadCalculator,
-IRotationRecommendationEngine            → Singleton
-SorDbContext, IUnitOfWork                → Scoped
+IRotationRecommendationEngine,
+IRetryPolicy (SqliteRetryPolicy),
+IThemeService (ThemeService),
+UiThreadDispatcher                       → Singleton
+
+SorDbContext, IUnitOfWork,
 IDomainEventPublisher, IAuditLogService,
 IZoneLoadQueryService, IStaffRotationService,
 IAuthenticationService, IPatientService,
-IZoneLoadMonitoringService               → Scoped
-UiThreadDispatcher                       → Singleton
+IPatientStayService, IZoneLoadMonitoringService,
+IMedicationCatalogService, IMedicalBundleService,
+IIcd10CatalogService, IDepartmentCatalogService,
 SessionViewModel, PatientBoardViewModel,
-MainViewModel                            → Scoped
+MedicationCatalogViewModel,
+PatientStayListViewModel, MainViewModel   → Scoped
 ```
+
+`IPatientStayService` obsługuje wyłącznie odczyt i projekcję listy pobytów, zleceń badań
+obrazowych i raportu z dyżuru (zob. `docs/ETAP-III-Implementacja.md`, rozdział 8).
 
 ### Rozwiązanie cyklu zależności
 

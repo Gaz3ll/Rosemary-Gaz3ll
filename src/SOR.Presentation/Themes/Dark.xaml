@@ -43,4 +43,8 @@
     <SolidColorBrush x:Key="PanelPinkHeaderBrush" Color="#6B4453" />
     <SolidColorBrush x:Key="PanelPinkBorderBrush" Color="#8A5768" />
     <SolidColorBrush x:Key="PanelPinkTextBrush" Color="#F6DCE4" />
+
+    <!-- Pokrywa przy otwartych listach rozwijanych: przygasza wlasne okno aplikacji,
+         dzieki czemu rozwinieta lista jest czytelna rowniez w trybie ciemnym. -->
+    <SolidColorBrush x:Key="PopupOverlayBrush" Color="#B3000000" />
 </ResourceDictionary>
