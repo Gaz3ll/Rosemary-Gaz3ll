@@ -1375,7 +1375,9 @@
              </para>
              <list type="number">
              <item>11 cyfr — brak liter, spacji i znaków rozdzielających;</item>
-             <item>poprawna suma kontrolna modulo 11 (wagi <c>1,3,7,9,1,3,7,9,1,3</c>);</item>
+             <item>poprawna cyfra kontrolna: wagi <c>1,3,7,9,1,3,7,9,1,3</c>, do sumy tylko ostatnia
+             cyfra iloczynu, cyfra kontrolna dopełnia sumę do dziesiątki (0, gdy ostatnia cyfra sumy
+             wynosi 0);</item>
              <item>poprawna data urodzenia zakodowana w pierwszych sześciu cyfrach.</item>
              </list>
             
@@ -1395,7 +1397,7 @@
              </summary>
         </member>
         <member name="F:SOR.Domain.ValueObjects.PeselNumber.Weights">
-            <summary>Wagi użyte do obliczania cyfry kontrolnej.</summary>
+            <summary>Wagi użyte do obliczania cyfry kontrolnej (cyfry 1–10).</summary>
         </member>
         <member name="P:SOR.Domain.ValueObjects.PeselNumber.Value">
             <summary>Znormalizowany numer PESEL (11 cyfr).</summary>
@@ -1479,6 +1481,26 @@
             się w XX, czy mężczyzna w XXI wieku — dlatego stulecie ustala osobno dopasowanie
             do daty zadeklarowanej w formularzu.
             </summary>
+        </member>
+        <member name="M:SOR.Domain.ValueObjects.PeselNumber.HasValidChecksum(System.String)">
+             <summary>
+             Sprawdza cyfrę kontrolną PESEL.
+            
+             <para>Algorytm (kroki 1–5 zgodne z rozporządzeniem w sprawie dokumentów osobistych):</para>
+             <list type="number">
+             <item>cyfry 1–10 mnożone są przez wagi <c>1,3,7,9,1,3,7,9,1,3</c>;</item>
+             <item>do sumy wchodzi tylko ostatnia cyfra każdego iloczynu (iloczyn modulo 10);</item>
+             <item>cyfra kontrolna dopełnia sumę do dziesiątki;</item>
+             <item>gdy ostatnia cyfra sumy wynosi 0, cyfrą kontrolną jest 0;</item>
+             <item>wynik musi być równy jedenastej cyfrze numeru.</item>
+             </list>
+            
+             <para>
+             Uwaga: nie jest to suma modulo 11 — dla numerów, w których suma pełnych iloczynów
+             daje resztę 10, reguła modulo 11 uznałaby cyfrę kontrolną za 0 i przyjęłaby numery
+             niewystępujące w rejestrach, odrzucając poprawne.
+             </para>
+             </summary>
         </member>
         <member name="T:SOR.Domain.ValueObjects.ReassignmentReason">
             <summary>

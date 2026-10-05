@@ -1,4 +1,4 @@
-# PwSWproject
+﻿# PwSWproject
 Gaz3ll&Rosemary
 
 ## Dokumentacja
@@ -13,7 +13,7 @@ Gaz3ll&Rosemary
 
 ```powershell
 dotnet build SOR.MedicalEmergencySystem.slnx    # kompilacja
-dotnet test SOR.MedicalEmergencySystem.slnx     # 106 testów
+dotnet test SOR.MedicalEmergencySystem.slnx     # 111 testów
 dotnet run --project src/SOR.Presentation/SOR.Presentation.csproj
 ```
 

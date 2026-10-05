@@ -1,4 +1,4 @@
-# ETAP III — Implementacja, testy i uruchomienie
+﻿# ETAP III — Implementacja, testy i uruchomienie
 
 ## 1. Struktura rozwiązania
 
@@ -101,19 +101,43 @@ Bindingi do właściwości tylko do odczytu (`ProgressBar.Value`, kolumny `DataG
 
 ## 4. Testy
 
-Łącznie **106 testów** (xUnit), wszystkie przechodzą. Dzielą się na pięć grup.
+Łącznie **111 testów** (xUnit), wszystkie przechodzą. Kluczowe grupy:
 
-### `PersistenceTests` — trwałość (5)
+### `PersistenceTests` — trwałość (6)
 
 | Test | Co weryfikuje |
 |---|---|
 | `EnsureCreated_TworzyPoprawnySchemat_BezBledowModelu` | Poprawność mapowania EF i utworzenie schematu |
 | `Seed_JestIdempotentny_NieDuplikujeDanych` | Idempotencja danych startowych |
-| `DiagnozaIcd10_JestZapisanaWRepozytorium` | Zapis rozpoznania ICD-10 |
+| `DiagnozaIcd10_JestZapisywanaWRelacjiOwnedType` | Zapis rozpoznania ICD-10 w relacji typu właściciela |
 | `UzasadnienieZmianyStrefy_JestZapisaneWRepozytorium` | Zapis uzasadnienia rotacji |
 | `DziennikAudytu_ZapisujeNieudanaProbeLogowania` | Audyt nieudanej próby logowania |
+| `SchematNieaktualny_PowodujeOdtworzenieBazyIKatalogow` | Odtworzenie bazy i katalogów po zmianie modelu |
 
-### `ScenarioTests` — scenariusze integracyjne (10)
+### `PeselNumberTests` — walidacja numeru PESEL (41 przypadków, BR-18)
+
+| Test | Reguła / cel |
+|---|---|
+| `PoprawnyPesel_OdczytujeDateIGene` (7 przypadków) | Cyfra kontrolna, zakodowana data i płeć |
+| `PrawidlowyPeselZRejestru_JestAkceptowany` (2 przypadki) | Numery zgodne z rozporządzeniem, które odrzucała suma modulo 11 (`02070803628`, `44051401458`) |
+| `NumerPoprawnyTylkoWedługSumyModulo11_JestOdrzucony` (2 przypadki) | Numer uznawany wcześniej za poprawny, a formalnie nieistniejący |
+| `CyfraKontrolnaGdyOstatniaCyfraSumyJestZero_RównaSieZero` | Gdy ostatnia cyfra sumy wynosi 0, cyfrą kontrolną jest 0 |
+| `NiepoprawnaSumaKontrolna_JestOdrzucona` | Zmiana cyfry kontrolnej odrzuca numer |
+| `NumerNiepelnejDlugosci_LubZNieCyfr_JestOdrzucony` (6 przypadków) | 11 cyfr, bez liter i separatorów |
+| `SeparatoryWNumerzeSaIgnorowane` | Spacje, myślniki i kropki są pomijane |
+| `NieistniejacaData_Urodzin_JestOdrzucona` | 30 lutego i 31 kwietnia — suma kontrolna poprawna, data nie istnieje |
+| `NiepoprawnyMiesiac_Zkodowania_JestOdrzucony` | Miesiąc 13 poza zakresami 01–12/21–32/41–52/61–72/81–92 |
+| `NumerZeStuleciaPoprzedniego_JestObslugiwany` | Kobieta urodzona w 1934 r. (miesiąc +20) |
+| `TryDecode_WyliczaDateUrDZINaIPlecZNumeru` (3 przypadki) | Odczyt daty i płci z surowego wejścia |
+| `TryDecode_OdrzucaNumerNiepoprawny` (6 przypadków) | Długość, suma kontrolna, data |
+| `MatchesGender_RozpoznajeZgodnaZNiezgodnaPlec` | Zgodność płci z formularzem; `Other` nie pasuje do żadnego numeru |
+| `RejestracjaPacjenta_*` (8 przypadków) | Rejestracja odrzuca rozbieżność płci i daty, akceptuje spójne dane (w tym XX i XXI wiek) |
+
+```powershell
+dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualifiedName~PeselNumberTests"
+```
+
+### `ScenarioTests` — scenariusze integracyjne (13 przypadków)
 
 | Test | Reguła / cel |
 |---|---|
@@ -173,6 +197,9 @@ Uruchomienie samych testów wypisu:
 dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualifiedName~DischargeTests"
 ```
 
+Pozostałe grupy: `CatalogDomainTests` (10), `CatalogWorkflowTests` (6),
+`MedicationOrderWorkflowTests` (4).
+
 ## 5. Kluczowe decyzje implementacyjne
 
 1. **Jawne dodawanie bytów potomnych** (`TriageAssessment`, `ZoneTransfer`, `MedicalOrder`,
@@ -186,6 +213,13 @@ dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualif
    natychmiast pracuje w nowej strefie (BR-16).
 5. **Rozwiązanie cyklu DI** przez rozdzielenie odczytu obciążenia i obserwatora zdarzeń.
 6. **Audyt w tej samej transakcji** co operacja biznesowa (BR-25).
+7. **Cyfra kontrolna PESEL liczona wg rozporządzenia** (`PeselNumber.HasValidChecksum`):
+   wagi `1,3,7,9,1,3,7,9,1,3`, do sumy wchodzi tylko ostatnia cyfra każdego iloczynu, cyfra
+   kontrolna dopełnia sumę do dziesiątki (0, gdy ostatnia cyfra sumy to 0). Reguła „suma
+   modulo 11" jest podobna, ale nie równoważna — przyjmowała numery nieistniejące
+   (np. `85441410008`) i odrzucała poprawne (`02070803628`, `44051401458`). Walidacja obejmuje
+   też datę zakodowaną w numerze oraz zgodność z płcią i datą podanymi w formularzu
+   (`Patient.Register`).
 
 ## 6. Scenariusz demonstracyjny
 
@@ -335,7 +369,7 @@ Umieszczenie `ContentPresenter` z `ContentSource="Content"` w szablonie `TabItem
 treść wewnątrz nagłówka (podwójne renderowanie i rozjechana wysokość zakładki), ponieważ WPF
 przenosi zawartość `TabItem` do obszaru treści `TabControl`.
 
-Weryfikacja zmian motywu: `dotnet build`, `dotnet test` (106 testów) oraz skrypt UI Automation
+Weryfikacja zmian motywu: `dotnet build`, `dotnet test` (111 testów) oraz skrypt UI Automation
 sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `ComboBox` i kalendarza
 `DatePicker` w obu motywach.
 

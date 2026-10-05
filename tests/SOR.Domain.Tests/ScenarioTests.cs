@@ -1,4 +1,4 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SOR.Application.DTOs;
 using SOR.Application.Interfaces;
@@ -572,14 +572,12 @@ public sealed class ScenarioTests : IAsyncLifetime
 
         for (var i = 0; i < 10; i++)
         {
-            sum += (baseNumber[i] - '0') * weights[i];
+            // Do sumy wchodzi tylko ostatnia cyfra iloczynu cyfry i wagi.
+            sum += ((baseNumber[i] - '0') * weights[i]) % 10;
         }
 
-        var checkDigit = sum % 11;
-        if (checkDigit == 10)
-        {
-            checkDigit = 0;
-        }
+        // Cyfra kontrolna dopełnia sumę do dziesiątki; gdy ostatnia cyfra sumy to 0, cyfra to 0.
+        var checkDigit = (10 - sum % 10) % 10;
 
         return baseNumber + checkDigit;
     }

@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using SOR.Application.Interfaces;
 using SOR.Domain.Common;
@@ -347,7 +347,7 @@ public sealed class DischargeTests : IAsyncLifetime
     {
         var patient = Patient.Register(
             Guid.NewGuid(),
-            "85441410008",
+            "85441410003",
             "Anna",
             "Kowalska",
             new DateOnly(1985, 4, 14),

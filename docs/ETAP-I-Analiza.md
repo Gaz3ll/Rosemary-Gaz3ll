@@ -1,4 +1,4 @@
-# ETAP I — Analiza wymagań i model dziedziny
+﻿# ETAP I — Analiza wymagań i model dziedziny
 
 ## 1. Cel i zakres systemu
 
@@ -32,7 +32,7 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 
 - **WF-01** Uwierzytelnianie z blokadą konta po 3 nieudanych próbach (60 s).
 - **WF-02** Wyznaczenie strefy z aktywnego dyżuru; brak dyżuru → strefa awaryjna Triage.
-- **WF-03** Rejestracja pacjenta z walidacją PESEL (suma kontrolna mod 11).
+- **WF-03** Rejestracja pacjenta z walidacją PESEL (11 cyfr, cyfra kontrolna wg rozporządzenia, zakodowana data urodzenia i zgodność płci).
 - **WF-04** Triage w pięciostopniowej skali i przydział do strefy wg kodu.
 - **WF-05** Monitoring obciążenia stref i wizualizacja statusu.
 - **WF-06** Wniosek o zmianę strefy z obowiązkowym uzasadnieniem.
@@ -61,7 +61,7 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 | BR-15 | Aktywność dyżuru w czasie | `DutyShift.IsActive` |
 | BR-16 | Kontekst strefy z grafiku; odświeżany po rotacji | `AuthenticationService.RefreshCurrentUserContextAsync` |
 | BR-17 | Brak nakładających się dyżurów w tej samej strefie | `DutyRoster.AddShift` |
-| BR-18 | PESEL jako klucz biznesowy i walidacja sumy kontrolnej | `Patient.ValidatePesel` |
+| BR-18 | PESEL jako klucz biznesowy: 11 cyfr, cyfra kontrolna wg rozporządzenia (wagi `1,3,7,9,1,3,7,9,1,3`, do sumy tylko ostatnia cyfra iloczynu, cyfra dopełnia sumę do 10), zakodowana data urodzenia oraz zgodność płci z numerem | `PeselNumber`, `Patient.Register` |
 | BR-19 | Zakaz przeniesienia pacjenta do tej samej strefy | `PatientService.TransferPatientAsync` |
 | BR-20 | Blokada współbieżnej modyfikacji karty | `Patient.AcquireLock`, `RowVersion` |
 | BR-25 | Audyt atomowy z operacją biznesową | `AuditLogService`, `IUnitOfWork` |
@@ -96,7 +96,8 @@ Strefy oddziału (`ZoneKind`): `Triage` (TRI), `Emergency` (EMG), `Internal` (IN
 ### Obiekty wartości
 
 `ReassignmentReason`, `Icd10Code`, `ZoneLoadThresholds`, `TriagePolicy`, `LoadRatio`,
-`PatientLoadSnapshot`, `ZoneLoadContext`.
+`PatientLoadSnapshot`, `ZoneLoadContext`, `PeselNumber` (11 cyfr, cyfra kontrolna wg
+rozporządzenia, zakodowana data urodzenia, płeć z dziesiątej cyfry).
 
 ### Usługi dziedzinowe
 

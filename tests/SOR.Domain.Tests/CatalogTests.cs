@@ -18,13 +18,13 @@ namespace SOR.Domain.Tests;
 public sealed class PeselNumberTests
 {
     [Theory]
-    [InlineData("85441410008", 1985, 4, 14, PeselNumber.GenderEncoded.Male)]
-    [InlineData("90311210011", 1990, 11, 12, PeselNumber.GenderEncoded.Female)]
-    [InlineData("72430810026", 1972, 3, 8, PeselNumber.GenderEncoded.Male)]
-    [InlineData("34210610077", 1934, 1, 6, PeselNumber.GenderEncoded.Female)]
-    [InlineData("11310510128", 2011, 11, 5, PeselNumber.GenderEncoded.Male)]
-    [InlineData("04030712354", 2004, 3, 7, PeselNumber.GenderEncoded.Female)]
-    [InlineData("25262112349", 2025, 6, 21, PeselNumber.GenderEncoded.Male)]
+    [InlineData("85441410003", 1985, 4, 14, PeselNumber.GenderEncoded.Male)]
+    [InlineData("90311210014", 1990, 11, 12, PeselNumber.GenderEncoded.Female)]
+    [InlineData("72430810025", 1972, 3, 8, PeselNumber.GenderEncoded.Male)]
+    [InlineData("34210610076", 1934, 1, 6, PeselNumber.GenderEncoded.Female)]
+    [InlineData("11310510127", 2011, 11, 5, PeselNumber.GenderEncoded.Male)]
+    [InlineData("04030712357", 2004, 3, 7, PeselNumber.GenderEncoded.Female)]
+    [InlineData("25262112340", 2025, 6, 21, PeselNumber.GenderEncoded.Male)]
     public void PoprawnyPesel_OdczytujeDateIGene(
         string pesel,
         int year,
@@ -42,7 +42,7 @@ public sealed class PeselNumberTests
     [Fact]
     public void NiepoprawnaSumaKontrolna_JestOdrzucona()
     {
-        // Cyfra kontrolna zmieniona z 8 na 2 — numer nie istnieje.
+        // Poprawna cyfra kontrolna to 3 — numer z 2 na końcu nie istnieje.
         Assert.False(PeselNumber.TryParse("85441410002", out _));
 
         var exception = Assert.Throws<ValidationException>(() => PeselNumber.Create("85441410002"));
@@ -50,8 +50,36 @@ public sealed class PeselNumberTests
     }
 
     [Theory]
+    [InlineData("02070803628")]     // kobieta, 2002-07-08 (miesiąc 27 = 20 + 07)
+    [InlineData("44051401458")]     // mężczyzna, 1944-05-14
+    public void PrawidlowyPeselZRejestru_JestAkceptowany(string pesel)
+    {
+        // Numery zgodne z rozporządzeniem, których reguła „suma modulo 11" odrzucała.
+        Assert.True(PeselNumber.TryParse(pesel, out var parsed));
+        Assert.Equal(pesel, parsed!.Value);
+    }
+
+    [Theory]
+    [InlineData("85441410008")]     // poprawny wyłącznie dla sumy modulo 11
+    [InlineData("25262112349")]     // jw.
+    public void NumerPoprawnyTylkoWedługSumyModulo11_JestOdrzucony(string pesel)
+    {
+        Assert.False(PeselNumber.TryParse(pesel, out _));
+    }
+
+    [Fact]
+    public void CyfraKontrolnaGdyOstatniaCyfraSumyJestZero_RównaSieZero()
+    {
+        // Suma ostatnich cyfr iloczynów: 2+5+4+4+2+3+7+8+3+2 = 40, więc cyfra kontrolna to 0.
+        Assert.True(PeselNumber.TryParse("25262112340", out var pesel));
+        Assert.Equal(new DateOnly(2025, 6, 21), pesel!.DateOfBirth);
+
+        Assert.False(PeselNumber.TryParse("25262112341", out _));
+    }
+
+    [Theory]
     [InlineData("8544141000")]        // 10 znaków
-    [InlineData("854414100081")]      // 12 znaków
+    [InlineData("854414100031")]      // 12 znaków
     [InlineData("8544141000X")]       // litera w numerze
     [InlineData("")]
     [InlineData("   ")]
@@ -65,11 +93,11 @@ public sealed class PeselNumberTests
     [Fact]
     public void SeparatoryWNumerzeSaIgnorowane()
     {
-        Assert.True(PeselNumber.TryParse("854 414 10008", out var withSpaces));
-        Assert.True(PeselNumber.TryParse("854-414-10008", out var withDashes));
-        Assert.True(PeselNumber.TryParse("854.414.10008", out var withDots));
+        Assert.True(PeselNumber.TryParse("854 414 10003", out var withSpaces));
+        Assert.True(PeselNumber.TryParse("854-414-10003", out var withDashes));
+        Assert.True(PeselNumber.TryParse("854.414.10003", out var withDots));
 
-        Assert.Equal("85441410008", withSpaces!.Value);
+        Assert.Equal("85441410003", withSpaces!.Value);
         Assert.Equal(withSpaces, withDashes);
         Assert.Equal(withSpaces, withDots);
     }
@@ -79,8 +107,8 @@ public sealed class PeselNumberTests
     {
         // 30 lutego 1985 oraz 31 kwietnia 1985 — daty, które nie istnieją.
         // W obu numerach suma kontrolna jest poprawna, więc odrzucenie wynika z daty.
-        Assert.False(PeselNumber.TryParse("85023012347", out _));
-        Assert.False(PeselNumber.TryParse("85043112346", out _));
+        Assert.False(PeselNumber.TryParse("85023012346", out _));
+        Assert.False(PeselNumber.TryParse("85043112345", out _));
     }
 
     [Fact]
@@ -94,16 +122,16 @@ public sealed class PeselNumberTests
     public void NumerZeStuleciaPoprzedniego_JestObslugiwany()
     {
         // Kobieta urodzona w 1934 r. — miesiąc zakodowany z przesunięciem +20 (XX wiek).
-        var pesel = PeselNumber.Create("34210610077");
+        var pesel = PeselNumber.Create("34210610076");
 
         Assert.Equal(1934, pesel.DateOfBirth.Year);
         Assert.Equal(PeselNumber.GenderEncoded.Female, pesel.Gender);
     }
 
     [Theory]
-    [InlineData("85441410008", 1985, 4, 14, PatientGender.Male)]
-    [InlineData("90311210011", 1990, 11, 12, PatientGender.Female)]
-    [InlineData("25262112349", 2025, 6, 21, PatientGender.Male)]
+    [InlineData("85441410003", 1985, 4, 14, PatientGender.Male)]
+    [InlineData("90311210014", 1990, 11, 12, PatientGender.Female)]
+    [InlineData("25262112340", 2025, 6, 21, PatientGender.Male)]
     public void TryDecode_WyliczaDateUrDZINaIPlecZNumeru(
         string raw,
         int year,
@@ -119,9 +147,9 @@ public sealed class PeselNumberTests
 
     [Theory]
     [InlineData("8544141000")]     // za krótki
-    [InlineData("854414100080")]   // za długi
+    [InlineData("854414100030")]   // za długi
     [InlineData("85441410002")]    // zła suma kontrolna
-    [InlineData("85023012347")]    // 30 lutego nie istnieje
+    [InlineData("85023012346")]    // 30 lutego nie istnieje
     [InlineData("")]
     [InlineData(null)]
     public void TryDecode_OdrzucaNumerNiepoprawny(string? raw)
@@ -132,7 +160,7 @@ public sealed class PeselNumberTests
     [Fact]
     public void MatchesGender_RozpoznajeZgodnaZNiezgodnaPlec()
     {
-        var pesel = PeselNumber.Create("85441410008");
+        var pesel = PeselNumber.Create("85441410003");
 
         Assert.True(pesel.MatchesGender(PatientGender.Male));
         Assert.False(pesel.MatchesGender(PatientGender.Female));
@@ -144,10 +172,10 @@ public sealed class PeselNumberTests
     [Fact]
     public void RejestracjaPacjenta_OdrzucaPlecInnaNiżZakodowanaWNumerze()
     {
-        // PESEL 90311210011 koduje płeć żeńską, a w formularzu wybrano "Inna".
+        // PESEL 90311210014 koduje płeć żeńską, a w formularzu wybrano "Inna".
         var exception = Assert.Throws<ValidationException>(() => Patient.Register(
             Guid.NewGuid(),
-            "90311210011",
+            "90311210014",
             "Anna",
             "Nowak",
             new DateOnly(1990, 11, 12),
@@ -164,7 +192,7 @@ public sealed class PeselNumberTests
         // PESEL koduje 1985-04-14, a w formularzu podano 1990-11-12.
         var exception = Assert.Throws<ValidationException>(() => Patient.Register(
             Guid.NewGuid(),
-            "85441410008",
+            "85441410003",
             "Jan",
             "Kowalski",
             new DateOnly(1990, 11, 12),
@@ -178,10 +206,10 @@ public sealed class PeselNumberTests
     [Fact]
     public void RejestracjaPacjenta_OdrzucaPeselNiezgodnyZPłcią()
     {
-        // PESEL 85441410008 koduje płeć męską, a w formularzu podano płeć żeńską.
+        // PESEL 85441410003 koduje płeć męską, a w formularzu podano płeć żeńską.
         var exception = Assert.Throws<ValidationException>(() => Patient.Register(
             Guid.NewGuid(),
-            "85441410008",
+            "85441410003",
             "Jan",
             "Kowalski",
             new DateOnly(1985, 4, 14),
@@ -195,7 +223,7 @@ public sealed class PeselNumberTests
     [Fact]
     public void RejestracjaPacjenta_AkceptujeSpójneDane()
     {
-        var pesel = "90311210011";
+        var pesel = "90311210014";
 
         var patient = Patient.Register(
             Guid.NewGuid(),
@@ -218,7 +246,7 @@ public sealed class PeselNumberTests
     {
         // Miesiąc 03 bez przesunięcia oznacza kobiety z XXI wieku; płeć koduje
         // nieparzysta dziesiąta cyfra numeru seryjnego, a nie przesunięcie miesiąca.
-        var pesel = "04030712354";
+        var pesel = "04030712357";
 
         var patient = Patient.Register(
             Guid.NewGuid(),
@@ -240,7 +268,7 @@ public sealed class PeselNumberTests
         // Ten sam zapis 25|26|21 oznacza kobietę urodzoną w 1925 r. (miesiąc +20)
         // albo mężczyznę urodzonego w 2025 r. — stulecie rozstrzyga dopasowanie
         // do daty zadeklarowanej w formularzu, a płeć — parzystość dziesiątej cyfry.
-        var pesel = "25262112351";
+        var pesel = "25262112357";
 
         var patient = Patient.Register(
             Guid.NewGuid(),
@@ -261,7 +289,7 @@ public sealed class PeselNumberTests
     {
         // Mężczyzna urodzony w 2025 r. zapisuje miesiąc z przesunięciem +20, czyli
         // identycznie jak kobieta urodzona w 1925 r. Rozróżnia ich parzystość dziesiątej cyfry.
-        var pesel = "25262112349";
+        var pesel = "25262112340";
 
         var patient = Patient.Register(
             Guid.NewGuid(),
@@ -283,7 +311,7 @@ public sealed class PeselNumberTests
         // Ten sam zapis co w teście kobiety z 1925 r., ale w formularzu podano lipiec.
         var exception = Assert.Throws<ValidationException>(() => Patient.Register(
             Guid.NewGuid(),
-            "25262112351",
+            "25262112357",
             "Helena",
             "Zielińska",
             new DateOnly(1925, 7, 21),
@@ -518,7 +546,7 @@ public sealed class CatalogDomainTests
     {
         var patient = Patient.Register(
             Guid.NewGuid(),
-            "85441410008",
+            "85441410003",
             "Marek",
             "Zieliński",
             new DateOnly(1985, 4, 14),
@@ -543,7 +571,7 @@ public sealed class CatalogDomainTests
     {
         var patient = Patient.Register(
             Guid.NewGuid(),
-            "85441410008",
+            "85441410003",
             "Marek",
             "Zieliński",
             new DateOnly(1985, 4, 14),

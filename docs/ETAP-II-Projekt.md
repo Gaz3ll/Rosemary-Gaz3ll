@@ -1,4 +1,4 @@
-# ETAP II — Projekt architektury i model techniczny
+﻿# ETAP II — Projekt architektury i model techniczny
 
 ## 1. Architektura warstwowa
 

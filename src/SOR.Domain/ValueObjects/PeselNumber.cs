@@ -1,4 +1,4 @@
-using System.Globalization;
+﻿using System.Globalization;
 using SOR.Domain.Common;
 using SOR.Domain.Enums;
 
@@ -13,7 +13,9 @@ namespace SOR.Domain.ValueObjects;
 /// </para>
 /// <list type="number">
 /// <item>11 cyfr — brak liter, spacji i znaków rozdzielających;</item>
-/// <item>poprawna suma kontrolna modulo 11 (wagi <c>1,3,7,9,1,3,7,9,1,3</c>);</item>
+/// <item>poprawna cyfra kontrolna: wagi <c>1,3,7,9,1,3,7,9,1,3</c>, do sumy tylko ostatnia
+/// cyfra iloczynu, cyfra kontrolna dopełnia sumę do dziesiątki (0, gdy ostatnia cyfra sumy
+/// wynosi 0);</item>
 /// <item>poprawna data urodzenia zakodowana w pierwszych sześciu cyfrach.</item>
 /// </list>
 ///
@@ -33,7 +35,7 @@ namespace SOR.Domain.ValueObjects;
 /// </summary>
 public sealed class PeselNumber : ValueObject
 {
-    /// <summary>Wagi użyte do obliczania cyfry kontrolnej.</summary>
+    /// <summary>Wagi użyte do obliczania cyfry kontrolnej (cyfry 1–10).</summary>
     private static readonly int[] Weights = { 1, 3, 7, 9, 1, 3, 7, 9, 1, 3 };
 
     private PeselNumber(string value, DateOnly dateOfBirth, GenderEncoded gender)
@@ -298,17 +300,34 @@ public sealed class PeselNumber : ValueObject
         return month is >= 1 and <= 12 && day is >= 1 and <= 31;
     }
 
+    /// <summary>
+    /// Sprawdza cyfrę kontrolną PESEL.
+    ///
+    /// <para>Algorytm (kroki 1–5 zgodne z rozporządzeniem w sprawie dokumentów osobistych):</para>
+    /// <list type="number">
+    /// <item>cyfry 1–10 mnożone są przez wagi <c>1,3,7,9,1,3,7,9,1,3</c>;</item>
+    /// <item>do sumy wchodzi tylko ostatnia cyfra każdego iloczynu (iloczyn modulo 10);</item>
+    /// <item>cyfra kontrolna dopełnia sumę do dziesiątki;</item>
+    /// <item>gdy ostatnia cyfra sumy wynosi 0, cyfrą kontrolną jest 0;</item>
+    /// <item>wynik musi być równy jedenastej cyfrze numeru.</item>
+    /// </list>
+    ///
+    /// <para>
+    /// Uwaga: nie jest to suma modulo 11 — dla numerów, w których suma pełnych iloczynów
+    /// daje resztę 10, reguła modulo 11 uznałaby cyfrę kontrolną za 0 i przyjęłaby numery
+    /// niewystępujące w rejestrach, odrzucając poprawne.
+    /// </para>
+    /// </summary>
     private static bool HasValidChecksum(string value)
     {
         var sum = 0;
 
-        for (var index = 0; index < 10; index++)
+        for (var index = 0; index < Weights.Length; index++)
         {
-            sum += (value[index] - '0') * Weights[index];
+            sum += ((value[index] - '0') * Weights[index]) % 10;
         }
 
-        var remainder = sum % 11;
-        var expected = remainder == 10 ? 0 : remainder;
+        var expected = (10 - sum % 10) % 10;
 
         return expected == value[10] - '0';
     }
