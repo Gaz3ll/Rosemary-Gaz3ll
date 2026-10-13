@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
     "net9.0": {
       "SOR.Domain/1.0.0": {
@@ -27,19 +27,19 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\wikto\\.nuget\\packages\\": {}
+    "C:\\Users\\glazn\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj",
+      "projectUniqueName": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj",
       "projectName": "SOR.Application",
-      "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj",
-      "packagesPath": "C:\\Users\\wikto\\.nuget\\packages\\",
-      "outputPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\obj\\",
+      "projectPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj",
+      "packagesPath": "C:\\Users\\glazn\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Application\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\wikto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\glazn\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0"
@@ -50,10 +50,11 @@
       },
       "frameworks": {
         "net9.0": {
+          "framework": "net9.0",
           "targetAlias": "net9.0",
           "projectReferences": {
-            "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj": {
-              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj"
+            "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj": {
+              "projectPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj"
             }
           }
         }
@@ -68,10 +69,11 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "10.0.300"
     },
     "frameworks": {
       "net9.0": {
+        "framework": "net9.0",
         "targetAlias": "net9.0",
         "imports": [
           "net461",
@@ -87,15 +89,15 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Ref",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           }
         ],
         "frameworkReferences": {
@@ -103,7 +105,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

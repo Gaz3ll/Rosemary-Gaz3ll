@@ -1,7 +1,7 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
-    "net9.0-windows7.0": {
+    "net9.0-windows": {
       "Microsoft.Data.Sqlite/9.0.0": {
         "type": "package",
         "dependencies": {
@@ -1192,26 +1192,26 @@
     }
   },
   "projectFileDependencyGroups": {
-    "net9.0-windows7.0": [
+    "net9.0-windows": [
       "SOR.Application >= 1.0.0",
       "SOR.Domain >= 1.0.0",
       "SOR.Infrastructure >= 1.0.0"
     ]
   },
   "packageFolders": {
-    "C:\\Users\\wikto\\.nuget\\packages\\": {}
+    "C:\\Users\\glazn\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Rosemary-Gaz3ll\\src\\SOR.Presentation\\SOR.Presentation.csproj",
+      "projectUniqueName": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Presentation\\SOR.Presentation.csproj",
       "projectName": "SOR.Presentation",
-      "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Presentation\\SOR.Presentation.csproj",
-      "packagesPath": "C:\\Users\\wikto\\.nuget\\packages\\",
-      "outputPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Presentation\\obj\\",
+      "projectPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Presentation\\SOR.Presentation.csproj",
+      "packagesPath": "C:\\Users\\glazn\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Presentation\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\wikto\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\glazn\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net9.0-windows"
@@ -1221,17 +1221,18 @@
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
-        "net9.0-windows7.0": {
+        "net9.0-windows": {
+          "framework": "net9.0-windows7.0",
           "targetAlias": "net9.0-windows",
           "projectReferences": {
-            "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj": {
-              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj"
+            "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj": {
+              "projectPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Application\\SOR.Application.csproj"
             },
-            "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj": {
-              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj"
+            "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj": {
+              "projectPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Domain\\SOR.Domain.csproj"
             },
-            "C:\\Rosemary-Gaz3ll\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj": {
-              "projectPath": "C:\\Rosemary-Gaz3ll\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj"
+            "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj": {
+              "projectPath": "C:\\Users\\glazn\\Documents\\GitHub\\Rosemary-Gaz3ll\\src\\SOR.Infrastructure\\SOR.Infrastructure.csproj"
             }
           }
         }
@@ -1246,10 +1247,11 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "10.0.100"
+      "SdkAnalysisLevel": "10.0.300"
     },
     "frameworks": {
-      "net9.0-windows7.0": {
+      "net9.0-windows": {
+        "framework": "net9.0-windows7.0",
         "targetAlias": "net9.0-windows",
         "imports": [
           "net461",
@@ -1265,19 +1267,19 @@
         "downloadDependencies": [
           {
             "name": "Microsoft.AspNetCore.App.Ref",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.NETCore.App.Host.win-x64",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.NETCore.App.Ref",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           },
           {
             "name": "Microsoft.WindowsDesktop.App.Ref",
-            "version": "[9.0.13, 9.0.13]"
+            "version": "[9.0.16, 9.0.16]"
           }
         ],
         "frameworkReferences": {
@@ -1288,7 +1290,7 @@
             "privateAssets": "none"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.103/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

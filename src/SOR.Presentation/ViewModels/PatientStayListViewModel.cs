@@ -46,12 +46,22 @@ public sealed class PatientStayListViewModel : ObservableObject
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
 
         SearchCommand = new AsyncRelayCommand(RefreshAsync, () => !_isBusy);
-        PreviousDayCommand = new RelayCommand(_ => ShiftDays(-1));
-        NextDayCommand = new RelayCommand(_ => ShiftDays(1));
-        PreviousMonthCommand = new RelayCommand(_ => ShiftMonths(-1));
-        NextMonthCommand = new RelayCommand(_ => ShiftMonths(1));
-        PreviousYearCommand = new RelayCommand(_ => ShiftYears(-1));
-        NextYearCommand = new RelayCommand(_ => ShiftYears(1));
+
+        // Nawigacja krokowa jest rozdzielona na „datę od” i „datę do”: przyciski w wierszu
+        // „Data od” zmieniają wyłącznie dolną granicę, a w wierszu „Data do” — wyłącznie górną.
+        PreviousDayFromCommand = new RelayCommand(_ => ShiftFromDays(-1));
+        NextDayFromCommand = new RelayCommand(_ => ShiftFromDays(1));
+        PreviousMonthFromCommand = new RelayCommand(_ => ShiftFromMonths(-1));
+        NextMonthFromCommand = new RelayCommand(_ => ShiftFromMonths(1));
+        PreviousYearFromCommand = new RelayCommand(_ => ShiftFromYears(-1));
+        NextYearFromCommand = new RelayCommand(_ => ShiftFromYears(1));
+
+        PreviousDayToCommand = new RelayCommand(_ => ShiftToDays(-1));
+        NextDayToCommand = new RelayCommand(_ => ShiftToDays(1));
+        PreviousMonthToCommand = new RelayCommand(_ => ShiftToMonths(-1));
+        NextMonthToCommand = new RelayCommand(_ => ShiftToMonths(1));
+        PreviousYearToCommand = new RelayCommand(_ => ShiftToYears(-1));
+        NextYearToCommand = new RelayCommand(_ => ShiftToYears(1));
     }
 
     /// <summary>Jednostki organizacyjne dostępne w filtrze ( SOR jako jednostka macierzysta).</summary>
@@ -86,17 +96,41 @@ public sealed class PatientStayListViewModel : ObservableObject
 
     public AsyncRelayCommand SearchCommand { get; }
 
-    public RelayCommand PreviousDayCommand { get; }
+    /// <summary>Przesuwa „datę od” o jeden dzień w tył — bez zmiany „daty do”.</summary>
+    public RelayCommand PreviousDayFromCommand { get; }
 
-    public RelayCommand NextDayCommand { get; }
+    /// <summary>Przesuwa „datę od” o jeden dzień w przód — o ile nie przekroczy „daty do”.</summary>
+    public RelayCommand NextDayFromCommand { get; }
 
-    public RelayCommand PreviousMonthCommand { get; }
+    /// <summary>Przesuwa „datę od” o jeden miesiąc w tył — bez zmiany „daty do”.</summary>
+    public RelayCommand PreviousMonthFromCommand { get; }
 
-    public RelayCommand NextMonthCommand { get; }
+    /// <summary>Przesuwa „datę od” o jeden miesiąc w przód — o ile nie przekroczy „daty do”.</summary>
+    public RelayCommand NextMonthFromCommand { get; }
 
-    public RelayCommand PreviousYearCommand { get; }
+    /// <summary>Przesuwa „datę od” o jeden rok w tył — bez zmiany „daty do”.</summary>
+    public RelayCommand PreviousYearFromCommand { get; }
 
-    public RelayCommand NextYearCommand { get; }
+    /// <summary>Przesuwa „datę od” o jeden rok w przód — o ile nie przekroczy „daty do”.</summary>
+    public RelayCommand NextYearFromCommand { get; }
+
+    /// <summary>Przesuwa „datę do” o jeden dzień w tył — o ile nie zejdzie poniżej „daty od”.</summary>
+    public RelayCommand PreviousDayToCommand { get; }
+
+    /// <summary>Przesuwa „datę do” o jeden dzień w przód — bez zmiany „daty od”.</summary>
+    public RelayCommand NextDayToCommand { get; }
+
+    /// <summary>Przesuwa „datę do” o jeden miesiąc w tył — o ile nie zejdzie poniżej „daty od”.</summary>
+    public RelayCommand PreviousMonthToCommand { get; }
+
+    /// <summary>Przesuwa „datę do” o jeden miesiąc w przód — bez zmiany „daty od”.</summary>
+    public RelayCommand NextMonthToCommand { get; }
+
+    /// <summary>Przesuwa „datę do” o jeden rok w tył — o ile nie zejdzie poniżej „daty od”.</summary>
+    public RelayCommand PreviousYearToCommand { get; }
+
+    /// <summary>Przesuwa „datę do” o jeden rok w przód — bez zmiany „daty od”.</summary>
+    public RelayCommand NextYearToCommand { get; }
 
     public string OrganizationalUnit
     {
@@ -122,7 +156,19 @@ public sealed class PatientStayListViewModel : ObservableObject
         get => _dateFrom;
         set
         {
-            if (SetProperty(ref _dateFrom, value))
+            // Wpisana „data od” nie może być późniejsza niż „data do” — w razie próby
+            // przyjmujemy wartość „daty do”, czyli obie daty zrównują się.
+            var normalized = value > _dateTo ? _dateTo : value;
+            var changed = SetProperty(ref _dateFrom, normalized);
+
+            if (!changed && value != normalized)
+            {
+                // Odrzucona wartość nie zmieniła modelu, ale pole tekstowe DatePickera
+                // trzeba cofnąć do obowiązującej daty — stąd wymuszone powiadomienie.
+                OnPropertyChanged(nameof(DateFrom));
+            }
+
+            if (changed)
             {
                 SearchCommand.Execute(null);
             }
@@ -134,7 +180,17 @@ public sealed class PatientStayListViewModel : ObservableObject
         get => _dateTo;
         set
         {
-            if (SetProperty(ref _dateTo, value))
+            // Wpisana „data do” nie może być wcześniejsza niż „data od” — w razie próby
+            // przyjmujemy wartość „daty od”, czyli obie daty zrównują się.
+            var normalized = value < _dateFrom ? _dateFrom : value;
+            var changed = SetProperty(ref _dateTo, normalized);
+
+            if (!changed && value != normalized)
+            {
+                OnPropertyChanged(nameof(DateTo));
+            }
+
+            if (changed)
             {
                 SearchCommand.Execute(null);
             }
@@ -292,25 +348,78 @@ public sealed class PatientStayListViewModel : ObservableObject
         OnPropertyChanged(nameof(Summary));
     }
 
-    private void ShiftDays(int offset)
+    private void ShiftFromDays(int offset)
     {
-        DateFrom = DateFrom.AddDays(offset);
-        DateTo = DateTo.AddDays(offset);
-        SearchCommand.Execute(null);
+        var candidate = DateFrom.AddDays(offset);
+
+        // Przesunięcie „daty od” w przód nie może przekroczyć „daty do” — wtedy brak efektu.
+        if (candidate > DateTo)
+        {
+            return;
+        }
+
+        DateFrom = candidate;
     }
 
-    private void ShiftMonths(int offset)
+    private void ShiftFromMonths(int offset)
     {
-        DateFrom = DateFrom.AddMonths(offset);
-        DateTo = DateTo.AddMonths(offset);
-        SearchCommand.Execute(null);
+        var candidate = DateFrom.AddMonths(offset);
+
+        if (candidate > DateTo)
+        {
+            return;
+        }
+
+        DateFrom = candidate;
     }
 
-    private void ShiftYears(int offset)
+    private void ShiftFromYears(int offset)
     {
-        DateFrom = DateFrom.AddYears(offset);
-        DateTo = DateTo.AddYears(offset);
-        SearchCommand.Execute(null);
+        var candidate = DateFrom.AddYears(offset);
+
+        if (candidate > DateTo)
+        {
+            return;
+        }
+
+        DateFrom = candidate;
+    }
+
+    private void ShiftToDays(int offset)
+    {
+        var candidate = DateTo.AddDays(offset);
+
+        // Przesunięcie „daty do” w tył nie może zejść poniżej „daty od” — wtedy brak efektu.
+        if (candidate < DateFrom)
+        {
+            return;
+        }
+
+        DateTo = candidate;
+    }
+
+    private void ShiftToMonths(int offset)
+    {
+        var candidate = DateTo.AddMonths(offset);
+
+        if (candidate < DateFrom)
+        {
+            return;
+        }
+
+        DateTo = candidate;
+    }
+
+    private void ShiftToYears(int offset)
+    {
+        var candidate = DateTo.AddYears(offset);
+
+        if (candidate < DateFrom)
+        {
+            return;
+        }
+
+        DateTo = candidate;
     }
 
     private static void Replace<T>(ObservableCollection<T> target, IEnumerable<T> items)

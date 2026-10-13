@@ -69,12 +69,18 @@ public partial class App : System.Windows.Application
         _scopeCreated = true;
 
         // Motyw jest stosowany przed utworzeniem okna, aby widok startował już w właściwych kolorach.
-        _scope.ServiceProvider.GetRequiredService<IThemeService>().Initialize();
+        var themeService = _scope.ServiceProvider.GetRequiredService<IThemeService>();
+        themeService.Initialize();
 
         var mainViewModel = _scope.ServiceProvider.GetRequiredService<MainViewModel>();
         var window = new MainWindow { DataContext = mainViewModel };
         MainWindow = window;
         window.Show();
+
+        // Kolorowanie paska tytułowego (min/max/close) zgodnie z aktywnym motywem — działa na Windows 10/11
+        // dzięki API DWM (immersive dark mode).
+        WindowTitleBarTheme.Apply(window, themeService.Current);
+        themeService.ThemeChanged += (_, theme) => WindowTitleBarTheme.Apply(window, theme);
     }
 
     protected override void OnExit(ExitEventArgs e)

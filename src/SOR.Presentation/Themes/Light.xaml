@@ -46,6 +46,10 @@
     <SolidColorBrush x:Key="PanelPinkBorderBrush" Color="#E39CB4" />
     <SolidColorBrush x:Key="PanelPinkTextBrush" Color="#5B2333" />
 
+    <!-- Obramowanie pol dat: w motywie jasnym pozostaje bez zmian (ten sam odcien co
+         SurfaceBorderBrush), aby wyglad pol dat sie nie zmienil. -->
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#D5DCE3" />
+
     <!-- Pokrywa przy otwartych listach rozwijanych (ComboBox, DatePicker, Menu) -->
     <SolidColorBrush x:Key="PopupOverlayBrush" Color="#33808080" />
 </ResourceDictionary>

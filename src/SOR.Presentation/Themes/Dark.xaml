@@ -44,6 +44,10 @@
     <SolidColorBrush x:Key="PanelPinkBorderBrush" Color="#8A5768" />
     <SolidColorBrush x:Key="PanelPinkTextBrush" Color="#F6DCE4" />
 
+    <!-- Obramowanie pol dat: lekko ciemniejsze od SurfaceBrush (#1E242B), aby kontur
+         byl subtelny, a nie jasniejszy od wypelnienia pola. -->
+    <SolidColorBrush x:Key="InputBorderBrush" Color="#14181D" />
+
     <!-- Pokrywa przy otwartych listach rozwijanych: przygasza wlasne okno aplikacji,
          dzieki czemu rozwinieta lista jest czytelna rowniez w trybie ciemnym. -->
     <SolidColorBrush x:Key="PopupOverlayBrush" Color="#B3000000" />
