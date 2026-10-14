@@ -264,7 +264,7 @@ interfejsu) przełączane przez `WorkspaceSection` w `MainViewModel`:
 | Poziom | Zawartość |
 |---|---|
 | A — pasek modułów | `PRZYJĘCIA`, `PORADNIA`, `INNE` (RadioButton, grupa `Moduły`, aktywna zakładka na białym tle) oraz po prawej `LOGIN NAZWISKO_IMIĘ (ROLA)`, `Strefa: …` i przełącznik motywu |
-| A — pasek operacyjny | `Szukaj`, `Karta pobytu`, `Raport`, `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia`, `AMK`, `Wyjdź` — ikony rysowane wektorowo (`Path`), bez bibliotek ikon |
+| A — pasek operacyjny | `Szukaj`, `Karta pobytu`, `Raport`, `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia`, `KMCR`, `Wyjdź` — ikony rysowane wektorowo (`Path`), bez bibliotek ikon |
 | A — menu | `Plik`, `Moduły`, `Widok` (te same przełączenia co zakładki modułów) |
 | B — jednostka i wyszukiwarka | jednostka organizacyjna (domyślnie SOR), pole pacjenta z lupą, przycisk `Szukaj` |
 | C — zakres dat i filtry | dwa wiersze: `Data od` i `Data do`, każdy z sześcioma przyciskami (`◀ dzień`, `dzień ▶`, `◀ miesiąc`, `miesiąc ▶`, `◀ rok`, `rok ▶`); pola dat pokazują pełny zapis `05.10.2026`; niżej siatka filtrów statusowych oraz `Brak karty odmowy` w kolejnym wierszu |
@@ -272,7 +272,7 @@ interfejsu) przełączane przez `WorkspaceSection` w `MainViewModel`:
 | pasek statusu | komunikat listy, licznik `Pobytów w zakresie: X / Y`, komunikat modułu bez danych, komunikat pulpitu i `Odśwież pulpit` |
 
 Pasek operacyjny jest deklaratywnym odnośnikiem do modułów: `Karta pobytu` i `Raport` przełączają
-zakładkę danych, `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia` i `AMK` wyświetlają
+zakładkę danych, `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia` i `KMCR` wyświetlają
 komunikat o braku modułu (bez udawania danych), a `Wyjdź` kończy sesję. Ikony mają
 `AutomationProperties.Name`, co umożliwia testy interfejsu przez UI Automation.
 
@@ -379,7 +379,7 @@ sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `Com
   usunięcia pliku bazy.
 - Monitoring nie działa jako trwała pętla w tle w UI (interfejs udostępnia `StartMonitoringAsync`).
 - Moduł **PORADNIA** nie jest zaimplementowany — brak modelu domenowego, sekcja pokazuje
-  komunikat zastępczy (analogicznie `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia`, `AMK`
+  komunikat zastępczy (analogicznie `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia`, `KMCR`
   w pasku operacyjnym).
 - Filtry i kolumny bez odpowiednika w modelu (COVID-19, Odmowa, Brak ubezpieczenia,
   Wypisani bez proc. rol. a w izbie, Kategorie – weryfikacja, Brak karty odmowy, Księga główna,
@@ -388,3 +388,55 @@ sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `Com
 - Brak automatycznej weryfikacji wizualnej w CI (WPF wymaga sesji pulpitu) — kontrast motywów
   sprawdzany jest ręcznie i przez UI Automation.
 - Brak integracji z systemami zewnętrznymi (HIS, laboratorium) — poza zakresem.
+
+## 11. Zmiany — Dark mode i poprawki UI (commit `eb3a27f`)
+
+**Motyw i pasek tytułu:**
+- Dodano `Services/WindowTitleBarTheme.cs` — ustawia natywnie ciemny pasek tytułu okna przez DWM
+  (`DWMWA_USE_IMMERSIVE_DARK_MODE`, fallback na starszy atrybut) i wymusza przerysowanie ramki
+  (`SetWindowPos` z `SWP_FRAMECHANGED`). Wywoływane po `window.Show()` oraz przy zmianie motywu
+  (`App.xaml.cs`).
+- Dodano pędzel `InputBorderBrush` do `Themes/Dark.xaml` i `Themes/Light.xaml`.
+
+**DatePicker:**
+- `DatePicker.BorderBrush` korzysta z `{DynamicResource InputBorderBrush}`, `BorderThickness=1`.
+- Własny `ControlTemplate` dla `DatePickerTextBox` (przezroczyste tło, brak obramowania, zachowane
+  `PART_ContentHost`, `PART_Watermark` i grupa stanów `WatermarkStates`) — usuwa twardo zakodowane
+  białe obramowanie z domyślnego szablonu Aero2.
+
+**Kalendarz (popup DatePicker):**
+- Dodano nazwane style motywowe: `ThemedCalendarDayButton`, `ThemedCalendarButton`,
+  `ThemedCalendarItem`, `ThemedCalendarStyle`.
+- Dodano niejawny styl `Calendar`, wiążący `CalendarDayButtonStyle`, `CalendarButtonStyle`
+  i `CalendarItemStyle` z powyższymi zasobami (zachowując powiązanie `DatePicker.CalendarStyle`).
+- Przełączanie widoku miesiąc/rok/dekada obsługiwane przez `DataTrigger` na `Calendar.DisplayMode`.
+- Ograniczenia zakresu: „Data od” ustawia `DisplayDateEnd = DateTo`, „Data do” ustawia
+  `DisplayDateStart = DateFrom`.
+
+**ComboBox:**
+- `ControlTemplate` `ComboBox` uzupełniony o `ContentTemplateSelector`, `VerticalContentAlignment`
+  i `HorizontalContentAlignment` w prezenterze wybranego elementu (poprawne renderowanie
+  `DisplayMemberPath`/`ItemTemplate` w zamkniętym polu).
+
+**Zakres dat (lista pobytów):**
+- Podział przycisków krokowych na 12 komend: `Previous/Next{Day,Month,Year}{From,To}` — osobne dla
+  „Data od” i „Data do”.
+- Strażniki niezmiennika `DateFrom <= DateTo`: zwiększenie `DateFrom` powyżej `DateTo` oraz
+  zmniejszenie `DateTo` poniżej `DateFrom` nie dają efektu (przyciski pozostają aktywne).
+- Settery `DateFrom`/`DateTo` normalizują wartość do granicy zakresu i wymuszają `OnPropertyChanged`,
+  gdy znormalizowana wartość jest równa bieżącej (pozwala wycofać nieprawidłowy wpis w `DatePicker`).
+- Wiązania w `MainWindow.xaml`: wiersz „od” używa komend `From` oraz
+  `DisplayDateEnd="{Binding Stays.DateTo}"`, wiersz „do” używa komend `To` oraz
+  `DisplayDateStart="{Binding Stays.DateFrom}"`.
+
+**AMK → KMCR:**
+- Zaktualizowano etykiety, tooltipy i `AutomationProperties.Name` w `MainWindow.xaml` oraz nazwę
+  komendy na `ShowKmcrCommand` w `MainViewModel` wraz z komunikatem modułu.
+
+**„Inne → Formularz i pakiety”:**
+- Lewa kolumna opakowana w `ScrollViewer`, dostosowano rozkład wierszy w celu uniknięcia nakładania
+  i obcinania sekcji.
+- Dodano `MinHeight="140"` dla `DataGrid` formularza leków oraz `MinHeight="120"` dla `ListBox`
+  pakietów medycznych.
+- `ComboBox` „Grupa Terapeutyczna” używa jawnego `ItemTemplate` (`TextBlock Text="{Binding Label}"`)
+  zamiast `DisplayMemberPath`.
