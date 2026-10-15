@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SOR.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d1257d191e3a6ebdbbaef365151ba10dcbb40f4f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e77751e552ff6a0e46f6b11e44fe7ee19f6513c4")]
 [assembly: System.Reflection.AssemblyProductAttribute("SOR.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SOR.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
