@@ -91,8 +91,8 @@ public sealed class MainViewModel : ObservableObject
             ShowNotImplementedModule("Wniosek"));
         ShowRepresentativeCommand = new RelayCommand(_ =>
             ShowNotImplementedModule("Przedstawiciel / Uprawnienia"));
-        ShowAmkCommand = new RelayCommand(_ =>
-            ShowNotImplementedModule("AMK"));
+        ShowKmcrCommand = new RelayCommand(_ =>
+            ShowNotImplementedModule("KMCR"));
         ExitCommand = new RelayCommand(
             _ => _ = Session.LogoutAsync(),
             _ => true);
@@ -143,8 +143,8 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>Ikona „Przedstawiciel / Uprawnienia”.</summary>
     public RelayCommand ShowRepresentativeCommand { get; }
 
-    /// <summary>Ikona „AMK” (zlecenia dla zespołu ratownictwa medycznego).</summary>
-    public RelayCommand ShowAmkCommand { get; }
+    /// <summary>Ikona „KMCR” (zlecenia dla zespołu ratownictwa medycznego).</summary>
+    public RelayCommand ShowKmcrCommand { get; }
 
     /// <summary>Ikona „Wyjdź” — wylogowanie z aplikacji.</summary>
     public RelayCommand ExitCommand { get; }

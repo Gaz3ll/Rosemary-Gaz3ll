@@ -29,3 +29,17 @@ C:\Users\wikto\AppData\Local\Temp\opencode\pres-out\SOR.Domain.deps.json
 C:\Users\wikto\AppData\Local\Temp\opencode\pres-out\SOR.Domain.dll
 C:\Users\wikto\AppData\Local\Temp\opencode\pres-out\SOR.Domain.pdb
 C:\Users\wikto\AppData\Local\Temp\opencode\pres-out\SOR.Domain.xml
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.deps.json
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.dll
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.pdb
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\bin\Debug\net9.0\SOR.Domain.xml
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.AssemblyInfoInputs.cache
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.AssemblyInfo.cs
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.csproj.CoreCompileInputs.cache
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.sourcelink.json
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.dll
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\refint\SOR.Domain.dll
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.xml
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\SOR.Domain.pdb
+C:\Users\glazn\Documents\GitHub\Rosemary-Gaz3ll\src\SOR.Domain\obj\Debug\net9.0\ref\SOR.Domain.dll

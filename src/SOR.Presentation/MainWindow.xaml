@@ -174,13 +174,13 @@
                                     </StackPanel>
                             </Button>
 
-                                <!-- AMK: zlecenia dla zespołu ratownictwa medycznego. -->
-                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="AMK" Command="{Binding ShowAmkCommand}"
-                                        ToolTip="AMK">
+                                <!-- KMCR: zlecenia dla zespołu ratownictwa medycznego. -->
+                            <Button Style="{StaticResource IconToolbarButton}" AutomationProperties.Name="KMCR" Command="{Binding ShowKmcrCommand}"
+                                        ToolTip="KMCR">
                                     <StackPanel Orientation="Horizontal">
                                         <Path Style="{StaticResource ToolbarIconPath}"
                                               Data="M 1.6,5.4 H 8.6 V 11.4 H 1.6 Z M 8.6,7.4 H 12 L 14.4,10 V 11.4 H 8.6 Z M 4,13.6 m -1.4,0 a 1.4,1.4 0 1 0 2.8,0 a 1.4,1.4 0 1 0 -2.8,0 M 11.4,13.6 m -1.4,0 a 1.4,1.4 0 1 0 2.8,0 a 1.4,1.4 0 1 0 -2.8,0 M 4,7.6 H 6.2 M 5.1,6.5 V 8.7" />
-                                        <TextBlock Text="AMK" Style="{StaticResource ToolbarIconLabel}" />
+                                        <TextBlock Text="KMCR" Style="{StaticResource ToolbarIconLabel}" />
                                     </StackPanel>
                             </Button>
 
@@ -275,24 +275,28 @@
                     <!-- Blok 1, wiersz 1: zakres dat od wraz z nawigacją krokową. -->
                     <StackPanel Grid.Row="0" Orientation="Horizontal">
                         <TextBlock Text="Data od:" Style="{StaticResource PinkFilterLabel}" />
-                        <DatePicker Width="190" Margin="0,0,14,0" SelectedDate="{Binding Stays.DateFrom, Mode=TwoWay}" />
-                        <Button Style="{StaticResource StepButton}" Content="◀ dzień" Command="{Binding Stays.PreviousDayCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="dzień ▶" Command="{Binding Stays.NextDayCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="◀ miesiąc" Margin="10,0,2,0" Command="{Binding Stays.PreviousMonthCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="miesiąc ▶" Command="{Binding Stays.NextMonthCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="◀ rok" Margin="10,0,2,0" Command="{Binding Stays.PreviousYearCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="rok ▶" Command="{Binding Stays.NextYearCommand}" />
+                        <DatePicker Width="190" Margin="0,0,14,0"
+                                    SelectedDate="{Binding Stays.DateFrom, Mode=TwoWay}"
+                                    DisplayDateEnd="{Binding Stays.DateTo}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ dzień" Command="{Binding Stays.PreviousDayFromCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="dzień ▶" Command="{Binding Stays.NextDayFromCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ miesiąc" Margin="10,0,2,0" Command="{Binding Stays.PreviousMonthFromCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="miesiąc ▶" Command="{Binding Stays.NextMonthFromCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ rok" Margin="10,0,2,0" Command="{Binding Stays.PreviousYearFromCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="rok ▶" Command="{Binding Stays.NextYearFromCommand}" />
                     </StackPanel>
                     <!-- Blok 1, wiersz 2: zakres dat do wraz z nawigacją krokową. -->
                     <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,6,0,0">
                         <TextBlock Text="Data do:" Style="{StaticResource PinkFilterLabel}" />
-                        <DatePicker Width="190" Margin="0,0,14,0" SelectedDate="{Binding Stays.DateTo, Mode=TwoWay}" />
-                        <Button Style="{StaticResource StepButton}" Content="◀ dzień" Command="{Binding Stays.PreviousDayCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="dzień ▶" Command="{Binding Stays.NextDayCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="◀ miesiąc" Margin="10,0,2,0" Command="{Binding Stays.PreviousMonthCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="miesiąc ▶" Command="{Binding Stays.NextMonthCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="◀ rok" Margin="10,0,2,0" Command="{Binding Stays.PreviousYearCommand}" />
-                        <Button Style="{StaticResource StepButton}" Content="rok ▶" Command="{Binding Stays.NextYearCommand}" />
+                        <DatePicker Width="190" Margin="0,0,14,0"
+                                    SelectedDate="{Binding Stays.DateTo, Mode=TwoWay}"
+                                    DisplayDateStart="{Binding Stays.DateFrom}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ dzień" Command="{Binding Stays.PreviousDayToCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="dzień ▶" Command="{Binding Stays.NextDayToCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ miesiąc" Margin="10,0,2,0" Command="{Binding Stays.PreviousMonthToCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="miesiąc ▶" Command="{Binding Stays.NextMonthToCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="◀ rok" Margin="10,0,2,0" Command="{Binding Stays.PreviousYearToCommand}" />
+                        <Button Style="{StaticResource StepButton}" Content="rok ▶" Command="{Binding Stays.NextYearToCommand}" />
                     </StackPanel>
                     <!-- Blok 2: filtry statusowe w układzie siatki, domyślnie „Wszyscy”. -->
                     <WrapPanel Grid.Row="2" Margin="0,8,0,0">
@@ -681,13 +685,10 @@
                                 <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,4,0,4">
                                     <TextBlock Text="Grupa terapeutyczna:" VerticalAlignment="Center"
                                                Foreground="{DynamicResource TextSecondaryBrush}" />
-                                    <ComboBox Width="260" Margin="8,0,0,0"
-                                              ItemsSource="{Binding Catalog.MedicationCategoryFilters}"
-                                              DisplayMemberPath="Label"
-                                              SelectedItem="{Binding Catalog.MedicationCategoryFilter}" />
+                                    <ComboBox Grid.Row="1" Grid.Column="3" Margin="0,0,0,6" ItemsSource="{Binding MedicationCatalog.MedicationCategoryFilters}" SelectedItem="{Binding MedicationCatalog.MedicationCategoryFilter}"><ComboBox.ItemTemplate><DataTemplate><TextBlock Text="{Binding Label}" /></DataTemplate></ComboBox.ItemTemplate></ComboBox>
                                 </StackPanel>
 
-                                <DataGrid Grid.Row="2" ItemsSource="{Binding Catalog.Medications}"
+                                <DataGrid Grid.Row="2" MinHeight="140" ItemsSource="{Binding Catalog.Medications}"
                                           SelectedItem="{Binding Catalog.SelectedMedication}">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="Kod" Binding="{Binding Code, Mode=OneWay}" Width="110" />
@@ -740,7 +741,7 @@
                                 </DockPanel>
 
                                 <ListBox Grid.Row="1" Grid.Column="0" Margin="0,4,8,0"
-                                         ItemsSource="{Binding Catalog.Bundles}"
+                                         MinHeight="120" ItemsSource="{Binding Catalog.Bundles}"
                                          SelectedItem="{Binding Catalog.SelectedBundle}"
                                          DisplayMemberPath="Name" />
 
