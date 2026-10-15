@@ -1,0 +1,56 @@
+# .NET / Visual Studio build output
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+
+# Build results
+[Ll]og/
+[Ll]ogs/
+artifacts/
+
+# User-specific files
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# VS Code
+.vscode/*
+
+# Rider
+.idea/
+
+# WPF temporary build files
+*_wpftmp.*
+*.baml
+
+# NuGet packages
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.nupkg
+**/packages/repositories.config
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+
+# Publish output
+publish/
+**/[Pp]ublish*/
+
+# ReSharper / Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# NCrunch
+_NCrunch_*
+.*crunch*.local.xml
+nCrunchTemp_*
+
+# OS junk
+.DS_Store
+Thumbs.db
