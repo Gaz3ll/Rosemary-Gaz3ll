@@ -13,14 +13,17 @@ namespace SOR.Presentation.ViewModels;
 /// ViewModel okna „Historia pobytu” otwieranego dwukrotnym kliknięciem wiersza pacjenta.
 /// Pokazuje pełny przebieg pobytu w SOR: dane przyjęcia, kolejne oceny Triage, przeniesienia
 /// między strefami, zlecenia (procedury i badania) wraz ze stanem realizacji, podane leki
-/// oraz wypisy. Okno jest jedynym miejscem, w którym zleca się procedury, badania i konsultacje,
-/// wprowadza rozpoznanie ICD-10 oraz rejestruje wypis pacjenta z SOR.
+/// oraz wypisy. Okno jest jedynym miejscem, w którym zleca się procedury, badania, konsultacje
+/// i leki, stosuje pakiety medyczne, wybiera rozpoznanie ICD-10 z katalogu (z wyszukiwaniem
+/// po kodzie i nazwie) oraz rejestruje wypis pacjenta z SOR.
 /// </summary>
 public sealed class PatientHistoryViewModel : ObservableObject
 {
     private readonly IPatientService _patientService;
     private readonly IClock _clock;
     private readonly IDepartmentCatalogService _departmentCatalog;
+    private readonly IMedicalBundleService _bundleService;
+    private readonly IIcd10CatalogService _icd10Catalog;
     private readonly SessionViewModel _session;
 
     private PatientDetailsDto? _details;
@@ -32,6 +35,14 @@ public sealed class PatientHistoryViewModel : ObservableObject
     private MedicalOrderType _orderType = MedicalOrderType.Consultation;
     private string _orderDescription = string.Empty;
     private bool _orderUrgent;
+
+    // Dane sekcji pakietów medycznych.
+    private string _bundleTerm = string.Empty;
+    private MedicalBundleDto? _selectedBundle;
+
+    // Dane sekcji rozpoznania ICD-10 (wybór pozycji z katalogu).
+    private string _icd10Term = string.Empty;
+    private Icd10CatalogEntryDto? _selectedDiagnosis;
     private string _icd10Code = string.Empty;
 
     // Dane formularza wypisu.
@@ -43,19 +54,26 @@ public sealed class PatientHistoryViewModel : ObservableObject
         IPatientService patientService,
         IClock clock,
         IDepartmentCatalogService departmentCatalog,
+        IMedicalBundleService bundleService,
+        IIcd10CatalogService icd10Catalog,
         SessionViewModel session)
     {
         _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _departmentCatalog = departmentCatalog ?? throw new ArgumentNullException(nameof(departmentCatalog));
+        _bundleService = bundleService ?? throw new ArgumentNullException(nameof(bundleService));
+        _icd10Catalog = icd10Catalog ?? throw new ArgumentNullException(nameof(icd10Catalog));
         _session = session ?? throw new ArgumentNullException(nameof(session));
 
         AddOrderCommand = new AsyncRelayCommand(AddOrderAsync, () => !_isBusy && CanIssueOrders);
         CompleteOrderCommand = new AsyncRelayCommand(
             CompleteOrderAsync,
             parameter => !_isBusy && CanCompleteOrder(parameter as MedicalOrderDto));
+        ApplyBundleCommand = new AsyncRelayCommand(ApplyBundleAsync, () => !_isBusy && CanIssueOrders);
         SetDiagnosisCommand = new AsyncRelayCommand(SetDiagnosisAsync, () => !_isBusy && CanEnterDiagnosis);
         DischargeCommand = new AsyncRelayCommand(DischargeAsync, () => !_isBusy && CanDischargePatient);
+        SearchBundlesCommand = new AsyncRelayCommand(SearchBundlesAsync);
+        SearchDiagnosesCommand = new AsyncRelayCommand(SearchDiagnosesAsync);
 
         OrderTypes = Enum.GetValues<MedicalOrderType>();
         DischargeTypes = Enum.GetValues<DischargeType>();
@@ -169,6 +187,12 @@ public sealed class PatientHistoryViewModel : ObservableObject
     /// <summary>Oddziały szpitalne dostępne jako cel przekazania pacjenta.</summary>
     public ObservableCollection<DepartmentDto> Departments { get; } = new();
 
+    /// <summary>Pakiety medyczne dostępne w oddziale (wynik wyszukiwania lub pełna lista).</summary>
+    public ObservableCollection<MedicalBundleDto> Bundles { get; } = new();
+
+    /// <summary>Rozpoznania ICD-10 (wynik wyszukiwania lub lista typowa dla SOR).</summary>
+    public ObservableCollection<Icd10CatalogEntryDto> Diagnoses { get; } = new();
+
     public MedicalOrderType OrderType
     {
         get => _orderType;
@@ -187,6 +211,41 @@ public sealed class PatientHistoryViewModel : ObservableObject
         set => SetProperty(ref _orderUrgent, value);
     }
 
+    /// <summary>Fraza wyszukiwania pakietów (nazwa, kod lub wskazanie).</summary>
+    public string BundleTerm
+    {
+        get => _bundleTerm;
+        set => SetProperty(ref _bundleTerm, value);
+    }
+
+    /// <summary>Pakiet medyczny wskazany do zastosowania na karcie pacjenta.</summary>
+    public MedicalBundleDto? SelectedBundle
+    {
+        get => _selectedBundle;
+        set => SetProperty(ref _selectedBundle, value);
+    }
+
+    /// <summary>Fraza wyszukiwania rozpoznań ICD-10 (fragment kodu albo opisu).</summary>
+    public string Icd10Term
+    {
+        get => _icd10Term;
+        set => SetProperty(ref _icd10Term, value);
+    }
+
+    /// <summary>Pozycja katalogu wybrana z listy; jej kod trafia do pola rozpoznania.</summary>
+    public Icd10CatalogEntryDto? SelectedDiagnosis
+    {
+        get => _selectedDiagnosis;
+        set
+        {
+            if (SetProperty(ref _selectedDiagnosis, value) && value is not null)
+            {
+                Icd10Code = value.Code;
+            }
+        }
+    }
+
+    /// <summary>Kod rozpoznania wybrany z katalogu ICD-10.</summary>
     public string Icd10Code
     {
         get => _icd10Code;
@@ -239,6 +298,7 @@ public sealed class PatientHistoryViewModel : ObservableObject
 
             AddOrderCommand.RaiseCanExecuteChanged();
             CompleteOrderCommand.RaiseCanExecuteChanged();
+            ApplyBundleCommand.RaiseCanExecuteChanged();
             SetDiagnosisCommand.RaiseCanExecuteChanged();
             DischargeCommand.RaiseCanExecuteChanged();
         }
@@ -256,19 +316,62 @@ public sealed class PatientHistoryViewModel : ObservableObject
     /// <summary>Oznacza wskazane zlecenie jako zrealizowane (BR-13).</summary>
     public AsyncRelayCommand CompleteOrderCommand { get; }
 
+    /// <summary>Zastosowuje wybrany pakiet medyczny na karcie pacjenta (BR-13).</summary>
+    public AsyncRelayCommand ApplyBundleCommand { get; }
+
     /// <summary>Ustawia rozpoznanie ICD-10 (tylko lekarz lub koordynator).</summary>
     public AsyncRelayCommand SetDiagnosisCommand { get; }
 
     /// <summary>Rejestruje wypis pacjenta z SOR (BR-11).</summary>
     public AsyncRelayCommand DischargeCommand { get; }
 
-    /// <summary>Wczytuje pełną historię pobytu wskazanego pacjenta oraz oddziały do formularza wypisu.</summary>
+    /// <summary>Wyszukuje pakiety medyczne po nazwie, kodzie lub wskazaniu.</summary>
+    public AsyncRelayCommand SearchBundlesCommand { get; }
+
+    /// <summary>Wyszukuje rozpoznania ICD-10 po kodzie lub opisie.</summary>
+    public AsyncRelayCommand SearchDiagnosesCommand { get; }
+
+    /// <summary>Wczytuje pełną historię pobytu pacjenta oraz dane formularzy akcji.</summary>
     public async Task LoadAsync(Guid patientId)
     {
         var details = await _patientService.GetPatientAsync(patientId).ConfigureAwait(true);
         Details = details;
 
         await LoadDepartmentsAsync().ConfigureAwait(true);
+        await LoadBundlesAsync().ConfigureAwait(true);
+        await LoadDiagnosesAsync().ConfigureAwait(true);
+    }
+
+    private async Task LoadBundlesAsync()
+    {
+        try
+        {
+            var bundles = string.IsNullOrWhiteSpace(_bundleTerm)
+                ? await _bundleService.GetAllAsync(CancellationToken.None).ConfigureAwait(true)
+                : await _bundleService.SearchAsync(_bundleTerm, CancellationToken.None).ConfigureAwait(true);
+
+            Replace(Bundles, bundles);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+    }
+
+    private async Task LoadDiagnosesAsync()
+    {
+        try
+        {
+            var entries = string.IsNullOrWhiteSpace(_icd10Term)
+                ? await _icd10Catalog.GetEmergencyRelevantAsync(CancellationToken.None).ConfigureAwait(true)
+                : await _icd10Catalog.SearchAsync(_icd10Term, CancellationToken.None).ConfigureAwait(true);
+
+            Replace(Diagnoses, entries);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
     }
 
     private async Task LoadDepartmentsAsync()
@@ -288,6 +391,55 @@ public sealed class PatientHistoryViewModel : ObservableObject
         {
             StatusMessage = ExceptionMessageMapper.Map(exception).Message;
         }
+    }
+
+    private async Task SearchBundlesAsync()
+    {
+        await LoadBundlesAsync().ConfigureAwait(true);
+        StatusMessage = $"Dostępne pakiety medyczne: {Bundles.Count}.";
+    }
+
+    private async Task ApplyBundleAsync()
+    {
+        if (_details is null || _isBusy)
+        {
+            return;
+        }
+
+        if (_selectedBundle is null)
+        {
+            StatusMessage = "Wybierz pakiet medyczny.";
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var patient = await _bundleService
+                .ApplyAsync(_details.Id, _selectedBundle.Id, itemIds: null, CancellationToken.None)
+                .ConfigureAwait(true);
+
+            Details = patient;
+            HasChanges = true;
+            StatusMessage = $"Zastosowano pakiet „{_selectedBundle.Name}” ({_selectedBundle.OrderCount} zleceń).";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SearchDiagnosesAsync()
+    {
+        await LoadDiagnosesAsync().ConfigureAwait(true);
+        StatusMessage = string.IsNullOrWhiteSpace(_icd10Term)
+            ? $"Rozpoznania typowe dla SOR: {Diagnoses.Count}."
+            : $"Znaleziono rozpoznań: {Diagnoses.Count}.";
     }
 
     private async Task AddOrderAsync()
@@ -402,7 +554,7 @@ public sealed class PatientHistoryViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(_icd10Code))
         {
-            StatusMessage = "Kod rozpoznania jest wymagany.";
+            StatusMessage = "Wybierz rozpoznanie z katalogu ICD-10.";
             return;
         }
 
@@ -410,15 +562,16 @@ public sealed class PatientHistoryViewModel : ObservableObject
 
         try
         {
-            var patient = await _patientService
-                .SetDiagnosisAsync(_details.Id, _icd10Code.Trim(), CancellationToken.None)
+            var patient = await _icd10Catalog
+                .AssignAsync(_details.Id, _icd10Code.Trim(), CancellationToken.None)
                 .ConfigureAwait(true);
 
             Details = patient;
             HasChanges = true;
 
+            SelectedDiagnosis = null;
             Icd10Code = string.Empty;
-            StatusMessage = "Zapisano rozpoznanie.";
+            StatusMessage = "Zapisano rozpoznanie ICD-10.";
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {
@@ -474,6 +627,16 @@ public sealed class PatientHistoryViewModel : ObservableObject
         DischargeType.TransferToDepartment => "przekazanie na inny oddział",
         _ => "zakończenie leczenia"
     };
+
+    private static void Replace<T>(ObservableCollection<T> target, IReadOnlyList<T> items)
+    {
+        target.Clear();
+
+        foreach (var item in items)
+        {
+            target.Add(item);
+        }
+    }
 
     private int CalculateAge(DateOnly dateOfBirth)
     {

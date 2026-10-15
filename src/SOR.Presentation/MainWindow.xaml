@@ -546,8 +546,8 @@
                     </Grid>
                 </TabItem>
 
-                <!-- ===================== FORMULARZ LEKÓW I PAKIETY ===================== -->
-                <TabItem Header="Formularz i pakiety">
+                <!-- ===================== FORMULARZ LEKÓW ===================== -->
+                <TabItem Header="Formularz leków">
                     <Grid Margin="8">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="2*" />
@@ -555,11 +555,9 @@
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
 
-                        <!-- Kolumna 1: formularz leków + pakiety -->
+                        <!-- Kolumna 1: formularz leków -->
                         <Grid Grid.Column="0">
                             <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="*" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="*" />
                             </Grid.RowDefinitions>
@@ -619,44 +617,13 @@
                                                Text="{Binding DataContext.Catalog.SelectedMedicationWarnings, RelativeSource={RelativeSource AncestorType=Window}}" />
                                 </StackPanel>
                             </Grid>
-
-                            <TextBlock Grid.Row="2" Text="Pakiety medyczne" Style="{StaticResource SectionHeader}" />
-                            <Grid Grid.Row="3">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="2*" />
-                                    <ColumnDefinition Width="*" />
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-
-                                <DockPanel Grid.Row="0" Grid.ColumnSpan="2">
-                                    <Button DockPanel.Dock="Right" Content="Szukaj"
-                                            Command="{Binding Catalog.SearchBundlesCommand}" MinWidth="90" />
-                                    <TextBox Text="{Binding Catalog.BundleTerm, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="0,0,8,0" />
-                                </DockPanel>
-
-                                <ListBox Grid.Row="1" Grid.Column="0" Margin="0,4,8,0"
-                                         MinHeight="120" ItemsSource="{Binding Catalog.Bundles}"
-                                         SelectedItem="{Binding Catalog.SelectedBundle}"
-                                         DisplayMemberPath="Name" />
-
-                                <DockPanel Grid.Row="1" Grid.Column="1">
-                                    <Button Content="Zastosuj pakiet" DockPanel.Dock="Top"
-                                            Command="{Binding Catalog.ApplyBundleCommand}" />
-                                    <ListBox ItemsSource="{Binding Catalog.SelectedBundle.Items}"
-                                             DisplayMemberPath="Description" />
-                                </DockPanel>
-                            </Grid>
                         </Grid>
 
                         <!-- Kolumna 2: selektor -->
                         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"
                                       Background="{DynamicResource SurfaceBorderBrush}" />
 
-                        <!-- Kolumna 3: zlecenie/podanie leku oraz rozpoznania ICD-10 -->
+                        <!-- Kolumna 3: zlecenie i podanie leku -->
                         <ScrollViewer Grid.Column="2" VerticalScrollBarVisibility="Auto">
                             <StackPanel Margin="8,0,0,0">
                                 <TextBlock Text="Zlecenie i podanie leku" Style="{StaticResource SectionHeader}" />

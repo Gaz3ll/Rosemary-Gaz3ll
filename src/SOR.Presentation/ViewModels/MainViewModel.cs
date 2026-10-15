@@ -104,7 +104,7 @@ public sealed class MainViewModel : ObservableObject
     /// <summary>Pulpit strefy: rejestracja, triage, karta pacjenta, obciążenie (BR-03/BR-06).</summary>
     public PatientBoardViewModel Board { get; }
 
-    /// <summary>Formularz leków, pakiety medyczne i katalog rozpoznań ICD-10.</summary>
+    /// <summary>Formularz leków oddziału: wyszukanie preparatu, zlecenie i podanie leku.</summary>
     public MedicationCatalogViewModel Catalog { get; }
 
     /// <summary>Lista pobytów: jednostka organizacyjna, wyszukiwarka, zakres dat, filtry i tabela danych.</summary>

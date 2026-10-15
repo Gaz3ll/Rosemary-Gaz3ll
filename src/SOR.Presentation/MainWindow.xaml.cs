@@ -77,8 +77,8 @@ public partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Po zalogowaniu ładuje formularz leków, pakiety i katalog rozpoznań. Dane referencyjne
-    /// nie są pobierane przed uzyskaniem sesji, aby nie zapełniać list cudzymi danymi.
+    /// Po zalogowaniu ładuje formularz leków. Dane referencyjne nie są pobierane przed
+    /// uzyskaniem sesji, aby nie zapełniać list cudzymi danymi.
     /// </summary>
     private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
     {

@@ -24,23 +24,36 @@ public sealed class PatientHistoryDialogService : IPatientHistoryDialogService
     private readonly IPatientService _patientService;
     private readonly IClock _clock;
     private readonly IDepartmentCatalogService _departmentCatalog;
+    private readonly IMedicalBundleService _bundleService;
+    private readonly IIcd10CatalogService _icd10Catalog;
     private readonly SessionViewModel _session;
 
     public PatientHistoryDialogService(
         IPatientService patientService,
         IClock clock,
         IDepartmentCatalogService departmentCatalog,
+        IMedicalBundleService bundleService,
+        IIcd10CatalogService icd10Catalog,
         SessionViewModel session)
     {
         _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _departmentCatalog = departmentCatalog ?? throw new ArgumentNullException(nameof(departmentCatalog));
+        _bundleService = bundleService ?? throw new ArgumentNullException(nameof(bundleService));
+        _icd10Catalog = icd10Catalog ?? throw new ArgumentNullException(nameof(icd10Catalog));
         _session = session ?? throw new ArgumentNullException(nameof(session));
     }
 
     public async Task<bool> ShowAsync(Guid patientId)
     {
-        var viewModel = new PatientHistoryViewModel(_patientService, _clock, _departmentCatalog, _session);
+        var viewModel = new PatientHistoryViewModel(
+            _patientService,
+            _clock,
+            _departmentCatalog,
+            _bundleService,
+            _icd10Catalog,
+            _session);
+
         await viewModel.LoadAsync(patientId).ConfigureAwait(true);
 
         // Dopiero po wczytaniu danych okno trafia na ekran — nie mruga pustymi sekcjami.

@@ -88,10 +88,13 @@ Uprawnienia ratownika medycznego (BR-13):
 - **`PatientStayListViewModel`** — ekran po zalogowaniu: jednostka organizacyjna i wyszukiwarka,
   zakres dat z nawigacją krokową, filtry statusowe, wiersze tabeli, raport z dyżuru i badania
   obrazowe (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
-- **`MedicationCatalogViewModel`** — katalog leków, pakiety medyczne i formularz zleceń.
+- **`MedicationCatalogViewModel`** — formularz leków oddziału: wyszukanie preparatu oraz złożenie
+  zlecenia lub odnotowanie podania na karcie pacjenta. Pakiety medyczne i katalog rozpoznań ICD-10
+  przeniesiono do okna „Historia pobytu".
 - **`PatientHistoryViewModel`** — okno „Historia pobytu": podgląd przebiegu pobytu (dane przyjęcia,
   oceny Triage, przeniesienia, zlecenia, leki, wypisy) oraz **jedyne** miejsce zlecania procedur,
-  badań, konsultacji i leków, ustawiania rozpoznania ICD-10 i wypisu pacjenta; otwierane przez
+  badań, konsultacji i leków, stosowania pakietów medycznych, wyboru rozpoznania ICD-10 z katalogu
+  (z wyszukiwaniem po kodzie i nazwie) i wypisu pacjenta; otwierane przez
   `IPatientHistoryDialogService` z listy pobytów i pulpitu strefy (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
 - **`MainWindow.xaml`** — ekran logowania oraz ekran roboczy opisany w [rozdziale 7](#7-ekran-po-zalogowaniu).
   Konwertery `BooleanToVisibilityConverter`, `InverseBooleanToVisibilityConverter`,
@@ -270,7 +273,7 @@ interfejsu) przełączane przez `WorkspaceSection` w `MainViewModel`:
 |---|---|---|
 | **PRZYJĘCIA** (domyślna) | tabela pobytów, raport z dyżuru, badania obrazowe | zakładka modułu, menu `Moduły`, pasek ikon |
 | **PORADNIA** | ekran informacyjny — modułu brak w modelu domenowym | zakładka modułu, menu `Moduły` |
-| **INNE** | dotychczasowy pulpit strefy (trzy kolumny) oraz zakładka „Formularz i pakiety” | zakładka modułu, menu `Moduły` |
+| **INNE** | dotychczasowy pulpit strefy (trzy kolumny) oraz zakładka „Formularz leków” | zakładka modułu, menu `Moduły` |
 
 | Poziom | Zawartość |
 |---|---|
@@ -356,20 +359,22 @@ i na pulpicie strefy (kolejka Triage oraz lista pacjentów strefy) — otwiera m
 | Procedury i badania | zlecenia wg typu (`MedicalOrderType`), opis, stan realizacji, pilność, czas wykonania |
 | Podane leki | preparat, dawka, droga podania, czas, uwagi |
 | Wypisy z SOR | sposób zakończenia pobytu (`DischargeType`), oddział, uzasadnienie, osoba rejestrująca |
-| Akcje | formularz nowego zlecenia (typ, opis, pilność), przycisk **Wykonane** przy zleceniu, rozpoznanie ICD-10 oraz wypis pacjenta — widoczne zależnie od uprawnień (`CanIssueOrders`, `CanExecuteOrders`, `CanEnterDiagnosis`, `CanDischargePatient`) |
+| Akcje | formularz nowego zlecenia (typ, opis, pilność), przycisk **Wykonane** przy zleceniu, lista pakietów medycznych z wyszukiwaniem i przyciskiem **Zastosuj pakiet**, lista rozpoznań ICD-10 z wyszukiwaniem po kodzie i nazwie, a także wypis pacjenta — widoczne zależnie od uprawnień (`CanIssueOrders`, `CanExecuteOrders`, `CanEnterDiagnosis`, `CanDischargePatient`) |
 
 Dane pobiera `IPatientService.GetPatientAsync` przez `PatientRepository.GetByIdAsync`, który
 dołącza `TriageHistory` i `Discharges` (bez tych `Include` historia ocen i wypisów byłaby pusta).
 Warstwę widoku tworzy `PatientHistoryViewModel` — oprócz podglądu udostępnia formularze zlecenia,
-rozpoznania ICD-10 i wypisu (z listą oddziałów z `IDepartmentCatalogService`) oraz przycisk
-**Wykonane** przy zleceniach; zapis wykonują metody `IPatientService` (każda commituje samodzielnie),
-a `IPatientHistoryDialogService.ShowAsync` zwraca `true`, gdy dane uległy zmianie, dzięki czemu
-lista pacjentów odświeża się po zamknięciu okna. Okno otwiera
-`IPatientHistoryDialogService` — dzięki temu listy pacjentów nie tworzą okien bezpośrednio i
-pozostają testowalne. Zdarzenie dwukliku obsługuje `MainWindow.xaml.cs` (`MouseDoubleClick`),
-ponieważ `DataGrid` nie udostępnia wiązania wyzwalanego dwuklikiem; kliknięcia nagłówka i paska
-przewijania są ignorowane (wykrywanie wiersza przez `VisualTreeHelper`). Każda kolumna daty ma
-własność `*Display` w formacie `dd.MM.yyyy HH:mm` (strefa lokalna).
+wyboru rozpoznania ICD-10, zastosowania pakietu i wypisu. Pakiety pobiera `IMedicalBundleService`
+(`GetAllAsync`/`SearchAsync`), a rozpoznania i ich zapis `IIcd10CatalogService`
+(`GetEmergencyRelevantAsync`/`SearchAsync`/`AssignAsync` — wyszukiwanie obejmuje kod i opis);
+listę oddziałów dostarcza `IDepartmentCatalogService`. Zapis wykonują metody serwisów
+aplikacyjnych (każda commituje samodzielnie), a `IPatientHistoryDialogService.ShowAsync` zwraca
+`true`, gdy dane uległy zmianie, dzięki czemu lista pacjentów odświeża się po zamknięciu okna.
+Okno otwiera `IPatientHistoryDialogService` — dzięki temu listy pacjentów nie tworzą okien
+bezpośrednio i pozostają testowalne. Zdarzenie dwukliku obsługuje `MainWindow.xaml.cs`
+(`MouseDoubleClick`), ponieważ `DataGrid` nie udostępnia wiązania wyzwalanego dwuklikiem;
+kliknięcia nagłówka i paska przewijania są ignorowane (wykrywanie wiersza przez `VisualTreeHelper`).
+Każda kolumna daty ma własność `*Display` w formacie `dd.MM.yyyy HH:mm` (strefa lokalna).
 
 ## 9. Motyw kolorystyczny i tryb ciemny
 
@@ -473,10 +478,11 @@ sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `Com
 - Zaktualizowano etykiety, tooltipy i `AutomationProperties.Name` w `MainWindow.xaml` oraz nazwę
   komendy na `ShowKmcrCommand` w `MainViewModel` wraz z komunikatem modułu.
 
-**„Inne → Formularz i pakiety”:**
+**„Inne → Formularz leków”:**
 - Lewa kolumna opakowana w `ScrollViewer`, dostosowano rozkład wierszy w celu uniknięcia nakładania
   i obcinania sekcji.
-- Dodano `MinHeight="140"` dla `DataGrid` formularza leków oraz `MinHeight="120"` dla `ListBox`
-  pakietów medycznych.
+- Dodano `MinHeight="140"` dla `DataGrid` formularza leków.
 - `ComboBox` „Grupa Terapeutyczna” używa jawnego `ItemTemplate` (`TextBlock Text="{Binding Label}"`)
   zamiast `DisplayMemberPath`.
+- Pakiety medyczne i katalog rozpoznań ICD-10 usunięto z tej zakładki i przeniesiono do okna
+  „Historia pobytu”; zakładkę przemianowano z „Formularz i pakiety” na „Formularz leków”.

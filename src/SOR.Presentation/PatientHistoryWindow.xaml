@@ -81,9 +81,53 @@
                                 IsEnabled="{Binding CanIssueOrders}"
                                 Command="{Binding AddOrderCommand}" />
 
+                        <TextBlock Text="Pakiety medyczne" Style="{StaticResource SectionHeader}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Szukaj" MinWidth="90"
+                                    Command="{Binding SearchBundlesCommand}" />
+                            <TextBox Text="{Binding BundleTerm, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,8,0" />
+                        </DockPanel>
+                        <Grid Margin="0,4,0,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*" />
+                                <ColumnDefinition Width="8" />
+                                <ColumnDefinition Width="*" />
+                            </Grid.ColumnDefinitions>
+                            <ListBox Grid.Column="0" Height="120"
+                                     ItemsSource="{Binding Bundles, Mode=OneWay}"
+                                     SelectedItem="{Binding SelectedBundle}"
+                                     DisplayMemberPath="Name" />
+                            <DockPanel Grid.Column="2">
+                                <Button DockPanel.Dock="Top" Content="Zastosuj pakiet" MinWidth="140"
+                                        HorizontalAlignment="Left"
+                                        IsEnabled="{Binding CanIssueOrders}"
+                                        Command="{Binding ApplyBundleCommand}" />
+                                <ListBox ItemsSource="{Binding SelectedBundle.Items, Mode=OneWay}"
+                                         DisplayMemberPath="Description" />
+                            </DockPanel>
+                        </Grid>
+
                         <TextBlock Text="Rozpoznanie ICD-10 (BR-13)" Style="{StaticResource SectionHeader}" />
-                        <TextBox Text="{Binding Icd10Code, UpdateSourceTrigger=PropertyChanged}"
-                                 IsEnabled="{Binding CanEnterDiagnosis}" />
+                        <DockPanel>
+                            <Button DockPanel.Dock="Right" Content="Szukaj" MinWidth="90"
+                                    Command="{Binding SearchDiagnosesCommand}" />
+                            <TextBox Text="{Binding Icd10Term, UpdateSourceTrigger=PropertyChanged}"
+                                     Margin="0,0,8,0" />
+                        </DockPanel>
+                        <DataGrid ItemsSource="{Binding Diagnoses, Mode=OneWay}" Height="140"
+                                  SelectedItem="{Binding SelectedDiagnosis}"
+                                  AutoGenerateColumns="False" IsReadOnly="True"
+                                  CanUserAddRows="False" CanUserDeleteRows="False"
+                                  HeadersVisibility="Column" FontSize="12" Margin="0,4,0,0">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Kod" Binding="{Binding Code, Mode=OneWay}" Width="90" />
+                                <DataGridTextColumn Header="Rozpoznanie" Binding="{Binding Description, Mode=OneWay}" Width="*" />
+                                <DataGridTextColumn Header="Rozdział" Binding="{Binding Chapter, Mode=OneWay}" Width="220" />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                        <TextBlock Style="{StaticResource FieldHint}" Margin="0,2,0,0"
+                                   Text="{Binding Icd10Code, StringFormat='Wybrany kod: {0}'}" />
                         <Button Content="Zapisz rozpoznanie" HorizontalAlignment="Left" MinWidth="150"
                                 IsEnabled="{Binding CanEnterDiagnosis}"
                                 Command="{Binding SetDiagnosisCommand}" />
