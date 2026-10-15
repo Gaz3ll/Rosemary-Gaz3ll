@@ -707,7 +707,14 @@ public sealed class PatientBoardViewModel : ObservableObject
 
         try
         {
-            await _historyDialog.ShowAsync(patient.Id).ConfigureAwait(true);
+            var changed = await _historyDialog.ShowAsync(patient.Id).ConfigureAwait(true);
+
+            // Zlecenia, rozpoznanie i wypis powstają wyłącznie w oknie historii, dlatego po
+            // jego zamknięciu odświeżamy pulpit, aby odzwierciedlić zmiany karty pacjenta.
+            if (changed)
+            {
+                await RefreshAsync().ConfigureAwait(true);
+            }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

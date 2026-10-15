@@ -82,15 +82,17 @@ Uprawnienia ratownika medycznego (BR-13):
   `MedicationCatalogViewModel` i `PatientStayListViewModel`), stan sekcji (`WorkspaceSection`),
   komendy paska ikon oraz etykiety `LOGIN NAZWISKO_IMIĘ (ROLA)` i `Strefa: …`.
 - **`SessionViewModel`** — logowanie, kontekst strefy, wniosek o zmianę strefy, rekomendacje rotacji.
-- **`PatientBoardViewModel`** — rejestracja, Triage, kolejki pacjentów, karta pacjenta, zlecenia,
-  rozpoznanie, blokada i zamknięcie karty, obciążenie strefy.
+- **`PatientBoardViewModel`** — rejestracja, Triage, kolejki pacjentów, karta pacjenta (tożsamość,
+  lista podanych leków, operacje blokady i zamknięcia karty), obciążenie strefy. Zlecanie procedur,
+  badań i konsultacji, rozpoznanie ICD-10 oraz wypis przeniesiono do okna „Historia pobytu".
 - **`PatientStayListViewModel`** — ekran po zalogowaniu: jednostka organizacyjna i wyszukiwarka,
   zakres dat z nawigacją krokową, filtry statusowe, wiersze tabeli, raport z dyżuru i badania
   obrazowe (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
 - **`MedicationCatalogViewModel`** — katalog leków, pakiety medyczne i formularz zleceń.
-- **`PatientHistoryViewModel`** — widok tylko do odczytu okna „Historia pobytu" (dane przyjęcia,
-  oceny Triage, przeniesienia, zlecenia, leki, wypisy); otwierany przez `IPatientHistoryDialogService`
-  z listy pobytów i pulpitu strefy (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
+- **`PatientHistoryViewModel`** — okno „Historia pobytu": podgląd przebiegu pobytu (dane przyjęcia,
+  oceny Triage, przeniesienia, zlecenia, leki, wypisy) oraz **jedyne** miejsce zlecania procedur,
+  badań, konsultacji i leków, ustawiania rozpoznania ICD-10 i wypisu pacjenta; otwierane przez
+  `IPatientHistoryDialogService` z listy pobytów i pulpitu strefy (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
 - **`MainWindow.xaml`** — ekran logowania oraz ekran roboczy opisany w [rozdziale 7](#7-ekran-po-zalogowaniu).
   Konwertery `BooleanToVisibilityConverter`, `InverseBooleanToVisibilityConverter`,
   `StringToVisibilityConverter`, `PolishEnumConverter` i `EnumEqualsConverter` utrzymują widok
@@ -233,16 +235,18 @@ Pozostałe grupy: `CatalogDomainTests` (10), `CatalogWorkflowTests` (6),
 1. Uruchom aplikację i zaloguj się jako `lekarz.trm` / `SOR2026!trm` — strefa to TRM (z grafiku).
 2. Wprowadź wniosek o zmianę strefy na EMG z przyczyną „Napływ pacjentów urazowych”.
 3. Zarejestruj pacjenta (PESEL 11 cyfr), wykonaj Triage np. `Red` — pacjent trafia do Części ratunkowej.
-4. Otwórz kartę pacjenta: dodaj zlecenie, ustaw rozpoznanie ICD-10 (`I21.4`).
-5. Spróbuj wypisać pacjenta — przy **zakończeniu leczenia** system zgłosi blokadę (brak otwartych
-   zleceń), a przy **przekazaniu na inny oddział** dodatkowo wymusi wybór oddziału i uzasadnienia.
+4. Otwórz kartę pacjenta dwukrotnym kliknięciem wiersza — okno **„Historia pobytu"** jest jedynym
+   miejscem akcji: dodaj zlecenie (typ, opis, pilność) i ustaw rozpoznanie ICD-10 (`I21.4`).
+5. Spróbuj wypisać pacjenta w tym samym oknie — przy **zakończeniu leczenia** system zgłosi blokadę
+   (brak otwartych zleceń), a przy **przekazaniu na inny oddział** dodatkowo wymusi wybór oddziału
+   i uzasadnienia.
 6. Wybierz scenariusz wypisu i zatwierdź przyciskiem **Wypisz pacjenta z SOR** — karta zmienia stan
    na „Wypisany z SOR” (przekazanie: „Przekazany na inny oddział”), a wpis trafia do historii wypisów.
 7. Zaloguj się jako `ordynator`, aby zobaczyć wszystkie strefy i zlecić rotację innemu pracownikowi.
-8. Zaloguj się jako `ratownik.trm` / `SOR2026!rtrm` — otwórz kartę pacjenta i oznacz zlecenie
+8. Zaloguj się jako `ratownik.trm` / `SOR2026!rtrm` — w oknie historii oznacz zlecenie
    podania leku lub badania obrazowego przyciskiem **Wykonane**; zlecenie laboratoryjne,
-   zabiegu i konsultacji pozostaje niedostępne, formularz dodawania zlecenia oraz przycisk
-   wypisu są zablokowane.
+   zabiegu i konsultacji pozostaje niedostępne, a formularz dodawania zlecenia oraz przycisk
+   wypisu i rozpoznania są zablokowane.
 
 ### Wypis pacjenta z SOR (BR-11)
 
@@ -352,10 +356,15 @@ i na pulpicie strefy (kolejka Triage oraz lista pacjentów strefy) — otwiera m
 | Procedury i badania | zlecenia wg typu (`MedicalOrderType`), opis, stan realizacji, pilność, czas wykonania |
 | Podane leki | preparat, dawka, droga podania, czas, uwagi |
 | Wypisy z SOR | sposób zakończenia pobytu (`DischargeType`), oddział, uzasadnienie, osoba rejestrująca |
+| Akcje | formularz nowego zlecenia (typ, opis, pilność), przycisk **Wykonane** przy zleceniu, rozpoznanie ICD-10 oraz wypis pacjenta — widoczne zależnie od uprawnień (`CanIssueOrders`, `CanExecuteOrders`, `CanEnterDiagnosis`, `CanDischargePatient`) |
 
 Dane pobiera `IPatientService.GetPatientAsync` przez `PatientRepository.GetByIdAsync`, który
 dołącza `TriageHistory` i `Discharges` (bez tych `Include` historia ocen i wypisów byłaby pusta).
-Warstwę widoku tworzy `PatientHistoryViewModel` (tylko do odczytu), a okno otwiera
+Warstwę widoku tworzy `PatientHistoryViewModel` — oprócz podglądu udostępnia formularze zlecenia,
+rozpoznania ICD-10 i wypisu (z listą oddziałów z `IDepartmentCatalogService`) oraz przycisk
+**Wykonane** przy zleceniach; zapis wykonują metody `IPatientService` (każda commituje samodzielnie),
+a `IPatientHistoryDialogService.ShowAsync` zwraca `true`, gdy dane uległy zmianie, dzięki czemu
+lista pacjentów odświeża się po zamknięciu okna. Okno otwiera
 `IPatientHistoryDialogService` — dzięki temu listy pacjentów nie tworzą okien bezpośrednio i
 pozostają testowalne. Zdarzenie dwukliku obsługuje `MainWindow.xaml.cs` (`MouseDoubleClick`),
 ponieważ `DataGrid` nie udostępnia wiązania wyzwalanego dwuklikiem; kliknięcia nagłówka i paska

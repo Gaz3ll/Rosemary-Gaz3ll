@@ -332,7 +332,14 @@ public sealed class PatientStayListViewModel : ObservableObject
 
         try
         {
-            await _historyDialog.ShowAsync(stay.PatientId).ConfigureAwait(true);
+            var changed = await _historyDialog.ShowAsync(stay.PatientId).ConfigureAwait(true);
+
+            // Zmiany wprowadzone w oknie historii (zlecenia, rozpoznanie, wypis) wymagają
+            // ponownego wczytania listy pobytów.
+            if (changed)
+            {
+                await RefreshAsync().ConfigureAwait(true);
+            }
         }
         catch (Exception exception) when (exception is not OperationCanceledException)
         {

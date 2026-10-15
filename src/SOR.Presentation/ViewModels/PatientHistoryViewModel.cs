@@ -1,8 +1,11 @@
+using System.Collections.ObjectModel;
 using SOR.Application.DTOs;
 using SOR.Application.Interfaces;
 using SOR.Domain.Common;
+using SOR.Domain.Enums;
 using SOR.Presentation.Converters;
 using SOR.Presentation.Mvvm;
+using SOR.Presentation.Services;
 
 namespace SOR.Presentation.ViewModels;
 
@@ -10,19 +13,52 @@ namespace SOR.Presentation.ViewModels;
 /// ViewModel okna „Historia pobytu” otwieranego dwukrotnym kliknięciem wiersza pacjenta.
 /// Pokazuje pełny przebieg pobytu w SOR: dane przyjęcia, kolejne oceny Triage, przeniesienia
 /// między strefami, zlecenia (procedury i badania) wraz ze stanem realizacji, podane leki
-/// oraz wypisy. Widok jest wyłącznie do odczytu — nie zawiera operacji zmieniających kartę.
+/// oraz wypisy. Okno jest jedynym miejscem, w którym zleca się procedury, badania i konsultacje,
+/// wprowadza rozpoznanie ICD-10 oraz rejestruje wypis pacjenta z SOR.
 /// </summary>
 public sealed class PatientHistoryViewModel : ObservableObject
 {
     private readonly IPatientService _patientService;
     private readonly IClock _clock;
+    private readonly IDepartmentCatalogService _departmentCatalog;
+    private readonly SessionViewModel _session;
 
     private PatientDetailsDto? _details;
+    private bool _isBusy;
+    private string _statusMessage = string.Empty;
+    private bool _hasChanges;
 
-    public PatientHistoryViewModel(IPatientService patientService, IClock clock)
+    // Dane formularza nowego zlecenia.
+    private MedicalOrderType _orderType = MedicalOrderType.Consultation;
+    private string _orderDescription = string.Empty;
+    private bool _orderUrgent;
+    private string _icd10Code = string.Empty;
+
+    // Dane formularza wypisu.
+    private DischargeType _dischargeType = DischargeType.TreatmentCompleted;
+    private DepartmentDto? _selectedDepartment;
+    private string _dischargeReason = string.Empty;
+
+    public PatientHistoryViewModel(
+        IPatientService patientService,
+        IClock clock,
+        IDepartmentCatalogService departmentCatalog,
+        SessionViewModel session)
     {
         _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
+        _departmentCatalog = departmentCatalog ?? throw new ArgumentNullException(nameof(departmentCatalog));
+        _session = session ?? throw new ArgumentNullException(nameof(session));
+
+        AddOrderCommand = new AsyncRelayCommand(AddOrderAsync, () => !_isBusy && CanIssueOrders);
+        CompleteOrderCommand = new AsyncRelayCommand(
+            CompleteOrderAsync,
+            parameter => !_isBusy && CanCompleteOrder(parameter as MedicalOrderDto));
+        SetDiagnosisCommand = new AsyncRelayCommand(SetDiagnosisAsync, () => !_isBusy && CanEnterDiagnosis);
+        DischargeCommand = new AsyncRelayCommand(DischargeAsync, () => !_isBusy && CanDischargePatient);
+
+        OrderTypes = Enum.GetValues<MedicalOrderType>();
+        DischargeTypes = Enum.GetValues<DischargeType>();
     }
 
     /// <summary>Pełne dane karty pacjenta; źródło wszystkich sekcji historii.</summary>
@@ -49,7 +85,16 @@ public sealed class PatientHistoryViewModel : ObservableObject
             OnPropertyChanged(nameof(AdministrationsSectionHeader));
             OnPropertyChanged(nameof(DischargesSectionHeader));
             OnPropertyChanged(nameof(HasDischargeBlockers));
+            OnPropertyChanged(nameof(CanDischargePatient));
+            DischargeCommand.RaiseCanExecuteChanged();
         }
+    }
+
+    /// <summary>Czy podczas pracy z oknem zmieniono kartę pacjenta (zlecenie, rozpoznanie, wypis).</summary>
+    public bool HasChanges
+    {
+        get => _hasChanges;
+        private set => SetProperty(ref _hasChanges, value);
     }
 
     /// <summary>Tytuł okna wraz z nazwiskiem pacjenta.</summary>
@@ -105,12 +150,330 @@ public sealed class PatientHistoryViewModel : ObservableObject
     /// <summary>Czy karta ma warunki blokujące wypis — decyduje o pokazaniu listy blokad.</summary>
     public bool HasDischargeBlockers => _details?.DischargeBlockers.Count > 0;
 
-    /// <summary>Wczytuje pełną historię pobytu wskazanego pacjenta.</summary>
+    /// <summary>BR-13: zlecenie lekarskie wystawia wyłącznie lekarz lub koordynator.</summary>
+    public bool CanIssueOrders => _session.CurrentUser?.CanIssueOrders == true;
+
+    /// <summary>BR-13: rozpoznanie ICD-10 wprowadza wyłącznie lekarz lub koordynator.</summary>
+    public bool CanEnterDiagnosis => _session.CurrentUser?.CanEnterDiagnosis == true;
+
+    /// <summary>BR-11/BR-13: wypis pacjenta rejestruje wyłącznie lekarz lub koordynator.</summary>
+    public bool CanDischargePatient =>
+        _session.CurrentUser?.CanDischargePatient == true && _details is not null;
+
+    /// <summary>Typy zleceń dostępne w formularzu (procedury, badania, konsultacje, leki, obserwacje).</summary>
+    public IReadOnlyList<MedicalOrderType> OrderTypes { get; }
+
+    /// <summary>Sposoby zakończenia pobytu dostępne w formularzu wypisu (BR-11).</summary>
+    public IReadOnlyList<DischargeType> DischargeTypes { get; }
+
+    /// <summary>Oddziały szpitalne dostępne jako cel przekazania pacjenta.</summary>
+    public ObservableCollection<DepartmentDto> Departments { get; } = new();
+
+    public MedicalOrderType OrderType
+    {
+        get => _orderType;
+        set => SetProperty(ref _orderType, value);
+    }
+
+    public string OrderDescription
+    {
+        get => _orderDescription;
+        set => SetProperty(ref _orderDescription, value);
+    }
+
+    public bool OrderUrgent
+    {
+        get => _orderUrgent;
+        set => SetProperty(ref _orderUrgent, value);
+    }
+
+    public string Icd10Code
+    {
+        get => _icd10Code;
+        set => SetProperty(ref _icd10Code, value);
+    }
+
+    /// <summary>Sposób zakończenia pobytu wybrany w formularzu wypisu (BR-11).</summary>
+    public DischargeType DischargeType
+    {
+        get => _dischargeType;
+        set
+        {
+            if (SetProperty(ref _dischargeType, value))
+            {
+                OnPropertyChanged(nameof(IsDepartmentRequired));
+                OnPropertyChanged(nameof(IsReasonRequired));
+            }
+        }
+    }
+
+    /// <summary>Oddział przyjmujący — pole obowiązkowe wyłącznie przy przekazaniu pacjenta.</summary>
+    public DepartmentDto? SelectedDepartment
+    {
+        get => _selectedDepartment;
+        set => SetProperty(ref _selectedDepartment, value);
+    }
+
+    /// <summary>Uzasadnienie wypisu — wymagane przy wypisie na własne żądanie i przy przekazaniu.</summary>
+    public string DischargeReason
+    {
+        get => _dischargeReason;
+        set => SetProperty(ref _dischargeReason, value);
+    }
+
+    /// <summary>Czy dla wybranego scenariusza trzeba wskazać oddział przyjmujący.</summary>
+    public bool IsDepartmentRequired => _dischargeType == DischargeType.TransferToDepartment;
+
+    /// <summary>Czy dla wybranego scenariusza trzeba podać uzasadnienie.</summary>
+    public bool IsReasonRequired => _dischargeType != DischargeType.TreatmentCompleted;
+
+    public bool IsBusy
+    {
+        get => _isBusy;
+        private set
+        {
+            if (!SetProperty(ref _isBusy, value))
+            {
+                return;
+            }
+
+            AddOrderCommand.RaiseCanExecuteChanged();
+            CompleteOrderCommand.RaiseCanExecuteChanged();
+            SetDiagnosisCommand.RaiseCanExecuteChanged();
+            DischargeCommand.RaiseCanExecuteChanged();
+        }
+    }
+
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        private set => SetProperty(ref _statusMessage, value);
+    }
+
+    /// <summary>Dodaje zlecenie lekarskie (procedura, badanie, konsultacja, lek, obserwacja).</summary>
+    public AsyncRelayCommand AddOrderCommand { get; }
+
+    /// <summary>Oznacza wskazane zlecenie jako zrealizowane (BR-13).</summary>
+    public AsyncRelayCommand CompleteOrderCommand { get; }
+
+    /// <summary>Ustawia rozpoznanie ICD-10 (tylko lekarz lub koordynator).</summary>
+    public AsyncRelayCommand SetDiagnosisCommand { get; }
+
+    /// <summary>Rejestruje wypis pacjenta z SOR (BR-11).</summary>
+    public AsyncRelayCommand DischargeCommand { get; }
+
+    /// <summary>Wczytuje pełną historię pobytu wskazanego pacjenta oraz oddziały do formularza wypisu.</summary>
     public async Task LoadAsync(Guid patientId)
     {
         var details = await _patientService.GetPatientAsync(patientId).ConfigureAwait(true);
         Details = details;
+
+        await LoadDepartmentsAsync().ConfigureAwait(true);
     }
+
+    private async Task LoadDepartmentsAsync()
+    {
+        try
+        {
+            var departments = await _departmentCatalog.GetAllAsync().ConfigureAwait(true);
+
+            Departments.Clear();
+
+            foreach (var department in departments)
+            {
+                Departments.Add(department);
+            }
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+    }
+
+    private async Task AddOrderAsync()
+    {
+        if (_details is null || _isBusy)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_orderDescription))
+        {
+            StatusMessage = "Opis zlecenia jest wymagany.";
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var patient = await _patientService.AddOrderAsync(
+                _details.Id,
+                _orderType,
+                _orderDescription.Trim(),
+                _orderUrgent,
+                CancellationToken.None).ConfigureAwait(true);
+
+            Details = patient;
+            HasChanges = true;
+
+            OrderDescription = string.Empty;
+            OrderUrgent = false;
+            StatusMessage = "Zapisano zlecenie.";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// BR-13: zlecenie może oznaczyć jako zrealizowane lekarz lub koordynator, a ratownik
+    /// medyczny dodatkowo zlecenie podania leku oraz badania obrazowego. Zlecenia innych
+    /// typów (konsultacje, zabiegi, obserwacje) pozostają w gestii lekarza.
+    /// </summary>
+    private bool CanCompleteOrder(MedicalOrderDto? order)
+    {
+        var user = _session.CurrentUser;
+
+        if (user is null || order is null || !user.CanExecuteOrders)
+        {
+            return false;
+        }
+
+        var isOpen = order.State is MedicalOrderState.Open or MedicalOrderState.InProgress;
+
+        if (!isOpen)
+        {
+            return false;
+        }
+
+        return user.Role is not UserRole.Paramedic ||
+               order.Type is MedicalOrderType.Medication or MedicalOrderType.Imaging;
+    }
+
+    private async Task CompleteOrderAsync(object? parameter)
+    {
+        if (parameter is not MedicalOrderDto order || _details is null || _isBusy)
+        {
+            return;
+        }
+
+        if (!_details.Orders.Any(item => item.Id == order.Id))
+        {
+            StatusMessage = "Zlecenie dotyczy innej karty pacjenta.";
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var patient = await _patientService.ChangeOrderStateAsync(
+                order.Id,
+                MedicalOrderState.Completed,
+                reason: null,
+                CancellationToken.None).ConfigureAwait(true);
+
+            Details = patient;
+            HasChanges = true;
+            StatusMessage = $"Zlecenie „{order.Description}” oznaczone jako zrealizowane.";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task SetDiagnosisAsync()
+    {
+        if (_details is null || _isBusy)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_icd10Code))
+        {
+            StatusMessage = "Kod rozpoznania jest wymagany.";
+            return;
+        }
+
+        IsBusy = true;
+
+        try
+        {
+            var patient = await _patientService
+                .SetDiagnosisAsync(_details.Id, _icd10Code.Trim(), CancellationToken.None)
+                .ConfigureAwait(true);
+
+            Details = patient;
+            HasChanges = true;
+
+            Icd10Code = string.Empty;
+            StatusMessage = "Zapisano rozpoznanie.";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private async Task DischargeAsync()
+    {
+        if (_details is null || _isBusy)
+        {
+            return;
+        }
+
+        var type = _dischargeType;
+        var departmentId = IsDepartmentRequired ? _selectedDepartment?.Id : null;
+        var reason = string.IsNullOrWhiteSpace(_dischargeReason) ? null : _dischargeReason.Trim();
+
+        IsBusy = true;
+
+        try
+        {
+            var patient = await _patientService.DischargePatientAsync(
+                _details.Id,
+                type,
+                departmentId,
+                reason,
+                CancellationToken.None).ConfigureAwait(true);
+
+            Details = patient;
+            HasChanges = true;
+
+            DischargeReason = string.Empty;
+            StatusMessage = $"Wypisano pacjenta z SOR ({DescribeDischargeType(type)}).";
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static string DescribeDischargeType(DischargeType type) => type switch
+    {
+        DischargeType.AtPatientRequest => "wypis na własne żądanie",
+        DischargeType.TransferToDepartment => "przekazanie na inny oddział",
+        _ => "zakończenie leczenia"
+    };
 
     private int CalculateAge(DateOnly dateOfBirth)
     {

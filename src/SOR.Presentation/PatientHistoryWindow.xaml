@@ -57,6 +57,61 @@
         <!-- Sekcje historii pobytu -->
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
             <StackPanel>
+                <!-- Akcje na karcie: jedyne miejsce zlecania procedur, badan i konsultacji,
+                     wprowadzania rozpoznania ICD-10 oraz rejestracji wypisu (BR-11/BR-13). -->
+                <Border Style="{StaticResource SurfaceCard}" Margin="0,0,0,8">
+                    <StackPanel>
+                        <TextBlock Text="Nowe zlecenie lekarskie" Style="{StaticResource SectionHeader}" />
+                        <ComboBox ItemsSource="{Binding OrderTypes, Mode=OneWay}"
+                                  SelectedItem="{Binding OrderType}"
+                                  IsEnabled="{Binding CanIssueOrders}"
+                                  Margin="0,2,0,2">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <TextBox Text="{Binding OrderDescription, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding CanIssueOrders}" />
+                        <CheckBox Content="Pilne" Margin="0,4"
+                                  IsChecked="{Binding OrderUrgent}"
+                                  IsEnabled="{Binding CanIssueOrders}" />
+                        <Button Content="Dodaj zlecenie" HorizontalAlignment="Left" MinWidth="150"
+                                IsEnabled="{Binding CanIssueOrders}"
+                                Command="{Binding AddOrderCommand}" />
+
+                        <TextBlock Text="Rozpoznanie ICD-10 (BR-13)" Style="{StaticResource SectionHeader}" />
+                        <TextBox Text="{Binding Icd10Code, UpdateSourceTrigger=PropertyChanged}"
+                                 IsEnabled="{Binding CanEnterDiagnosis}" />
+                        <Button Content="Zapisz rozpoznanie" HorizontalAlignment="Left" MinWidth="150"
+                                IsEnabled="{Binding CanEnterDiagnosis}"
+                                Command="{Binding SetDiagnosisCommand}" />
+
+                        <TextBlock Text="Wypis pacjenta z SOR (BR-11)" Style="{StaticResource SectionHeader}" />
+                        <ComboBox ItemsSource="{Binding DischargeTypes, Mode=OneWay}"
+                                  SelectedItem="{Binding DischargeType}"
+                                  IsEnabled="{Binding CanDischargePatient}">
+                            <ComboBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
+                                </DataTemplate>
+                            </ComboBox.ItemTemplate>
+                        </ComboBox>
+                        <ComboBox ItemsSource="{Binding Departments, Mode=OneWay}"
+                                  DisplayMemberPath="Name"
+                                  SelectedItem="{Binding SelectedDepartment}"
+                                  Margin="0,2,0,0"
+                                  Visibility="{Binding IsDepartmentRequired, Converter={StaticResource BoolToVisibility}}" />
+                        <TextBox Text="{Binding DischargeReason, UpdateSourceTrigger=PropertyChanged}"
+                                 Margin="0,2,0,0"
+                                 Visibility="{Binding IsReasonRequired, Converter={StaticResource BoolToVisibility}}" />
+                        <Button Content="Wypisz pacjenta z SOR" HorizontalAlignment="Left" MinWidth="170"
+                                IsEnabled="{Binding CanDischargePatient}"
+                                Command="{Binding DischargeCommand}" />
+                    </StackPanel>
+                </Border>
+
                 <TextBlock Text="{Binding TriageSectionHeader, Mode=OneWay}" Style="{StaticResource SectionHeader}" />
                 <DataGrid ItemsSource="{Binding Details.TriageHistory, Mode=OneWay}" Height="120">
                     <DataGrid.Columns>
@@ -98,6 +153,15 @@
                         </DataGridTextColumn>
                         <DataGridCheckBoxColumn Header="Pilne" Binding="{Binding IsUrgent, Mode=OneWay}" Width="50" />
                         <DataGridTextColumn Header="Realizacja" Binding="{Binding CompletedAtDisplay, Mode=OneWay}" Width="130" />
+                        <DataGridTemplateColumn Header="Akcja" Width="110">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="Wykonane" MinWidth="0" Padding="8,3" Margin="0"
+                                            Command="{Binding DataContext.CompleteOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                            CommandParameter="{Binding}" />
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
                     </DataGrid.Columns>
                 </DataGrid>
 
@@ -133,9 +197,12 @@
             </StackPanel>
         </ScrollViewer>
 
-        <!-- Stopka: zamkniecie okna (Esc dziala, bo IsCancel=True) -->
+        <!-- Stopka: komunikat operacji i zamkniecie okna (Esc dziala, bo IsCancel=True) -->
         <DockPanel Grid.Row="2" Margin="0,10,0,0">
             <Button DockPanel.Dock="Right" Content="Zamknij" IsCancel="True" MinWidth="110" />
+            <TextBlock Text="{Binding StatusMessage, Mode=OneWay}" VerticalAlignment="Center"
+                       TextWrapping="Wrap" Margin="0,0,12,0"
+                       Foreground="{DynamicResource WarningBorderBrush}" />
         </DockPanel>
     </Grid>
 </Window>

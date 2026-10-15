@@ -518,70 +518,6 @@
                                             <Run Text="Rozpoznanie: " /><Run Text="{Binding Diagnosis, Mode=OneWay}" />
                                         </TextBlock>
 
-                                        <TextBlock Text="Warunki blokujące wypis (BR-11)" Style="{StaticResource SectionHeader}" />
-                                        <ItemsControl ItemsSource="{Binding DischargeBlockers}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding}" TextWrapping="Wrap"
-                                                               Foreground="{DynamicResource DangerBrush}" />
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
-
-                                        <TextBlock Text="Zlecenia lekarskie" Style="{StaticResource SectionHeader}" />
-                                        <DataGrid ItemsSource="{Binding Orders}" Height="140">
-                                            <DataGrid.Columns>
-                                                <DataGridTextColumn Header="Typ" Width="110">
-                                                    <DataGridTextColumn.Binding>
-                                                        <Binding Path="Type" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
-                                                    </DataGridTextColumn.Binding>
-                                                </DataGridTextColumn>
-                                                <DataGridTextColumn Header="Opis" Binding="{Binding Description, Mode=OneWay}" Width="*" />
-                                                <DataGridTextColumn Header="Stan" Width="95">
-                                                    <DataGridTextColumn.Binding>
-                                                        <Binding Path="State" Mode="OneWay" Converter="{StaticResource PolishEnum}" />
-                                                    </DataGridTextColumn.Binding>
-                                                </DataGridTextColumn>
-                                                <!-- Realizacja zlecenia: lekarz, koordynator oraz ratownik medyczny
-                                                     (dla zleceń leku i badania obrazowego) — BR-13. -->
-                                                <DataGridTemplateColumn Header="Realizacja" Width="110">
-                                                    <DataGridTemplateColumn.CellTemplate>
-                                                        <DataTemplate>
-                                                            <Button Content="Wykonane"
-                                                                    MinWidth="0"
-                                                                    Padding="8,3"
-                                                                    Margin="0"
-                                                                    Command="{Binding DataContext.Board.CompleteOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                                    CommandParameter="{Binding}" />
-                                                        </DataTemplate>
-                                                    </DataGridTemplateColumn.CellTemplate>
-                                                </DataGridTemplateColumn>
-                                            </DataGrid.Columns>
-                                        </DataGrid>
-
-                                        <TextBlock Text="Dodaj zlecenie" Style="{StaticResource SectionHeader}" />
-                                        <ComboBox ItemsSource="{Binding DataContext.Board.OrderTypes, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  IsEnabled="{Binding DataContext.Board.CanIssueOrders, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  SelectedItem="{Binding DataContext.Board.OrderType, RelativeSource={RelativeSource AncestorType=Window}}">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                        <TextBox Text="{Binding DataContext.Board.OrderDescription, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" />
-                                        <CheckBox Content="Pilne" Margin="0,4"
-                                                  IsChecked="{Binding DataContext.Board.OrderUrgent, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                        <Button Content="Dodaj zlecenie"
-                                                IsEnabled="{Binding DataContext.Board.CanIssueOrders, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                Command="{Binding DataContext.Board.AddOrderCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-
-                                        <TextBlock Text="Rozpoznanie ICD-10 (BR-13)" Style="{StaticResource SectionHeader}" />
-                                        <TextBox Text="{Binding DataContext.Board.Icd10Code, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}" />
-                                        <Button Content="Zapisz rozpoznanie"
-                                                IsEnabled="{Binding DataContext.Board.CanEnterDiagnosis, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                Command="{Binding DataContext.Board.SetDiagnosisCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-
                                         <TextBlock Text="Podane leki" Style="{StaticResource SectionHeader}" />
                                         <DataGrid ItemsSource="{Binding Administrations}" Height="140">
                                             <DataGrid.Columns>
@@ -595,46 +531,6 @@
                                                 <DataGridTextColumn Header="Godzina" Binding="{Binding AdministeredAtUtc, StringFormat='HH:mm', Mode=OneWay}" Width="60" />
                                             </DataGrid.Columns>
                                         </DataGrid>
-
-                                        <!-- Wypis pacjenta z SOR (BR-11): zakończenie leczenia, wypis na własne żądanie
-                                             albo przekazanie na inny oddział szpitala. Pole oddziału
-                                             pojawia się wyłącznie dla przekazania. -->
-                                        <TextBlock Text="Wypis pacjenta z SOR (BR-11)" Style="{StaticResource SectionHeader}" />
-                                        <ComboBox ItemsSource="{Binding DataContext.Board.DischargeTypes, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  IsEnabled="{Binding DataContext.Board.CanDischargePatient, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                  SelectedItem="{Binding DataContext.Board.DischargeType, RelativeSource={RelativeSource AncestorType=Window}}">
-                                            <ComboBox.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock Text="{Binding Converter={StaticResource PolishEnum}}" />
-                                                </DataTemplate>
-                                            </ComboBox.ItemTemplate>
-                                        </ComboBox>
-                                        <Grid Visibility="{Binding DataContext.Board.IsDepartmentRequired, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}">
-                                            <ComboBox ItemsSource="{Binding DataContext.Board.Departments, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                      DisplayMemberPath="Name"
-                                                      SelectedItem="{Binding DataContext.Board.SelectedDepartment, RelativeSource={RelativeSource AncestorType=Window}}" />
-                                        </Grid>
-                                        <TextBox Text="{Binding DataContext.Board.DischargeReason, RelativeSource={RelativeSource AncestorType=Window}, UpdateSourceTrigger=PropertyChanged}"
-                                                 Visibility="{Binding DataContext.Board.IsReasonRequired, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource BoolToVisibility}}" />
-                                        <Button Content="Wypisz pacjenta z SOR"
-                                                IsEnabled="{Binding DataContext.Board.CanDischargePatient, RelativeSource={RelativeSource AncestorType=Window}}"
-                                                Command="{Binding DataContext.Board.DischargeCommand, RelativeSource={RelativeSource AncestorType=Window}}" />
-
-                                        <TextBlock Text="Historia wypisów" Style="{StaticResource SectionHeader}" />
-                                        <ItemsControl ItemsSource="{Binding Discharges}">
-                                            <ItemsControl.ItemTemplate>
-                                                <DataTemplate>
-                                                    <TextBlock TextWrapping="Wrap">
-                                                        <Run Text="{Binding Type, Mode=OneWay, Converter={StaticResource PolishEnum}}" />
-                                                        <Run Text=" — " />
-                                                        <Run Text="{Binding DischargedAtUtc, StringFormat='dd.MM.yyyy HH:mm', Mode=OneWay}" />
-                                                        <Run Text=" (" />
-                                                        <Run Text="{Binding RecordedByLogin, Mode=OneWay}" />
-                                                        <Run Text=")" />
-                                                    </TextBlock>
-                                                </DataTemplate>
-                                            </ItemsControl.ItemTemplate>
-                                        </ItemsControl>
 
                                         <TextBlock Text="Operacje na karcie" Style="{StaticResource SectionHeader}" />
                                         <UniformGrid Columns="1">
@@ -778,28 +674,8 @@
                                             Command="{Binding Catalog.RecordAdministrationCommand}" />
                                 </StackPanel>
 
-                                <TextBlock Text="Rozpoznania ICD-10" Style="{StaticResource SectionHeader}" />
-                                <DockPanel>
-                                    <Button DockPanel.Dock="Right" Content="Szukaj"
-                                            Command="{Binding Catalog.SearchDiagnosesCommand}" MinWidth="90" />
-                                    <TextBox Text="{Binding Catalog.Icd10Term, UpdateSourceTrigger=PropertyChanged}"
-                                             Margin="0,0,8,0" />
-                                </DockPanel>
-                                <DataGrid ItemsSource="{Binding Catalog.Diagnoses}"
-                                          SelectedItem="{Binding Catalog.SelectedDiagnosis}"
-                                          Height="220">
-                                    <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Kod" Binding="{Binding Code, Mode=OneWay}" Width="90" />
-                                        <DataGridTextColumn Header="Rozpoznanie" Binding="{Binding Description, Mode=OneWay}" Width="*" />
-                                    </DataGrid.Columns>
-                                </DataGrid>
-                                <TextBlock Text="Kod rozpoznania" Style="{StaticResource FieldLabel}" />
-                                <TextBox Text="{Binding Catalog.Icd10Code, UpdateSourceTrigger=PropertyChanged}" />
-                                <Button Content="Zapisz rozpoznanie do karty"
-                                        IsEnabled="{Binding Board.CanEnterDiagnosis}"
-                                        Command="{Binding Catalog.AssignDiagnosisCommand}" />
-
                                 <TextBlock Style="{StaticResource FieldLabel}" TextWrapping="Wrap"
+                                           Margin="0,10,0,0"
                                            Text="{Binding Catalog.StatusMessage, StringFormat='Status: {0}'}" />
                             </StackPanel>
                         </ScrollViewer>
