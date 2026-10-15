@@ -22,6 +22,7 @@ public sealed class PatientStayListViewModel : ObservableObject
     private readonly IClock _clock;
     private readonly UiThreadDispatcher _dispatcher;
     private readonly SessionViewModel _session;
+    private readonly IPatientHistoryDialogService _historyDialog;
 
     private string _organizationalUnit = DefaultUnit;
     private string _patientSearch = string.Empty;
@@ -31,21 +32,25 @@ public sealed class PatientStayListViewModel : ObservableObject
     private bool _withoutRefusalCard;
     private bool _isBusy;
     private string _statusMessage = string.Empty;
+    private PatientStayDto? _selectedStay;
 
     public PatientStayListViewModel(
         IPatientStayService stayService,
         IAuditLogService auditLog,
         IClock clock,
         SessionViewModel session,
-        UiThreadDispatcher dispatcher)
+        UiThreadDispatcher dispatcher,
+        IPatientHistoryDialogService historyDialog)
     {
         _stayService = stayService ?? throw new ArgumentNullException(nameof(stayService));
         _auditLog = auditLog ?? throw new ArgumentNullException(nameof(auditLog));
         _clock = clock ?? throw new ArgumentNullException(nameof(clock));
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _historyDialog = historyDialog ?? throw new ArgumentNullException(nameof(historyDialog));
 
         SearchCommand = new AsyncRelayCommand(RefreshAsync, () => !_isBusy);
+        OpenPatientHistoryCommand = new AsyncRelayCommand(OpenPatientHistoryAsync);
 
         // Nawigacja krokowa jest rozdzielona na „datę od” i „datę do”: przyciski w wierszu
         // „Data od” zmieniają wyłącznie dolną granicę, a w wierszu „Data do” — wyłącznie górną.
@@ -96,6 +101,12 @@ public sealed class PatientStayListViewModel : ObservableObject
 
     public AsyncRelayCommand SearchCommand { get; }
 
+    /// <summary>
+    /// Otwiera okno „Historia pobytu” dla wskazanego wiersza (parametr) albo dla wiersza
+    /// zaznaczonego na liście. Wywoływane dwukrotnym kliknięciem wiersza pacjenta.
+    /// </summary>
+    public AsyncRelayCommand OpenPatientHistoryCommand { get; }
+
     /// <summary>Przesuwa „datę od” o jeden dzień w tył — bez zmiany „daty do”.</summary>
     public RelayCommand PreviousDayFromCommand { get; }
 
@@ -136,6 +147,13 @@ public sealed class PatientStayListViewModel : ObservableObject
     {
         get => _organizationalUnit;
         set => SetProperty(ref _organizationalUnit, value);
+    }
+
+    /// <summary>Wiersz listy zaznaczony przez użytkownika — cel dwukrotnego kliknięcia.</summary>
+    public PatientStayDto? SelectedStay
+    {
+        get => _selectedStay;
+        set => SetProperty(ref _selectedStay, value);
     }
 
     /// <summary>Tekst wyszukiwarki pacjenta (PESEL lub nazwisko).</summary>
@@ -295,6 +313,30 @@ public sealed class PatientStayListViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Otwiera okno „Historia pobytu” (dwukrotne kliknięcie wiersza pacjenta). Wiersz trafia
+    /// jako parametr polecenia, a gdy go brak — używane jest bieżące zaznaczenie listy.
+    /// </summary>
+    private async Task OpenPatientHistoryAsync(object? parameter)
+    {
+        var stay = parameter as PatientStayDto ?? _selectedStay;
+
+        if (stay is null)
+        {
+            StatusMessage = "Wybierz pobyt z listy, aby zobaczyć historię.";
+            return;
+        }
+
+        try
+        {
+            await _historyDialog.ShowAsync(stay.PatientId).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
         }
     }
 

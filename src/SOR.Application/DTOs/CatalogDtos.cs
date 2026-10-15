@@ -72,4 +72,8 @@ public sealed record MedicationAdministrationDto(
     MedicationRoute Route,
     DateTimeOffset AdministeredAtUtc,
     Guid? MedicalOrderId,
-    string? Notes);
+    string? Notes)
+{
+    /// <summary>Godzina podania w strefie lokalnej — kolumna w historii pobytu.</summary>
+    public string AdministeredAtDisplay => AdministeredAtUtc.ToLocalTime().ToString("dd.MM.yyyy HH:mm");
+}

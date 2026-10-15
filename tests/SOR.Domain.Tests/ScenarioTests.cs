@@ -545,6 +545,54 @@ public sealed class ScenarioTests : IAsyncLifetime
         _ = patients;
     }
 
+    /// <summary>
+    /// Okno „Historia pobytu” opiera się na <see cref="PatientDetailsDto.TriageHistory"/>. Kolejne
+    /// oceny Triage nie nadpisują poprzednich — każda trafia do historii, dzięki czemu przebieg
+    /// segregacji pacjenta jest odtwarzalny. Test sprawdza też format czasu pokazywany w kolumnie
+    /// „Ocena” oraz to, że bieżąca ocena to wynik ostatniego triażu.
+    /// </summary>
+    [Fact]
+    public async Task HistoriaPobytu_ZawieraWszystkieOcenyTriage()
+    {
+        await using var provider = await BuildProviderAsync();
+        await using var scope = provider.CreateAsyncScope();
+
+        var auth = scope.ServiceProvider.GetRequiredService<IAuthenticationService>();
+        var patients = scope.ServiceProvider.GetRequiredService<IPatientService>();
+
+        await auth.LoginAsync("lekarz.emg", "SOR2026!emg");
+
+        var patient = await patients.RegisterPatientAsync(
+            GeneratePesel(1974, 8, 3, isFemale: false),
+            "Marek",
+            "Historia",
+            new DateOnly(1974, 8, 3),
+            PatientGender.Male,
+            "Ból w klatce piersiowej");
+
+        await patients.PerformTriageAsync(patient.Id, TriageCategory.Yellow, "Pierwsza ocena", "RR 140/90");
+
+        // Ponowna ocena przy zmianie stanu klinicznego — poprzednia ocena musi pozostać w historii.
+        var details = await patients.PerformTriageAsync(patient.Id, TriageCategory.Orange, "Pogorszenie stanu", "SpO2 92%");
+
+        Assert.Equal(2, details.TriageHistory.Count);
+        Assert.Equal(TriageCategory.Orange, details.Triage);
+
+        var categories = details.TriageHistory.Select(entry => entry.Category).ToList();
+
+        Assert.Contains(TriageCategory.Yellow, categories);
+        Assert.Contains(TriageCategory.Orange, categories);
+
+        Assert.All(details.TriageHistory, entry =>
+        {
+            Assert.False(string.IsNullOrWhiteSpace(entry.ClinicalJustification));
+            Assert.False(string.IsNullOrWhiteSpace(entry.VitalSignsSummary));
+            Assert.Matches(@"^\d{2}\.\d{2}\.\d{4} \d{2}:\d{2}$", entry.AssessedAtDisplay);
+        });
+
+        _output.WriteLine($"Historia Triage: {details.TriageHistory.Count} ocen, bieżąca: {details.Triage}.");
+    }
+
     private async Task<ServiceProvider> BuildProviderAsync()
     {
         var services = new ServiceCollection();

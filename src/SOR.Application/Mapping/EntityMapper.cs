@@ -57,6 +57,13 @@ public static class EntityMapper
             .Select(a => a.ToDto(ResolveMedicationName(medicationNames, a.MedicationId)))
             .ToList();
 
+        // Historia Triage: ocena bieżąca nie nadpisuje poprzednich, dlatego pełna lista
+        // pokazuje przebieg segregacji pacjenta w trakcie pobytu (najnowsza pierwsza).
+        var triageHistory = patient.TriageHistory
+            .OrderByDescending(t => t.AssessedAtUtc)
+            .Select(t => t.ToDto())
+            .ToList();
+
         return new PatientDetailsDto(
             patient.Id,
             patient.Pesel,
@@ -71,7 +78,8 @@ public static class EntityMapper
             zoneName,
             patient.RegisteredAtUtc,
             patient.ZoneAssignedAtUtc,
-patient.Orders.Select(o => o.ToDto()).ToList(),
+            triageHistory,
+            patient.Orders.Select(o => o.ToDto()).ToList(),
                patient.Transfers.Select(t => t.ToDto(zoneName)).ToList(),
                administrations,
                patient.Discharges.Select(d => d.ToDto()).ToList(),
@@ -129,6 +137,19 @@ patient.Orders.Select(o => o.ToDto()).ToList(),
             order.OrderedAtUtc,
             order.CompletedAtUtc,
             order.CancellationReason);
+    }
+
+    /// <summary>Buduje DTO pojedynczej oceny Triage (element historii segregacji).</summary>
+    public static TriageAssessmentDto ToDto(this TriageAssessment assessment)
+    {
+        ArgumentNullException.ThrowIfNull(assessment);
+
+        return new TriageAssessmentDto(
+            assessment.Id,
+            assessment.Category,
+            assessment.ClinicalJustification,
+            assessment.VitalSignsSummary,
+            assessment.AssessedAtUtc);
     }
 
     public static ZoneTransferDto ToDto(this ZoneTransfer transfer, string? currentZoneName)

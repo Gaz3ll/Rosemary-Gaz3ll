@@ -374,6 +374,7 @@
                                 <TextBlock Text="Kolejka oczekujących na Triage" Style="{StaticResource SectionHeader}" />
                                 <DataGrid ItemsSource="{Binding Board.AwaitingTriage}"
                                           SelectedItem="{Binding Board.SelectedTriagePatient}"
+                                          MouseDoubleClick="PatientRow_MouseDoubleClick"
                                           Height="160">
                                     <DataGrid.Columns>
                                         <DataGridTextColumn Header="PESEL" Binding="{Binding Pesel, Mode=OneWay}" Width="100" />
@@ -469,7 +470,8 @@
                             <TextBlock Grid.Row="1" Text="Pacjenci w strefie" Style="{StaticResource SectionHeader}" />
 
                             <DataGrid Grid.Row="2" ItemsSource="{Binding Board.ZonePatients}"
-                                      SelectedItem="{Binding Board.SelectedPatient}">
+                                      SelectedItem="{Binding Board.SelectedPatient}"
+                                      MouseDoubleClick="PatientRow_MouseDoubleClick">
                                 <DataGrid.Columns>
                                     <DataGridTextColumn Header="PESEL" Binding="{Binding Pesel, Mode=OneWay}" Width="110" />
                                     <DataGridTextColumn Header="Pacjent" Binding="{Binding FullName, Mode=OneWay}" Width="*" />
@@ -814,6 +816,8 @@
                         Visibility="{Binding IsAdmissionsVisible, Converter={StaticResource BoolToVisibility}}">
                 <TabItem Header="Karta pobytu">
                     <DataGrid ItemsSource="{Binding Stays.VisibleStays}"
+                              SelectedItem="{Binding Stays.SelectedStay}"
+                              MouseDoubleClick="PatientRow_MouseDoubleClick"
                               AutoGenerateColumns="False" IsReadOnly="True"
                               CanUserAddRows="False" CanUserDeleteRows="False"
                               SelectionMode="Single" GridLinesVisibility="Horizontal"
@@ -822,20 +826,20 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="COVID-19" Binding="{Binding Covid19}" Width="70" />
                             <DataGridTextColumn Header="Pacjent" Binding="{Binding PatientDisplay}" Width="190" />
-                            <DataGridTextColumn Header="Triage" Binding="{Binding TriageDisplay}" Width="60" />
-                            <DataGridTextColumn Header="Objawy" Binding="{Binding Symptoms}" Width="200" />
-                            <DataGridTextColumn Header="Czas" Binding="{Binding WaitingTimeDisplay}" Width="80" />
+                            <DataGridTextColumn Header="Triage" Binding="{Binding Triage, Converter={StaticResource PolishEnum}}" Width="100" />
+                            <DataGridTextColumn Header="Objawy" Binding="{Binding Complaint}" Width="200" />
+                            <DataGridTextColumn Header="Czas" Binding="{Binding TimeInZoneDisplay}" Width="80" />
                             <DataGridTextColumn Header="Data przyjęcia" Binding="{Binding AdmittedAtDisplay}" Width="130" />
                             <DataGridTextColumn Header="Data wypisu" Binding="{Binding DischargedAtDisplay}" Width="130" />
                             <DataGridTextColumn Header="Nr" Binding="{Binding VisitNumber}" Width="70" />
-                            <DataGridTextColumn Header="TOPSOR" Binding="{Binding TopSorNumber}" Width="110" />
-                            <DataGridTextColumn Header="Oddział" Binding="{Binding DepartmentName}" Width="140" />
+                            <DataGridTextColumn Header="TOPSOR" Binding="{Binding MedicalRecordNumber}" Width="110" />
+                            <DataGridTextColumn Header="Oddział" Binding="{Binding Department}" Width="140" />
                             <DataGridTextColumn Header="Księga główna" Binding="{Binding MainLedgerBook}" Width="110" />
                             <DataGridTextColumn Header="Ubezp." Binding="{Binding HasInsurance}" Width="70" />
                             <DataGridTextColumn Header="Onkologiczna" Binding="{Binding IsOncological}" Width="100" />
-                            <DataGridTextColumn Header="Zgoda" Binding="{Binding ConsentToMedicalTreatment}" Width="70" />
-                            <DataGridTextColumn Header="Kat." Binding="{Binding TriageDisplay}" Width="60" />
-                            <DataGridTextColumn Header="IDH" Binding="{Binding HospitalizationNumber}" Width="90" />
+                            <DataGridTextColumn Header="Zgoda" Binding="{Binding ConsentGiven}" Width="70" />
+                            <DataGridTextColumn Header="Kat." Binding="{Binding PriorityCategory}" Width="100" />
+                            <DataGridTextColumn Header="IDH" Binding="{Binding IdhNumber}" Width="90" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </TabItem>

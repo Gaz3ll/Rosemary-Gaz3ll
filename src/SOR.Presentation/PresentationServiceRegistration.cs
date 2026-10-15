@@ -25,6 +25,10 @@ public static class PresentationServiceRegistration
         // Motyw jest stanem procesu, a nie sesji — jeden wybór obowiązuje przez cały czas pracy.
         services.AddSingleton<IThemeService, ThemeService>();
 
+        // Okno historii pobytu jest bezstanowe (ładuje dane przy każdym otwarciu), ale korzysta
+        // z usług aplikacyjnych o cyklu Scoped — dlatego dzieli z nimi cykl życia.
+        services.AddScoped<IPatientHistoryDialogService, PatientHistoryDialogService>();
+
         services.AddScoped<SessionViewModel>();
         services.AddScoped<PatientBoardViewModel>();
         services.AddScoped<MedicationCatalogViewModel>();

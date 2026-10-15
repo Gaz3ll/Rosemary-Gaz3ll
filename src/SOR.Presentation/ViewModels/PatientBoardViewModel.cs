@@ -22,6 +22,7 @@ public sealed class PatientBoardViewModel : ObservableObject
     private readonly IDepartmentCatalogService _departmentCatalog;
     private readonly SessionViewModel _session;
     private readonly UiThreadDispatcher _dispatcher;
+    private readonly IPatientHistoryDialogService _historyDialog;
 
     private PatientCardDto? _selectedPatient;
     private PatientDetailsDto? _selectedPatientDetails;
@@ -60,7 +61,8 @@ public sealed class PatientBoardViewModel : ObservableObject
         IUnitOfWork unitOfWork,
         IDepartmentCatalogService departmentCatalog,
         SessionViewModel session,
-        UiThreadDispatcher dispatcher)
+        UiThreadDispatcher dispatcher,
+        IPatientHistoryDialogService historyDialog)
     {
         _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
         _monitoringService = monitoringService ?? throw new ArgumentNullException(nameof(monitoringService));
@@ -68,12 +70,14 @@ public sealed class PatientBoardViewModel : ObservableObject
         _departmentCatalog = departmentCatalog ?? throw new ArgumentNullException(nameof(departmentCatalog));
         _session = session ?? throw new ArgumentNullException(nameof(session));
         _dispatcher = dispatcher ?? throw new ArgumentNullException(nameof(dispatcher));
+        _historyDialog = historyDialog ?? throw new ArgumentNullException(nameof(historyDialog));
 
         RefreshCommand = new AsyncRelayCommand(RefreshAsync);
         RegisterPatientCommand = new AsyncRelayCommand(RegisterPatientAsync, () => !_isBusy);
         PerformTriageCommand = new AsyncRelayCommand(PerformTriageAsync, () => !_isBusy);
         AssignToZoneCommand = new AsyncRelayCommand(AssignToZoneAsync, () => !_isBusy);
         SelectPatientCommand = new AsyncRelayCommand(SelectPatientAsync);
+        OpenPatientHistoryCommand = new AsyncRelayCommand(OpenPatientHistoryAsync);
         AddOrderCommand = new AsyncRelayCommand(AddOrderAsync, () => !_isBusy);
         CompleteOrderCommand = new AsyncRelayCommand(
             CompleteOrderAsync,
@@ -360,6 +364,12 @@ public sealed class PatientBoardViewModel : ObservableObject
     public AsyncRelayCommand AssignToZoneCommand { get; }
 
     public AsyncRelayCommand SelectPatientCommand { get; }
+
+    /// <summary>
+    /// Otwiera okno „Historia pobytu” dla pacjenta wskazanego jako parametr polecenia
+    /// (wiersz pulpitu — kolejka triage albo lista pacjentów strefy). Wywoływane dwuklikiem.
+    /// </summary>
+    public AsyncRelayCommand OpenPatientHistoryCommand { get; }
 
     public AsyncRelayCommand AddOrderCommand { get; }
 
@@ -678,6 +688,30 @@ public sealed class PatientBoardViewModel : ObservableObject
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// Otwiera okno „Historia pobytu” dla pacjenta przekazanego jako parametr polecenia
+    /// (dwukrotne kliknięcie wiersza na pulpicie). Bez parametru korzysta z zaznaczenia.
+    /// </summary>
+    private async Task OpenPatientHistoryAsync(object? parameter)
+    {
+        var patient = parameter as PatientCardDto ?? _selectedPatient;
+
+        if (patient is null)
+        {
+            StatusMessage = "Wybierz pacjenta z listy, aby zobaczyć historię pobytu.";
+            return;
+        }
+
+        try
+        {
+            await _historyDialog.ShowAsync(patient.Id).ConfigureAwait(true);
+        }
+        catch (Exception exception) when (exception is not OperationCanceledException)
+        {
+            StatusMessage = ExceptionMessageMapper.Map(exception).Message;
         }
     }
 

@@ -105,9 +105,11 @@ public sealed class PatientRepository : EntityFrameworkRepository<Patient>, IPat
     public override async Task<Patient?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         await Context.Patients
             .Include(p => p.CurrentTriage)
+            .Include(p => p.TriageHistory)
             .Include(p => p.Orders)
             .Include(p => p.Transfers)
             .Include(p => p.Administrations)
+            .Include(p => p.Discharges)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken).ConfigureAwait(false);
 }
 

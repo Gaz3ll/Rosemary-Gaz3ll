@@ -88,6 +88,9 @@ Uprawnienia ratownika medycznego (BR-13):
   zakres dat z nawigacją krokową, filtry statusowe, wiersze tabeli, raport z dyżuru i badania
   obrazowe (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
 - **`MedicationCatalogViewModel`** — katalog leków, pakiety medyczne i formularz zleceń.
+- **`PatientHistoryViewModel`** — widok tylko do odczytu okna „Historia pobytu" (dane przyjęcia,
+  oceny Triage, przeniesienia, zlecenia, leki, wypisy); otwierany przez `IPatientHistoryDialogService`
+  z listy pobytów i pulpitu strefy (patrz [rozdział 8](#8-moduł-przyjęć--karta-pobytu-raport-z-dyżuru-i-badania-obrazowe)).
 - **`MainWindow.xaml`** — ekran logowania oraz ekran roboczy opisany w [rozdziale 7](#7-ekran-po-zalogowaniu).
   Konwertery `BooleanToVisibilityConverter`, `InverseBooleanToVisibilityConverter`,
   `StringToVisibilityConverter`, `PolishEnumConverter` i `EnumEqualsConverter` utrzymują widok
@@ -101,7 +104,7 @@ Bindingi do właściwości tylko do odczytu (`ProgressBar.Value`, kolumny `DataG
 
 ## 4. Testy
 
-Łącznie **111 testów** (xUnit), wszystkie przechodzą. Kluczowe grupy:
+Łącznie **112 testów** (xUnit), wszystkie przechodzą. Kluczowe grupy:
 
 ### `PersistenceTests` — trwałość (6)
 
@@ -137,7 +140,7 @@ Bindingi do właściwości tylko do odczytu (`ProgressBar.Value`, kolumny `DataG
 dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualifiedName~PeselNumberTests"
 ```
 
-### `ScenarioTests` — scenariusze integracyjne (13 przypadków)
+### `ScenarioTests` — scenariusze integracyjne (14 przypadków)
 
 | Test | Reguła / cel |
 |---|---|
@@ -149,6 +152,10 @@ dotnet test tests/SOR.Domain.Tests/SOR.Domain.Tests.csproj --filter "FullyQualif
 | `KoordynatorMozeZlecicRotacje_InnegoPracownika` | BR-08 + zdarzenie domenowe |
 | `RotacjaDoPelnejStrefy_JestOdrzucona_IZapisujeAudyt` | BR-04 |
 | `Monitoring_KlasyfikujeObciazenie_BezAlarmuPrzyStabilnymStanie` | BR-06 |
+| `TriageWStrefieKlinicznej_PrzydzielaAutomatycznieDoTejStrefy` | WF-04 — przydział automatyczny |
+| `TriageWModuleWstepnym_PozostajeBezStrefy_DoPrzydzialuRecznego` | WF-04 — moduł triage (TRI) |
+| `TriageWPelnejStrefie_NieCofaOceny_PacjentCzekaNaPrzydzial` | BR-04 + zachowanie oceny Triage |
+| `HistoriaPobytu_ZawieraWszystkieOcenyTriage` | Historia pobytu — kolejne oceny Triage nie nadpisują poprzednich, format czasu |
 
 Uruchomienie samych scenariuszy:
 
@@ -331,6 +338,30 @@ Domyślny zakres dat to **05.10.2026**, a dane startowe (`DatabaseSeeder`) obejm
 zapytania; przycisk `◀ dzień` przy `Data od` przełącza zakres na dzień z danymi. Świadomie nie
 zmieniono domyślnej daty wymaganej przez specyfikację interfejsu.
 
+### Historia pobytu (dwukrotne kliknięcie wiersza pacjenta)
+
+Dwukrotne kliknięcie wiersza pacjenta — zarówno na liście pobytów (zakładka „Karta pobytu"), jak
+i na pulpicie strefy (kolejka Triage oraz lista pacjentów strefy) — otwiera modalne okno
+**„Historia pobytu"** (`PatientHistoryWindow`) z pełnym odtworzeniem przebiegu pobytu w SOR.
+
+| Element | Zawartość |
+|---|---|
+| Nagłówek | imię i nazwisko, PESEL, wiek, płeć, stan karty, czas i strefa przyjęcia, triage, rozpoznanie ICD-10, zgłaszane dolegliwości, blokady wypisu |
+| Oceny Triage | pełna historia ocen (kolejna ocena nie nadpisuje poprzedniej), z uzasadnieniem i parametrami życiowymi |
+| Przeniesienia | strefa źródłowa i docelowa, uzasadnienie, czas |
+| Procedury i badania | zlecenia wg typu (`MedicalOrderType`), opis, stan realizacji, pilność, czas wykonania |
+| Podane leki | preparat, dawka, droga podania, czas, uwagi |
+| Wypisy z SOR | sposób zakończenia pobytu (`DischargeType`), oddział, uzasadnienie, osoba rejestrująca |
+
+Dane pobiera `IPatientService.GetPatientAsync` przez `PatientRepository.GetByIdAsync`, który
+dołącza `TriageHistory` i `Discharges` (bez tych `Include` historia ocen i wypisów byłaby pusta).
+Warstwę widoku tworzy `PatientHistoryViewModel` (tylko do odczytu), a okno otwiera
+`IPatientHistoryDialogService` — dzięki temu listy pacjentów nie tworzą okien bezpośrednio i
+pozostają testowalne. Zdarzenie dwukliku obsługuje `MainWindow.xaml.cs` (`MouseDoubleClick`),
+ponieważ `DataGrid` nie udostępnia wiązania wyzwalanego dwuklikiem; kliknięcia nagłówka i paska
+przewijania są ignorowane (wykrywanie wiersza przez `VisualTreeHelper`). Każda kolumna daty ma
+własność `*Display` w formacie `dd.MM.yyyy HH:mm` (strefa lokalna).
+
 ## 9. Motyw kolorystyczny i tryb ciemny
 
 `ThemeService` podmienia w `Application.Resources` słownik `Themes/Light.xaml` lub
@@ -369,7 +400,7 @@ Umieszczenie `ContentPresenter` z `ContentSource="Content"` w szablonie `TabItem
 treść wewnątrz nagłówka (podwójne renderowanie i rozjechana wysokość zakładki), ponieważ WPF
 przenosi zawartość `TabItem` do obszaru treści `TabControl`.
 
-Weryfikacja zmian motywu: `dotnet build`, `dotnet test` (111 testów) oraz skrypt UI Automation
+Weryfikacja zmian motywu: `dotnet build`, `dotnet test` (112 testów) oraz skrypt UI Automation
 sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `ComboBox` i kalendarza
 `DatePicker` w obu motywach.
 
