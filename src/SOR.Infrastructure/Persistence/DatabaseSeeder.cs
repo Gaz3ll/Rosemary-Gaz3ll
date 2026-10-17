@@ -279,6 +279,9 @@ public sealed class DatabaseSeeder
         User internalDoctor,
         User nurse)
     {
+        // Indeks pacjenta na liście — steruje zróżnicowaniem danych administracyjnych.
+        var patientIndex = 0;
+
         // Pacjenci z założonym rozkładem kodów Triage — część ratunkowa celowo przeciążona.
         AddPatient("85441410003", "Marek", "Zieliński", new DateOnly(1985, 4, 14), PatientGender.Male,
             "Wypadek komunikacyjny, krwawienie wewnętrzne", TriageCategory.Red, emergency, emergencyDoctor, 40, now,
@@ -358,6 +361,19 @@ public sealed class DatabaseSeeder
             {
                 patient.SetDiagnosis(Icd10Code.Create(icd10));
             }
+
+            // Dane administracyjne kolumn listy pobytów — celowo zróżnicowane per pacjent
+            // (niektórzy bez ubezpieczenia, bez księgi albo z numerem IDH), aby widok
+            // nie prezentował jednolitych placeholderów.
+            var index = patientIndex++;
+            patient.SetAdministrativeAttributes(
+                visitNumber: index switch { 0 => 3, 5 => 2, 8 => 2, _ => 1 },
+                covid19: index is 3 or 7,
+                hasInsurance: index switch { 1 => false, 4 => null, 5 => false, 10 => null, _ => true },
+                isOncological: index is 7 or 8,
+                consentGiven: index switch { 0 => false, 4 => null, 8 => null, _ => true },
+                mainLedgerBook: index % 2 == 0 ? $"KG-{index + 1:D4}" : null,
+                idhNumber: index % 3 == 1 ? null : $"IDH-{index + 1:D4}");
 
             _context.Patients.Add(patient);
 

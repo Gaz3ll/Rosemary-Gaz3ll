@@ -76,6 +76,29 @@ public sealed class Patient : Entity<Guid>
     /// <summary>Rozpoznanie ICD-10 — warunek poprawności zamknięcia karty (BR-09).</summary>
     public Icd10Code? Diagnosis { get; private set; }
 
+    // ---------- Dane administracyjne (kolumny listy pobytów) ----------
+
+    /// <summary>Kolejny numer pobytu pacjenta w SOR — kolumna „Nr”.</summary>
+    public int VisitNumber { get; private set; } = 1;
+
+    /// <summary>Przyjęcie z powodu COVID-19 — kolumna „COVID-19” i podstawa filtra.</summary>
+    public bool Covid19 { get; private set; }
+
+    /// <summary>Informacja o ubezpieczeniu — kolumna „Ubezp.”; <c>null</c> = brak danych.</summary>
+    public bool? HasInsurance { get; private set; }
+
+    /// <summary>Prowadzenie w ścieżce onkologicznej — kolumna „Onkologiczna”.</summary>
+    public bool IsOncological { get; private set; }
+
+    /// <summary>Zgoda pacjenta — kolumna „Zgoda”; <c>null</c> = brak danych.</summary>
+    public bool? ConsentGiven { get; private set; }
+
+    /// <summary>Numer wpisu w księdze głównej dokumentacji — kolumna „Księga główna”.</summary>
+    public string? MainLedgerBook { get; private set; }
+
+    /// <summary>Numer IDH — kolumna „IDH”.</summary>
+    public string? IdhNumber { get; private set; }
+
     /// <summary>Aktualna ocena Triage (najnowsza w historii).</summary>
     public TriageAssessment? CurrentTriage { get; private set; }
 
@@ -267,6 +290,59 @@ public sealed class Patient : Entity<Guid>
         }
 
         Diagnosis = null;
+    }
+
+    /// <summary>
+    /// Ustawia dane administracyjne widoczne jako kolumny listy pobytów (Nr, Księga główna,
+    /// Ubezp., Onkologiczna, Zgoda, IDH, COVID-19). Dopuszczalne wyłącznie dla karty otwartej —
+    /// statystyka zamkniętego pobytu pozostaje niezmienna.
+    /// </summary>
+    public void SetAdministrativeAttributes(
+        int visitNumber,
+        bool covid19,
+        bool? hasInsurance,
+        bool isOncological,
+        bool? consentGiven,
+        string? mainLedgerBook,
+        string? idhNumber)
+    {
+        if (State is PatientState.Closed or PatientState.TransferredOut)
+        {
+            throw new ValidationException(
+                "Nie można zmienić danych administracyjnych wypisanego pacjenta.",
+                nameof(State));
+        }
+
+        if (visitNumber < 1)
+        {
+            throw new ValidationException("Numer pobytu musi być dodatni.", nameof(visitNumber));
+        }
+
+        VisitNumber = visitNumber;
+        Covid19 = covid19;
+        HasInsurance = hasInsurance;
+        IsOncological = isOncological;
+        ConsentGiven = consentGiven;
+        MainLedgerBook = NormalizeAdministrativeCode(mainLedgerBook, nameof(mainLedgerBook));
+        IdhNumber = NormalizeAdministrativeCode(idhNumber, nameof(idhNumber));
+    }
+
+    /// <summary>Przycina i waliduje krótkie kody administracyjne; puste wartości to brak danych.</summary>
+    private static string? NormalizeAdministrativeCode(string? value, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var normalized = value.Trim();
+
+        if (normalized.Length > 16)
+        {
+            throw new ValidationException("Kod administracyjny może mieć najwyżej 16 znaków.", paramName);
+        }
+
+        return normalized;
     }
 
     /// <summary>

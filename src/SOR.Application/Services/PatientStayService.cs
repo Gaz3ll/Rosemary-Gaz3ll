@@ -41,11 +41,10 @@ public sealed class PatientStayService : IPatientStayService
             .ConfigureAwait(false);
 
         var zoneNames = await GetZoneNamesAsync(patients, cancellationToken).ConfigureAwait(false);
-        var visitNumbers = BuildVisitNumbers(patients);
 
         var rows = patients
-            .Where(patient => Matches(patient, query.Filter))
-            .Select(patient => ToDto(patient, zoneNames, visitNumbers, nowUtc))
+            .Where(patient => Matches(patient, query))
+            .Select(patient => ToDto(patient, zoneNames, nowUtc))
             .ToList();
 
         return rows;
@@ -119,41 +118,27 @@ public sealed class PatientStayService : IPatientStayService
         return zones.ToDictionary(zone => zone.Id, zone => zone.Name);
     }
 
-    /// <summary>Numeruje pobyty w obrębie jednego pacjenta (kolejne wizyty w SOR).</summary>
-    private static Dictionary<Guid, int> BuildVisitNumbers(IReadOnlyList<Patient> patients)
-    {
-        var counters = new Dictionary<Guid, int>();
-
-        foreach (var patient in patients.OrderBy(patient => patient.RegisteredAtUtc))
-        {
-            counters.TryGetValue(patient.Id, out var count);
-            counters[patient.Id] = count + 1;
-        }
-
-        // Wiersze są posortowane malejąco po dacie przyjęcia, więc numerację budujemy
-        // w kolejności rosnącej i przypisujemy pacjentowi najnowszy numer pobytu.
-        return patients
-            .GroupBy(patient => patient.Id)
-            .ToDictionary(
-                group => group.Key,
-                group => counters[group.Key]);
-    }
-
-    private static bool Matches(Patient patient, StayFilter filter) => filter switch
+    /// <summary>Decyduje, czy pacjent należy do zbioru zwróconego przez aktywny filtr listy.</summary>
+    private static bool Matches(Patient patient, StayQuery query) => query.Filter switch
     {
         StayFilter.All => true,
         StayFilter.CurrentlyInHospital => ActiveStates.Contains(patient.State),
         StayFilter.TransferredToDepartment => patient.State == PatientState.TransferredOut,
         StayFilter.Cancelled => patient.Discharges.Any(discharge =>
             discharge.Type == DischargeType.AtPatientRequest),
-        StayFilter.CurrentlyInBay => patient.State == PatientState.Triaged,
+        StayFilter.Covid19 => patient.Covid19,
+
+        // „Aktualnie w izbie” — pacjent z przypisaną strefą i trwającym pobytem; zakres strefy
+        // (null = wszystkie) pochodzi z sesji, aby koordynator widział cały SOR.
+        StayFilter.CurrentlyInBay => patient.ZoneId is not null
+            && ActiveStates.Contains(patient.State)
+            && (query.ZoneScopeId is null || patient.ZoneId == query.ZoneScopeId),
         _ => false,
     };
 
     private static PatientStayDto ToDto(
         Patient patient,
         IReadOnlyDictionary<Guid, string> zoneNames,
-        IReadOnlyDictionary<Guid, int> visitNumbers,
         DateTimeOffset nowUtc)
     {
         var discharge = patient.Discharges
@@ -168,7 +153,7 @@ public sealed class PatientStayService : IPatientStayService
         var waitingSince = patient.ZoneAssignedAtUtc ?? patient.RegisteredAtUtc;
 
         return new PatientStayDto(
-            Covid19: false,
+            Covid19: patient.Covid19,
             patient.Id,
             BuildPatientNumber(patient),
             patient.FirstName,
@@ -180,17 +165,18 @@ public sealed class PatientStayService : IPatientStayService
             nowUtc - waitingSince,
             patient.RegisteredAtUtc,
             discharge?.DischargedAtUtc,
-            visitNumbers.GetValueOrDefault(patient.Id, 1),
+            patient.VisitNumber,
             BuildMedicalRecordNumber(patient),
             department,
+            patient.ZoneId,
             patient.State,
             discharge?.Type,
-            MainLedgerBook: "—",
-            HasInsurance: null,
-            IsOncological: false,
-            ConsentGiven: null,
+            MainLedgerBook: patient.MainLedgerBook ?? "—",
+            HasInsurance: patient.HasInsurance,
+            IsOncological: patient.IsOncological,
+            ConsentGiven: patient.ConsentGiven,
             BuildPriorityCategory(triage),
-            IdhNumber: "—");
+            IdhNumber: patient.IdhNumber ?? "—");
     }
 
     /// <summary>Numer dokumentacji medycznej w formacie MRN-XXXXXXXX (odpowiednik kolumny TOPSOR).</summary>
@@ -227,13 +213,3 @@ public sealed class PatientStayService : IPatientStayService
     };
 }
 
-/// <summary>Wiersz listy badań obrazowych (zakładka „Badania obrazowe”).</summary>
-/// <param name="PatientId">Identyfikator pacjenta.</param>
-/// <param name="PatientName">Nazwa pacjenta.</param>
-/// <param name="Pesel">Numer PESEL.</param>
-/// <param name="Type">Typ zlecenia.</param>
-/// <param name="Description">Opis zlecenia.</param>
-/// <param name="State">Stan zlecenia.</param>
-/// <param name="IsUrgent">Zlecenie pilne.</param>
-/// <param name="OrderedAtUtc">Data wystawienia zlecenia.</param>
-/// <param name="CompletedAtUtc">Data realizacji zlecenia.</param>

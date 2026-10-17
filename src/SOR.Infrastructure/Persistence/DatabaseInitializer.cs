@@ -50,13 +50,13 @@ public sealed class DatabaseInitializer
 
             if (File.Exists(_databasePath))
             {
-                var missingTables = await FindMissingTablesAsync(cancellationToken).ConfigureAwait(false);
+                var schemaGaps = await FindSchemaGapsAsync(cancellationToken).ConfigureAwait(false);
 
-                if (missingTables.Count > 0)
+                if (schemaGaps.Count > 0)
                 {
                     _logger.LogWarning(
-                        "Schemat bazy jest nieaktualny — brakuje tabel: {Tables}. Odtwarzam schemat; dane demonstracyjne zostaną wygenerowane ponownie.",
-                        string.Join(", ", missingTables));
+                        "Schemat bazy jest nieaktualny — brakuje: {Gaps}. Odtwarzam schemat; dane demonstracyjne zostaną wygenerowane ponownie.",
+                        string.Join(", ", schemaGaps));
 
                     await RecreateSchemaAsync(cancellationToken).ConfigureAwait(false);
                 }
@@ -75,11 +75,54 @@ public sealed class DatabaseInitializer
         }
     }
 
-    /// <summary>Zwraca nazwy tabel zdefiniowanych w modelu, których brakuje w pliku bazy.</summary>
-    private async Task<IReadOnlyList<string>> FindMissingTablesAsync(CancellationToken cancellationToken)
+    /// <summary>
+    /// Zwraca opisy luk w pliku bazy wobec bieżącego modelu: nazwy brakujących tabel
+    /// oraz kolumn w istniejących tabelach (format „Tabela.Kolumna"). Dodanie kolumny do
+    /// istniejącej tabeli jest niewidoczne dla <c>EnsureCreated</c> — bez poniższej kontroli
+    /// zapytania kończyłyby się błędem „no such column".
+    /// </summary>
+    private async Task<IReadOnlyList<string>> FindSchemaGapsAsync(CancellationToken cancellationToken)
     {
-        var existing = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        var existingTables = await ReadExistingTablesAsync(cancellationToken).ConfigureAwait(false);
+        var gaps = new List<string>();
 
+        var entityTypes = _context.Model
+            .GetEntityTypes()
+            .Where(entityType => !entityType.IsOwned());
+
+        foreach (var entityType in entityTypes)
+        {
+            var tableName = entityType.GetTableName();
+
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                continue;
+            }
+
+            if (!existingTables.Contains(tableName))
+            {
+                gaps.Add(tableName);
+                continue;
+            }
+
+            var existingColumns = await ReadColumnsAsync(tableName, cancellationToken).ConfigureAwait(false);
+
+            foreach (var column in entityType.GetProperties().Select(property => property.GetColumnName()))
+            {
+                if (!existingColumns.Contains(column))
+                {
+                    gaps.Add($"{tableName}.{column}");
+                }
+            }
+        }
+
+        return gaps;
+    }
+
+    /// <summary>Odczytuje nazwy kolumn tabeli z katalogu SQLite.</summary>
+    private async Task<HashSet<string>> ReadColumnsAsync(string tableName, CancellationToken cancellationToken)
+    {
+        var columns = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var connection = _context.Database.GetDbConnection();
 
         if (connection.State != ConnectionState.Open)
@@ -87,27 +130,19 @@ public sealed class DatabaseInitializer
             await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         }
 
-        await using (var command = connection.CreateCommand())
+        // PRAGMA nie przyjmuje parametrów — nazwa tabeli z katalogu modelu, zawijana w cudzysłowy.
+        await using var command = CreateCommand(
+            connection,
+            $"PRAGMA table_info(\"{tableName.Replace("\"", "\"\"", StringComparison.Ordinal)}\");");
+
+        await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
+
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
-            command.CommandText = "SELECT name FROM sqlite_master WHERE type = 'table';";
-
-            await using var reader = await command
-                .ExecuteReaderAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
-            {
-                existing.Add(reader.GetString(0));
-            }
+            columns.Add(reader.GetString(1));
         }
 
-        return _context.Model
-            .GetEntityTypes()
-            .Where(entityType => !entityType.IsOwned())
-            .Select(entityType => entityType.GetTableName())
-            .Where(tableName => !string.IsNullOrWhiteSpace(tableName) && !existing.Contains(tableName!))
-            .Select(tableName => tableName!)
-            .ToList();
+        return columns;
     }
 
     /// <summary>

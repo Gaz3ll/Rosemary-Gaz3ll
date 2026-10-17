@@ -32,7 +32,9 @@ dotnet run --project src/SOR.Presentation/SOR.Presentation.csproj
 
 Baza danych tworzona jest automatycznie przy pierwszym uruchomieniu w
 `%LOCALAPPDATA%\SOR\sor.db`. Dane startowe (strefy, konta, pacjenci, dyżury) są wypełniane
-przez `DatabaseSeeder` i operacja jest idempotentna.
+przez `DatabaseSeeder` i operacja jest idempotentna. `DatabaseInitializer` wykrywa nieaktualny
+schemat (brakującą tabelę **lub kolumnę**, przez `PRAGMA table_info`) i odtwarza go od nowa
+z reseedem danych.
 
 ### Konta demonstracyjne
 
@@ -306,15 +308,15 @@ odświeża listę po zalogowaniu i wylogowaniu).
 
 | Kolumna | Źródło |
 |---|---|
-| `COVID-19` | brak odpowiednika w modelu — `—` |
+| `COVID-19` | flaga `Patient.Covid19` (przyjęcie z powodu COVID-19) |
 | `Pacjent` | `PESEL, PAC-XXXXXX, Nazwisko, Imię, Wiek lat` (złożona kolumna `PatientDisplay`) |
 | `Triage`, `Kat.` | ostatnia ocena Triage (`TriageCategory`) i wyprowadzona z niej kategoria pilności |
 | `Objawy` | objawy zgłoszone przy rejestracji |
 | `Czas` | czas pobytu w strefie |
-| `Data przyjęcia`, `Data wypisu`, `Nr` | daty przyjęcia/wypisu i kolejny numer pobytu pacjenta w SOR |
+| `Data przyjęcia`, `Data wypisu`, `Nr` | daty przyjęcia/wypisu oraz kolejny numer pobytu pacjenta w SOR (`Patient.VisitNumber`) |
 | `TOPSOR` | numer dokumentacji medycznej (`MRN-…`) |
 | `Oddział` | strefa pobytu albo oddział przekazania |
-| `Księga główna`, `Ubezp.`, `Onkologiczna`, `Zgoda`, `IDH` | brak odpowiedników w modelu — `—` |
+| `Księga główna`, `Ubezp.`, `Onkologiczna`, `Zgoda`, `IDH` | dane administracyjne pacjenta (`Patient.MainLedgerBook`, `HasInsurance`, `IsOncological`, `ConsentGiven`, `IdhNumber`); brak wartości → `—` |
 
 ### Filtry
 
@@ -323,12 +325,15 @@ zwracają **pustą listę** zamiast danych, których system nie przechowuje.
 
 | Filtr (`StayFilter`) | Zachowanie |
 |---|---|
-| `All` | wszyscy pacjenci z zakresu dat (domyślnie) |
-| `CurrentlyInHospital` | pacjenci w trakcie pobytu w SOR |
+| `All` | wszyscy pacjenci z zakresu dat — łącznie z wypisanymi i przeniesionymi (domyślnie) |
+| `CurrentlyInHospital` | wszyscy aktualnie obecni w SOR, także nieztriagowani |
 | `TransferredToDepartment` | wypis typu przekazanie |
 | `Cancelled` | wypis na własne żądanie |
-| `CurrentlyInBay` | pacjenci oczekujący w strefie segregacji (TRI) |
-| `Refused`, `Covid19`, `NoInsurance`, `DischargedWithoutFormalities`, `LedgerVerification`, `Brak karty odmowy` | brak odpowiednika w modelu — pusty wynik |
+| `CurrentlyInBay` | pacjenci aktualnie przypisani do strefy; zakres strefy pochodzi z sesji
+(strefa bieżącego użytkownika, koordynator — wszystkie strefy), przekazywany przez
+`StayQuery.ZoneScopeId` |
+| `Covid19` | pacjenci z flagą `Patient.Covid19` — filtrowanie w `PatientStayService.Matches` oraz ponowne zawężenie po stronie widoku |
+| `Refused`, `NoInsurance`, `DischargedWithoutFormalities`, `LedgerVerification`, `Brak karty odmowy` | brak odpowiednika w modelu — pusty wynik |
 
 ### Raport z dyżuru i badania obrazowe
 
@@ -343,7 +348,10 @@ zwracają **pustą listę** zamiast danych, których system nie przechowuje.
 Domyślny zakres dat to **05.10.2026**, a dane startowe (`DatabaseSeeder`) obejmują dyżur
 **04.10.2026** (12 pobytów). Pierwsze uruchomienie pokazuje więc pustą tabelę — poprawny wynik
 zapytania; przycisk `◀ dzień` przy `Data od` przełącza zakres na dzień z danymi. Świadomie nie
-zmieniono domyślnej daty wymaganej przez specyfikację interfejsu.
+zmieniono domyślnej daty wymaganej przez specyfikację interfejsu. Seeder wariantuje też dane
+administracyjne kolumn listy — deterministycznie wg indeksu pacjenta na liście (nie losowo):
+Ubezp. `true`/`false`/brak, Zgoda `true`/`false`/brak, Onkologiczna u dwóch pacjentów,
+Księga główna `KG-…` u części, `IDH-…` u części, COVID-19 u dwóch pacjentów, `Nr` 1–3.
 
 ### Historia pobytu (dwukrotne kliknięcie wiersza pacjenta)
 
@@ -420,15 +428,17 @@ sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `Com
 
 ## 10. Znane ograniczenia
 
-- Brak migracji EF (schemat tworzony przez `EnsureCreatedAsync`) — zmiany modelu wymagają
-  usunięcia pliku bazy.
+- Brak migracji EF (schemat tworzony przez `EnsureCreatedAsync`) — `DatabaseInitializer`
+  automatycznie odtwarza schemat po wykryciu brakującej tabeli lub kolumny; pozostałe zmiany
+  modelu (np. zmiana typów) wymagają ręcznego usunięcia pliku bazy.
 - Monitoring nie działa jako trwała pętla w tle w UI (interfejs udostępnia `StartMonitoringAsync`).
 - Moduł **PORADNIA** nie jest zaimplementowany — brak modelu domenowego, sekcja pokazuje
   komunikat zastępczy (analogicznie `Konsultacje`, `Wniosek`, `Przedstawiciel / Uprawnienia`, `KMCR`
   w pasku operacyjnym).
-- Filtry i kolumny bez odpowiednika w modelu (COVID-19, Odmowa, Brak ubezpieczenia,
-  Wypisani bez proc. rol. a w izbie, Kategorie – weryfikacja, Brak karty odmowy, Księga główna,
-  Ubezp., Onkologiczna, Zgoda, IDH) pokazują pusty wynik lub `—`, zamiast danych zastępczych.
+- Filtry bez odpowiednika w modelu (Odmowa, Brak ubezpieczenia,
+  Wypisani bez proc. rol. a w izbie, Kategorie – weryfikacja, Brak karty odmowy) pokazują
+  pusty wynik. Kolumny COVID-19, Księga główna, Ubezp., Onkologiczna, Zgoda i IDH to dane
+  administracyjne pacjenta (`Patient`) — brak wartości pokazywany jako `—`.
 - Brak danych startowych dla domyślnego zakresu dat (05.10.2026) — dane seed dotyczą 04.10.2026.
 - Brak automatycznej weryfikacji wizualnej w CI (WPF wymaga sesji pulpitu) — kontrast motywów
   sprawdzany jest ręcznie i przez UI Automation.
@@ -442,6 +452,11 @@ sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `Com
   (`SetWindowPos` z `SWP_FRAMECHANGED`). Wywoływane po `window.Show()` oraz przy zmianie motywu
   (`App.xaml.cs`).
 - Dodano pędzel `InputBorderBrush` do `Themes/Dark.xaml` i `Themes/Light.xaml`.
+- Okno „Historia pobytu” (otwierane po kliknięciu pacjenta) barwi swój natywny pasek tytułowy
+  tak samo jak okno główne: `PatientHistoryDialogService` wywołuje `WindowTitleBarTheme.Apply`
+  przed `ShowDialog()` i dopisuje się do `IThemeService.ThemeChanged` na czas otwartego dialogu
+  (odpisuje w `finally`). Treść okna korzysta z poziomych stylów `App.xaml`, więc przełączenie
+  motywu przemalowuje okno również w trakcie wyświetlania.
 
 **DatePicker:**
 - `DatePicker.BorderBrush` korzysta z `{DynamicResource InputBorderBrush}`, `BorderThickness=1`.
@@ -486,3 +501,32 @@ sprawdzający przełączenie motywu, przełączanie zakładek, rozwinięcie `Com
   zamiast `DisplayMemberPath`.
 - Pakiety medyczne i katalog rozpoznań ICD-10 usunięto z tej zakładki i przeniesiono do okna
   „Historia pobytu”; zakładkę przemianowano z „Formularz i pakiety” na „Formularz leków”.
+
+## 12. Zmiany — dane administracyjne kolumn listy i ciemne tło historii
+
+**Dane administracyjne w modelu (`Patient`):**
+- Encja `Patient` zyskała pola odpowiadające kolumnom listy pobytów: `VisitNumber` (Nr, domyślnie 1),
+  `Covid19`, `HasInsurance` (Ubezp.), `IsOncological` (Onkologiczna), `ConsentGiven` (Zgoda),
+  `MainLedgerBook` (Księga główna), `IdhNumber` (IDH). Wartości ustawia metoda domenowa
+  `SetAdministrativeAttributes(...)` z walidacją: karta musi być otwarta, numer pobytu ≥ 1,
+  kody administracyjne najwyżej 16 znaków (puste = brak danych).
+- `PatientStayService.ToDto` mapuje realne wartości zamiast placeholderów (`false` / `—` / `null`);
+  kolumna `Nr` czyta `Patient.VisitNumber` — usunięto `BuildVisitNumbers`, która z definicji
+  zwracała zawsze 1 (po jednej encji na pacjenta, PESEL unikalny).
+- `DatabaseSeeder` wariantuje dane administracyjne deterministycznie wg indeksu pacjenta
+  (Ubezp. true/false/brak, Zgoda true/false/brak, Onkologiczna u dwóch, Księga `KG-…` u części,
+  IDH u części, COVID-19 u dwóch, `Nr` 1–3).
+- `DatabaseInitializer` wykrywa brakujące kolumny (`PRAGMA table_info` vs model) i odtwarza
+  schemat z reseedem — dodanie kolumny do istniejącej tabeli nie wymaga już ręcznego
+  usuwania pliku `sor.db`.
+
+**Filtr COVID-19:**
+- `StayFilter.Covid19` działa: `PatientStayService.Matches` zawęża po `Patient.Covid19`,
+  widok (`PatientStayListViewModel.ApplyFilters`) ponownie filtruje po stronie klienckiej;
+  usunięto go z listy filtrów bez odpowiednika w modelu.
+
+**Ciemne tło okna „Historia pobytu”:**
+- `PatientHistoryWindow.xaml` ustawia jawnie `Background="{DynamicResource AppBackgroundBrush}"`
+  i `Foreground="{DynamicResource TextPrimaryBrush}"` na elemencie `<Window>` — niejawny styl
+  `TargetType="Window"` z `App.xaml` nie dociera do okna pochodnego, więc bez tego okno
+  renderowało się na jasno mimo ciemnego motywu (wraz z naprawą paska tytułowego z §11).

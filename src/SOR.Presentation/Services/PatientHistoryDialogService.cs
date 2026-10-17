@@ -26,6 +26,7 @@ public sealed class PatientHistoryDialogService : IPatientHistoryDialogService
     private readonly IDepartmentCatalogService _departmentCatalog;
     private readonly IMedicalBundleService _bundleService;
     private readonly IIcd10CatalogService _icd10Catalog;
+    private readonly IThemeService _themeService;
     private readonly SessionViewModel _session;
 
     public PatientHistoryDialogService(
@@ -34,6 +35,7 @@ public sealed class PatientHistoryDialogService : IPatientHistoryDialogService
         IDepartmentCatalogService departmentCatalog,
         IMedicalBundleService bundleService,
         IIcd10CatalogService icd10Catalog,
+        IThemeService themeService,
         SessionViewModel session)
     {
         _patientService = patientService ?? throw new ArgumentNullException(nameof(patientService));
@@ -41,6 +43,7 @@ public sealed class PatientHistoryDialogService : IPatientHistoryDialogService
         _departmentCatalog = departmentCatalog ?? throw new ArgumentNullException(nameof(departmentCatalog));
         _bundleService = bundleService ?? throw new ArgumentNullException(nameof(bundleService));
         _icd10Catalog = icd10Catalog ?? throw new ArgumentNullException(nameof(icd10Catalog));
+        _themeService = themeService ?? throw new ArgumentNullException(nameof(themeService));
         _session = session ?? throw new ArgumentNullException(nameof(session));
     }
 
@@ -63,7 +66,21 @@ public sealed class PatientHistoryDialogService : IPatientHistoryDialogService
             Owner = System.Windows.Application.Current?.MainWindow,
         };
 
-        window.ShowDialog();
+        // Natywny pasek tytułowy okna (min/max/close) barwimy tak samo jak okna głównego,
+        // a przez czas otwartego dialogu reagujemy na przełączenie motywu w aplikacji.
+        void OnThemeChanged(object? sender, AppTheme theme) => WindowTitleBarTheme.Apply(window, theme);
+
+        WindowTitleBarTheme.Apply(window, _themeService.Current);
+        _themeService.ThemeChanged += OnThemeChanged;
+
+        try
+        {
+            window.ShowDialog();
+        }
+        finally
+        {
+            _themeService.ThemeChanged -= OnThemeChanged;
+        }
 
         return viewModel.HasChanges;
     }

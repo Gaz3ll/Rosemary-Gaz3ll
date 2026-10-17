@@ -235,6 +235,127 @@ public sealed class PersistenceTests : IAsyncLifetime
         Assert.True(await context.MedicalBundles.CountAsync() > 0);
     }
 
+    /// <summary>
+    /// Filtr „Aktualnie w izbie” zwraca wyłącznie pacjentów przypisanych do strefy;
+    /// zawężenie zakresu strefy (ZoneScopeId) redukuje wynik do wskazanej strefy,
+    /// a pacjent jeszcze nieztriagowany (bez strefy) pozostaje „aktualnie w szpitalu”.
+    /// </summary>
+    [Fact]
+    public async Task FiltrAktualnieWIzbie_ZwracaTylkoPacjentowPrzypisanychDoStrefy()
+    {
+        var services = BuildServices();
+        await using var provider = services.BuildServiceProvider();
+        await provider.InitializeDatabaseAsync();
+
+        await using var scope = provider.CreateAsyncScope();
+        var stays = scope.ServiceProvider.GetRequiredService<Application.Interfaces.IPatientStayService>();
+        var context = scope.ServiceProvider.GetRequiredService<SorDbContext>();
+        var nowUtc = DateTimeOffset.UtcNow;
+        var from = nowUtc.AddDays(-2);
+        var to = nowUtc.AddDays(2);
+
+        // Pacjent po rejestracji, przed Triage — nie ma przypisanej strefy (BR-01a).
+        var untriaged = Domain.Entities.Patient.Register(
+            Guid.NewGuid(),
+            "90051500000",
+            "Adam",
+            "BezStrefy",
+            new DateOnly(1990, 5, 15),
+            Domain.Enums.PatientGender.Male,
+            null,
+            nowUtc);
+        context.Patients.Add(untriaged);
+        await context.SaveChangesAsync();
+
+        var unscoped = await stays.GetStaysAsync(
+            new Application.DTOs.StayQuery(
+                from,
+                to,
+                Application.DTOs.StayFilter.CurrentlyInBay,
+                WithoutRefusalCard: false),
+            nowUtc);
+
+        Assert.NotEmpty(unscoped);
+        Assert.All(unscoped, stay => Assert.NotNull(stay.ZoneId));
+        Assert.DoesNotContain(unscoped, stay => stay.PatientId == untriaged.Id);
+
+        var zoneId = unscoped[0].ZoneId!.Value;
+        var scoped = await stays.GetStaysAsync(
+            new Application.DTOs.StayQuery(
+                from,
+                to,
+                Application.DTOs.StayFilter.CurrentlyInBay,
+                WithoutRefusalCard: false,
+                ZoneScopeId: zoneId),
+            nowUtc);
+
+        Assert.NotEmpty(scoped);
+        Assert.All(scoped, stay => Assert.Equal(zoneId, stay.ZoneId));
+        Assert.True(scoped.Count < unscoped.Count);
+
+        var inHospital = await stays.GetStaysAsync(
+            new Application.DTOs.StayQuery(
+                from,
+                to,
+                Application.DTOs.StayFilter.CurrentlyInHospital,
+                WithoutRefusalCard: false),
+            nowUtc);
+
+        Assert.Contains(inHospital, stay => stay.PatientId == untriaged.Id);
+    }
+
+    /// <summary>
+    /// Seeder demonstracyjny wariantuje dane administracyjne kolumn listy pobytów
+    /// (Księga główna, Ubezp., Onkologiczna, Zgoda, IDH, COVID-19, Nr), a filtr COVID-19
+    /// zawęża wynik do pacjentów z flagą przyjęcia z powodu COVID-19.
+    /// </summary>
+    [Fact]
+    public async Task Seeder_WariantujeDaneAdministracyjne_AFiltrCovid19Dziala()
+    {
+        var services = BuildServices();
+        await using var provider = services.BuildServiceProvider();
+        await provider.InitializeDatabaseAsync();
+
+        await using var scope = provider.CreateAsyncScope();
+        var stays = scope.ServiceProvider.GetRequiredService<Application.Interfaces.IPatientStayService>();
+        var nowUtc = DateTimeOffset.UtcNow;
+        var from = nowUtc.AddDays(-2);
+        var to = nowUtc.AddDays(2);
+
+        var all = await stays.GetStaysAsync(
+            new Application.DTOs.StayQuery(
+                from,
+                to,
+                Application.DTOs.StayFilter.All,
+                WithoutRefusalCard: false),
+            nowUtc);
+
+        Assert.NotEmpty(all);
+        Assert.Contains(all, stay => stay.HasInsurance == true);
+        Assert.Contains(all, stay => stay.HasInsurance == false);
+        Assert.Contains(all, stay => stay.HasInsurance is null);
+        Assert.Contains(all, stay => stay.IsOncological);
+        Assert.Contains(all, stay => stay.ConsentGiven is false);
+        Assert.Contains(all, stay => stay.ConsentGiven is null);
+        Assert.Contains(all, stay => stay.MainLedgerBook != "—");
+        Assert.Contains(all, stay => stay.MainLedgerBook == "—");
+        Assert.Contains(all, stay => stay.IdhNumber != "—");
+        Assert.Contains(all, stay => stay.IdhNumber == "—");
+        Assert.Contains(all, stay => stay.VisitNumber > 1);
+
+        var covid = await stays.GetStaysAsync(
+            new Application.DTOs.StayQuery(
+                from,
+                to,
+                Application.DTOs.StayFilter.Covid19,
+                WithoutRefusalCard: false),
+            nowUtc);
+
+        Assert.NotEmpty(covid);
+        Assert.All(covid, stay => Assert.True(stay.Covid19));
+        Assert.True(covid.Count < all.Count);
+    }
+
     private ServiceCollection BuildServices()
     {
         var services = new ServiceCollection();

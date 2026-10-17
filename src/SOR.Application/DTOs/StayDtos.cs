@@ -7,7 +7,7 @@ namespace SOR.Application.DTOs;
 /// interfejsu: COVID-19, Pacjent, Triage, Objawy, Czas, Data przyjęcia, Data wypisu, Nr, TOPSOR,
 /// Oddział, Księga główna, Ubezp., Onkologiczna, Zgoda, Kat., IDH.
 /// </summary>
-/// <param name="Covid19">Przyjęcie z powodu COVID-19 — brak takiego atrybutu w modelu domenowym.</param>
+/// <param name="Covid19">Przyjęcie z powodu COVID-19 (flaga przechowywana w karcie pacjenta).</param>
 /// <param name="PatientId">Identyfikator pacjenta (GUID) — segment „ID pacjenta” kolumny Pacjent.</param>
 /// <param name="PatientNumber">Krótki numer pacjenta wyświetlany w kolumnie Pacjent.</param>
 /// <param name="FirstName">Imię pacjenta.</param>
@@ -22,14 +22,15 @@ namespace SOR.Application.DTOs;
 /// <param name="VisitNumber">Numer kolejnego pobytu pacjenta w SOR.</param>
 /// <param name="MedicalRecordNumber">Numer dokumentacji medycznej (TOPSOR).</param>
 /// <param name="Department">Strefa pobytu albo oddział przekazania.</param>
+/// <param name="ZoneId">Identyfikator strefy, do której pacjent jest przypisany (null = brak przydziału).</param>
 /// <param name="State">Stan karty pacjenta.</param>
 /// <param name="DischargeType">Sposób zakończenia pobytu.</param>
-/// <param name="MainLedgerBook">Księga główna — brak danych w modelu.</param>
-/// <param name="HasInsurance">Ubezpieczenie — brak danych w modelu.</param>
-/// <param name="IsOncological">Przyjęcie onkologiczne — brak danych w modelu.</param>
-/// <param name="ConsentGiven">Zgoda — brak danych w modelu.</param>
+/// <param name="MainLedgerBook">Numer wpisu w księdze głównej („—”, jeśli brak danych).</param>
+/// <param name="HasInsurance">Informacja o ubezpieczeniu (null = brak danych).</param>
+/// <param name="IsOncological">Prowadzenie w ścieżce onkologicznej.</param>
+/// <param name="ConsentGiven">Zgoda pacjenta (null = brak danych).</param>
 /// <param name="PriorityCategory">Kategoria pilności wyprowadzona z Triage.</param>
-/// <param name="IdhNumber">Numer IDH — brak danych w modelu.</param>
+/// <param name="IdhNumber">Numer IDH („—”, jeśli brak danych).</param>
 public sealed record PatientStayDto(
     bool Covid19,
     Guid PatientId,
@@ -46,6 +47,7 @@ public sealed record PatientStayDto(
     int VisitNumber,
     string MedicalRecordNumber,
     string? Department,
+    Guid? ZoneId,
     PatientState State,
     DischargeType? DischargeType,
     string MainLedgerBook,
@@ -84,10 +86,10 @@ public sealed record PatientStayDto(
 /// </summary>
 public enum StayFilter
 {
-    /// <summary>Wszyscy pacjenci z zakresu dat.</summary>
+    /// <summary>Wszyscy pacjenci z zakresu dat — łącznie z wypisanymi i przeniesionymi.</summary>
     All = 0,
 
-    /// <summary>Aktualnie w szpitalu — pacjenci w trakcie pobytu w SOR.</summary>
+    /// <summary>Aktualnie w szpitalu — wszyscy obecni w SOR, także nieztriagowani.</summary>
     CurrentlyInHospital = 1,
 
     /// <summary>Przeniesieni na oddział — wypis typu przekazanie.</summary>
@@ -99,10 +101,13 @@ public enum StayFilter
     /// <summary>Odmowa — brak odpowiednika w modelu domenowym.</summary>
     Refused = 4,
 
-    /// <summary>Aktualnie w izbie — pacjenci oczekujący w strefie segregacji (TRI).</summary>
+    /// <summary>
+    /// Aktualnie w izbie — pacjenci aktualnie przypisani do strefy; zakres strefy pochodzi
+    /// z sesji (<see cref="StayQuery.ZoneScopeId"/>), koordynator widzi wszystkie strefy.
+    /// </summary>
     CurrentlyInBay = 5,
 
-    /// <summary>COVID-19 — brak odpowiednika w modelu domenowym.</summary>
+    /// <summary>COVID-19 — pacjenci z flagą przyjęcia z powodu COVID-19.</summary>
     Covid19 = 6,
 
     /// <summary>Brak ubezpieczenia — brak odpowiednika w modelu domenowym.</summary>
@@ -120,7 +125,16 @@ public enum StayFilter
 /// <param name="ToUtc">Data do (włącznie).</param>
 /// <param name="Filter">Wybrany filtr statusu.</param>
 /// <param name="WithoutRefusalCard">Brak karty odmowy — brak odpowiednika w modelu domenowym.</param>
-public sealed record StayQuery(DateTimeOffset FromUtc, DateTimeOffset ToUtc, StayFilter Filter, bool WithoutRefusalCard);
+/// <param name="ZoneScopeId">
+/// Zakres strefy filtra <see cref="StayFilter.CurrentlyInBay"/>: identyfikator strefy
+/// bieżącej sesji albo <c>null</c> (koordynator — wszystkie strefy).
+/// </param>
+public sealed record StayQuery(
+    DateTimeOffset FromUtc,
+    DateTimeOffset ToUtc,
+    StayFilter Filter,
+    bool WithoutRefusalCard,
+    Guid? ZoneScopeId = null);
 
 /// <summary>Zlecenie badania obrazowego wyświetlane w zakładce „Badania obrazowe”.</summary>
 public sealed record ImagingStudyDto(

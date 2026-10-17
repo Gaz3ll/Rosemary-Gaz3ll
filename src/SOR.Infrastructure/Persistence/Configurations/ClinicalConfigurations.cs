@@ -20,6 +20,10 @@ public sealed class PatientConfiguration : IEntityTypeConfiguration<Patient>
         builder.Property(p => p.Gender).HasConversion<int>();
         builder.Property(p => p.LockedBy).HasMaxLength(64);
 
+        // Dane administracyjne kolumn listy pobytów (Nr, Księga główna, Ubezp., COVID-19…).
+        builder.Property(p => p.MainLedgerBook).HasMaxLength(16);
+        builder.Property(p => p.IdhNumber).HasMaxLength(16);
+
         // ICD-10 jako owned entity type (kolumny rozłożone, brak kolumny klucza obcego).
         builder.OwnsOne(p => p.Diagnosis, diagnosis =>
         {

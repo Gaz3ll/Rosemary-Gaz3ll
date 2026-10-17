@@ -359,12 +359,21 @@ public sealed class PatientStayListViewModel : ObservableObject
             new DateTimeOffset(from).ToUniversalTime(),
             new DateTimeOffset(to).ToUniversalTime(),
             StatusFilter,
-            WithoutRefusalCard);
+            WithoutRefusalCard,
+            ResolveZoneScope());
     }
+
+    /// <summary>
+    /// Zakres strefy filtra „Aktualnie w izbie”: strefa bieżącej sesji, a dla koordynatora
+    /// (dostęp do wszystkich stref) <c>null</c> — czyli cały SOR.
+    /// </summary>
+    private Guid? ResolveZoneScope() =>
+        _session.IsCoordinator
+            ? null
+            : _session.CurrentZone?.ZoneId ?? _session.CurrentUser?.CurrentZoneId;
 
     /// <summary>Filtry bez odpowiednika w modelu domenowym zwracają pustą listę.</summary>
     private static bool IsFilterWithoutDataSupport(StayFilter filter) => filter is StayFilter.Refused
-        or StayFilter.Covid19
         or StayFilter.NoInsurance
         or StayFilter.DischargedWithoutFormalities
         or StayFilter.LedgerVerification;
@@ -372,6 +381,7 @@ public sealed class PatientStayListViewModel : ObservableObject
     private void ApplyFilters()
     {
         var term = _patientSearch.Trim();
+        var zoneScope = ResolveZoneScope();
 
         var filtered = Stays.Where(stay =>
         {
@@ -388,7 +398,10 @@ public sealed class PatientStayListViewModel : ObservableObject
                 StayFilter.CurrentlyInHospital => stay.DischargedAtUtc is null,
                 StayFilter.TransferredToDepartment => stay.DischargeType == DischargeType.TransferToDepartment,
                 StayFilter.Cancelled => stay.DischargeType == DischargeType.AtPatientRequest,
-                StayFilter.CurrentlyInBay => stay.State == PatientState.Triaged && stay.DischargedAtUtc is null,
+                StayFilter.CurrentlyInBay => stay.ZoneId is not null
+                    && stay.DischargedAtUtc is null
+                    && (zoneScope is null || stay.ZoneId == zoneScope),
+                StayFilter.Covid19 => stay.Covid19,
                 _ => false,
             };
         });

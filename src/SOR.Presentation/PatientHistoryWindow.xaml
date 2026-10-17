@@ -6,6 +6,8 @@
         mc:Ignorable="d"
         Title="{Binding Title}"
         Height="720" Width="1000" MinHeight="520" MinWidth="820"
+        Background="{DynamicResource AppBackgroundBrush}"
+        Foreground="{DynamicResource TextPrimaryBrush}"
         WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
 
     <!-- Historia pobytu: dane przyjecia, oceny Triage, przeniesienia, zlecenia (procedury
